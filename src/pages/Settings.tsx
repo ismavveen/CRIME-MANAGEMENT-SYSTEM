@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Bell, Shield, User, Lock, Globe, Monitor, BellOff, Eye, PieChart, Key } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const Settings = () => {
   return (
