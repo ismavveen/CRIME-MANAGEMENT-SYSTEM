@@ -6,7 +6,7 @@ import NigeriaMap from '../components/NigeriaMap';
 import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
-import { Users, FileText, CircleArrowUp, CircleCheck } from 'lucide-react';
+import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -36,35 +36,36 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Updated to focus on incidents */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            title="TOTAL USERS"
-            value="2,045"
-            icon={<Users size={24} />}
-            status="neutral"
+            title="ACTIVE INCIDENTS"
+            value="27"
+            icon={<CircleAlert size={24} />}
+            status="critical"
           />
           <StatCard
-            title="SIGN-UPS"
-            value="3"
+            title="CRITICAL ALERTS"
+            value="8"
+            subtitle="REGIONS: 4 | UNITS: 3"
+            status="critical"
+            trend="up"
+            trendValue="3"
+            icon={<CircleArrowUp size={24} />}
+          />
+          <StatCard
+            title="INCIDENTS RESOLVED"
+            value="15"
             subtitle="PAST 24 HOURS"
             status="success"
-            trend="up"
-            trendValue="2"
+            icon={<CircleCheck size={24} />}
           />
           <StatCard
-            title="SIGN-INS"
-            value="3"
-            subtitle="SUCCESS: 3 | FAILED: 0"
-            status="success"
-            trend="neutral"
-          />
-          <StatCard
-            title="ACTIVE INCIDENTS"
-            value="7"
-            subtitle="CRITICAL: 3 | WARNING: 4"
-            status="critical"
-            icon={<CircleArrowUp size={24} />}
+            title="RESPONSE TEAMS"
+            value="12"
+            subtitle="DEPLOYED: 8 | STANDBY: 4"
+            status="warning"
+            icon={<Target size={24} />}
           />
         </div>
 
