@@ -1,13 +1,35 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Filter, Search, Download, Map } from "lucide-react";
+import { Filter, Search, Download, Map, CheckCircle, XCircle, AlertCircle, Clock, Share2, Printer, Flag } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+
+interface Report {
+  id: string;
+  title: string;
+  location: string;
+  reportType: string;
+  priority: string;
+  reportedAt: string;
+  status: string;
+  description?: string;
+  coordinates?: { lat: number; lng: number };
+  reportedBy?: string;
+  assignedTo?: string;
+  lastUpdated?: string;
+  evidenceCount?: number;
+}
 
 const Reports = () => {
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+
   // Mock data for reports
-  const reports = [
+  const reports: Report[] = [
     { 
       id: "REP-2023-001", 
       title: "Suspicious activity in Borno State", 
@@ -15,7 +37,13 @@ const Reports = () => {
       reportType: "Security Threat", 
       priority: "Critical",
       reportedAt: "2023-05-22 08:24",
-      status: "Investigating"
+      status: "Investigating",
+      description: "Multiple individuals spotted surveying military checkpoint locations over the past 48 hours. Behavior indicates possible planning for coordinated attack.",
+      coordinates: { lat: 11.8469, lng: 13.1571 },
+      reportedBy: "Anonymous Source",
+      assignedTo: "Col. Ibrahim Mohammed",
+      lastUpdated: "2023-05-22 10:30",
+      evidenceCount: 3
     },
     { 
       id: "REP-2023-002", 
@@ -24,7 +52,13 @@ const Reports = () => {
       reportType: "Intelligence", 
       priority: "High",
       reportedAt: "2023-05-21 16:40",
-      status: "Verified"
+      status: "Verified",
+      description: "Cache of weapons discovered in abandoned warehouse. Includes approximately 24 assault rifles and explosives. Location secured.",
+      coordinates: { lat: 12.9982, lng: 7.6094 },
+      reportedBy: "Lt. Ahmed Yusuf",
+      assignedTo: "Maj. Abubakar Sani",
+      lastUpdated: "2023-05-22 09:15",
+      evidenceCount: 7
     },
     { 
       id: "REP-2023-003", 
@@ -82,6 +116,41 @@ const Reports = () => {
     }
   ];
 
+  const handleViewReport = (report: Report) => {
+    setSelectedReport(report);
+    setDialogOpen(true);
+  };
+
+  const handleStatusUpdate = (newStatus: string) => {
+    // In a real implementation, this would update the backend
+    toast({
+      title: "Status updated",
+      description: `Report ${selectedReport?.id} status changed to ${newStatus}`,
+    });
+    setDialogOpen(false);
+  };
+
+  const handleAssign = () => {
+    toast({
+      title: "Assignment action triggered",
+      description: "This would open an assignment dialog in a full implementation",
+    });
+  };
+
+  const handleShare = () => {
+    toast({
+      title: "Report shared",
+      description: "Report details have been shared with authorized personnel",
+    });
+  };
+
+  const handleExport = () => {
+    toast({
+      title: "Export started",
+      description: "Report is being prepared for export",
+    });
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority.toLowerCase()) {
       case "critical":
@@ -111,6 +180,23 @@ const Reports = () => {
         return "bg-green-500 text-white";
       default:
         return "bg-gray-500 text-white";
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "investigating":
+        return <Clock className="h-4 w-4 mr-1" />;
+      case "verified":
+        return <CheckCircle className="h-4 w-4 mr-1" />;
+      case "resolved":
+        return <CheckCircle className="h-4 w-4 mr-1" />;
+      case "dispatched":
+        return <Share2 className="h-4 w-4 mr-1" />;
+      case "monitoring":
+        return <AlertCircle className="h-4 w-4 mr-1" />;
+      default:
+        return <Clock className="h-4 w-4 mr-1" />;
     }
   };
 
@@ -169,7 +255,11 @@ const Reports = () => {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {reports.map((report) => (
-                <tr key={report.id} className="hover:bg-gray-700/40 transition-colors cursor-pointer">
+                <tr 
+                  key={report.id} 
+                  className="hover:bg-gray-700/40 transition-colors cursor-pointer"
+                  onClick={() => handleViewReport(report)}
+                >
                   <td className="py-4 px-6 whitespace-nowrap text-gray-300 font-mono">
                     {report.id}
                   </td>
@@ -225,6 +315,148 @@ const Reports = () => {
           </PaginationContent>
         </Pagination>
       </div>
+
+      {/* Report Detail Dialog */}
+      {selectedReport && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-4xl">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <DialogTitle className="text-2xl text-white mb-2">{selectedReport.title}</DialogTitle>
+                  <DialogDescription className="text-gray-300">
+                    Report ID: <span className="font-mono text-dhq-blue">{selectedReport.id}</span>
+                  </DialogDescription>
+                </div>
+                <Badge className={`${getPriorityColor(selectedReport.priority)} text-sm`}>
+                  {selectedReport.priority} Priority
+                </Badge>
+              </div>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+              <div className="md:col-span-2 space-y-6">
+                <div className="bg-gray-900/60 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-white mb-2">Description</h3>
+                  <p className="text-gray-300">{selectedReport.description}</p>
+                </div>
+                
+                <div className="bg-gray-900/60 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-white mb-3">Status History</h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {getStatusIcon(selectedReport.status)}
+                        <span className="text-white">{selectedReport.status}</span>
+                      </div>
+                      <span className="text-gray-400 text-sm">{selectedReport.lastUpdated}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <AlertCircle className="h-4 w-4 mr-1" />
+                        <span className="text-white">Reported</span>
+                      </div>
+                      <span className="text-gray-400 text-sm">{selectedReport.reportedAt}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-900/60 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-white mb-2">Evidence</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-300">{selectedReport.evidenceCount} items</span>
+                    <Button variant="outline" size="sm" className="bg-transparent border-gray-600 text-gray-300">
+                      View All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-6">
+                <div className="bg-gray-900/60 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium text-white mb-2">Details</h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Location:</span>
+                      <span className="text-white">{selectedReport.location}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Type:</span>
+                      <span className="text-white">{selectedReport.reportType}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Reported by:</span>
+                      <span className="text-white">{selectedReport.reportedBy}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">Assigned to:</span>
+                      <span className="text-white">{selectedReport.assignedTo}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="text-lg font-medium text-white mb-3">Actions</h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        onClick={() => handleStatusUpdate("Resolved")} 
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Resolve
+                      </Button>
+                      <Button 
+                        onClick={() => handleStatusUpdate("Investigating")} 
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Investigate
+                      </Button>
+                    </div>
+                    <Button 
+                      onClick={handleAssign} 
+                      variant="outline" 
+                      className="w-full bg-transparent border-gray-600 text-gray-300"
+                    >
+                      <Flag className="h-4 w-4 mr-2" />
+                      Assign to Unit
+                    </Button>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button 
+                        onClick={handleShare} 
+                        variant="outline" 
+                        className="bg-transparent border-gray-600 text-gray-300"
+                      >
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share
+                      </Button>
+                      <Button 
+                        onClick={handleExport} 
+                        variant="outline" 
+                        className="bg-transparent border-gray-600 text-gray-300"
+                      >
+                        <Printer className="h-4 w-4 mr-2" />
+                        Export
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <DialogFooter className="flex justify-end mt-6">
+              <Button 
+                variant="outline" 
+                onClick={() => setDialogOpen(false)}
+                className="bg-transparent border-gray-600 text-gray-300"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
