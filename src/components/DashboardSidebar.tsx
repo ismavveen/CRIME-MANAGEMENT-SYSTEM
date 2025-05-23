@@ -1,12 +1,12 @@
 
 import React from 'react';
-import { 
-  Circle, 
-  Settings, 
-  Users, 
-  FileText, 
+import {
+  Circle,
+  Settings,
+  Users,
+  FileText,
   Calendar,
-  Inbox 
+  Inbox
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 
@@ -25,7 +25,7 @@ const DashboardSidebar = () => {
       {/* Header */}
       <div className="p-6 border-b border-gray-600/30">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-dhq-blue rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-red-800 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-lg">DHQ</span>
           </div>
           <div>
@@ -43,10 +43,9 @@ const DashboardSidebar = () => {
               <NavLink
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                    isActive || item.active
-                      ? 'bg-dhq-blue text-white shadow-lg'
-                      : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                  `flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${isActive || item.active
+                    ? 'bg-dhq-blue text-white shadow-lg'
+                    : 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
                   }`
                 }
               >
