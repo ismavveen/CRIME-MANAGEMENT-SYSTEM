@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
+import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
 
 interface Incident {
   id: string;
@@ -13,7 +14,11 @@ interface Incident {
 }
 
 const IncidentTable = () => {
-  const incidents: Incident[] = [
+  const [selectedIncident, setSelectedIncident] = useState<IncidentDetails | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Sample incident data with enhanced details
+  const incidents: IncidentDetails[] = [
     {
       id: 'INC-001',
       type: 'Armed Robbery',
@@ -21,7 +26,21 @@ const IncidentTable = () => {
       status: 'critical',
       timestamp: '2024-01-20 14:30',
       priority: 'high',
-      officer: 'Lt. Col. Johnson'
+      officer: 'Lt. Col. Johnson',
+      description: 'Armed individuals reported at First Bank branch on Kofo Abayomi Street. Multiple suspects, potentially armed with automatic weapons. Hostages reported inside.',
+      coordinates: { lat: 6.4281, lng: 3.4219 },
+      updates: [
+        {
+          time: '2024-01-20 14:35',
+          message: 'Tactical team dispatched to location, ETA 5 minutes.',
+          author: 'Dispatch Officer'
+        },
+        {
+          time: '2024-01-20 14:40',
+          message: 'Perimeter established around target location. Negotiation team on standby.',
+          author: 'Capt. Williams'
+        }
+      ]
     },
     {
       id: 'INC-002',
@@ -30,7 +49,9 @@ const IncidentTable = () => {
       status: 'investigating',
       timestamp: '2024-01-20 12:15',
       priority: 'medium',
-      officer: 'Maj. Williams'
+      officer: 'Maj. Williams',
+      description: 'Multiple reports of suspicious packages left unattended near government buildings. Bomb squad has been alerted and is conducting assessment.',
+      coordinates: { lat: 9.0765, lng: 7.4912 }
     },
     {
       id: 'INC-003',
@@ -39,7 +60,9 @@ const IncidentTable = () => {
       status: 'critical',
       timestamp: '2024-01-20 09:45',
       priority: 'high',
-      officer: 'Col. Ahmed'
+      officer: 'Col. Ahmed',
+      description: 'Reports of unauthorized border crossings with potential weapons trafficking. Surveillance indicates 3-5 vehicles involved.',
+      coordinates: { lat: 11.8469, lng: 13.1571 }
     },
     {
       id: 'INC-004',
@@ -48,7 +71,16 @@ const IncidentTable = () => {
       status: 'resolved',
       timestamp: '2024-01-19 16:20',
       priority: 'medium',
-      officer: 'Capt. Okafor'
+      officer: 'Capt. Okafor',
+      description: 'Demonstration escalated to violence near government buildings. Riot police deployed and situation now contained.',
+      coordinates: { lat: 4.8156, lng: 7.0498 },
+      updates: [
+        {
+          time: '2024-01-19 17:30',
+          message: 'Situation contained, 15 arrests made. Minor injuries reported.',
+          author: 'Capt. Okafor'
+        }
+      ]
     },
     {
       id: 'INC-005',
@@ -57,7 +89,9 @@ const IncidentTable = () => {
       status: 'warning',
       timestamp: '2024-01-19 11:30',
       priority: 'high',
-      officer: 'Maj. Bello'
+      officer: 'Maj. Bello',
+      description: 'Foreign national working with NGO reported missing. Last known location was near the university. Ransom demand received.',
+      coordinates: { lat: 11.1093, lng: 7.7210 }
     },
   ];
 
@@ -87,6 +121,11 @@ const IncidentTable = () => {
       default:
         return 'text-gray-400';
     }
+  };
+
+  const handleIncidentClick = (incident: IncidentDetails) => {
+    setSelectedIncident(incident);
+    setIsDialogOpen(true);
   };
 
   return (
@@ -121,7 +160,8 @@ const IncidentTable = () => {
             {incidents.map((incident) => (
               <tr 
                 key={incident.id} 
-                className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors"
+                className="border-b border-gray-700/50 hover:bg-gray-800/30 transition-colors cursor-pointer"
+                onClick={() => handleIncidentClick(incident)}
               >
                 <td className="py-4 px-4">
                   <span className="text-dhq-blue font-mono text-sm">{incident.id}</span>
@@ -153,10 +193,19 @@ const IncidentTable = () => {
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex space-x-2">
-                    <button className="text-dhq-blue hover:text-blue-400 text-sm">
+                    <button 
+                      className="text-dhq-blue hover:text-blue-400 text-sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleIncidentClick(incident);
+                      }}
+                    >
                       View
                     </button>
-                    <button className="text-gray-400 hover:text-gray-300 text-sm">
+                    <button 
+                      className="text-gray-400 hover:text-gray-300 text-sm"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       Edit
                     </button>
                   </div>
@@ -166,6 +215,13 @@ const IncidentTable = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Incident details dialog */}
+      <IncidentDetailsDialog 
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        incident={selectedIncident}
+      />
     </div>
   );
 };
