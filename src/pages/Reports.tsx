@@ -6,6 +6,7 @@ import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, Pagi
 import { Filter, Search, Download, Map, CheckCircle, XCircle, AlertCircle, Clock, Share2, Printer, Flag } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import AssignReportDialog from '../components/AssignReportDialog';
 
 interface Report {
   id: string;
@@ -26,6 +27,7 @@ interface Report {
 const Reports = () => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Mock data for reports
@@ -131,10 +133,7 @@ const Reports = () => {
   };
 
   const handleAssign = () => {
-    toast({
-      title: "Assignment action triggered",
-      description: "This would open an assignment dialog in a full implementation",
-    });
+    setAssignDialogOpen(true);
   };
 
   const handleShare = () => {
@@ -457,6 +456,14 @@ const Reports = () => {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Assignment Dialog */}
+      <AssignReportDialog
+        open={assignDialogOpen}
+        reportId={selectedReport?.id}
+        reportTitle={selectedReport?.title}
+        onOpenChange={setAssignDialogOpen}
+      />
     </div>
   );
 };
