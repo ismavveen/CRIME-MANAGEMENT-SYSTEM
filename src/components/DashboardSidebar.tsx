@@ -6,11 +6,17 @@ import {
   Users,
   FileText,
   Calendar,
-  Inbox
+  Inbox,
+  LogOut
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const DashboardSidebar = () => {
+  const { signOut } = useAuth();
+  const { toast } = useToast();
+
   const menuItems = [
     { title: 'Dashboard', icon: Circle, path: '/', active: true },
     { title: 'Users', icon: Users, path: '/users' },
@@ -19,6 +25,22 @@ const DashboardSidebar = () => {
     { title: 'Inbox', icon: Inbox, path: '/inbox' },
     { title: 'Settings', icon: Settings, path: '/settings' },
   ];
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of DHQ Intelligence Portal",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sign out failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="dhq-sidebar w-64 h-screen fixed left-0 top-0 flex flex-col">
@@ -57,9 +79,9 @@ const DashboardSidebar = () => {
         </ul>
       </nav>
 
-      {/* User Profile */}
+      {/* User Profile and Sign Out */}
       <div className="p-4 border-t border-gray-600/30">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 mb-3">
           <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
             <span className="text-white font-semibold">MA</span>
           </div>
@@ -68,6 +90,13 @@ const DashboardSidebar = () => {
             <p className="text-gray-400 text-sm">DHQ Analyst</p>
           </div>
         </div>
+        <button
+          onClick={handleSignOut}
+          className="flex items-center space-x-2 w-full px-3 py-2 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-colors"
+        >
+          <LogOut size={16} />
+          <span className="text-sm">Sign Out</span>
+        </button>
       </div>
     </div>
   );

@@ -9,44 +9,94 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
+          assigned_to: string | null
+          created_at: string | null
           description: string | null
           file_url: string | null
           id: string
           is_anonymous: boolean | null
           location: string | null
           manual_location: string | null
+          priority: string | null
           reporter_type: string
+          status: string | null
           threat_type: string | null
           timestamp: string | null
+          updated_at: string | null
           urgency: string | null
         }
         Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
           description?: string | null
           file_url?: string | null
           id?: string
           is_anonymous?: boolean | null
           location?: string | null
           manual_location?: string | null
+          priority?: string | null
           reporter_type?: string
+          status?: string | null
           threat_type?: string | null
           timestamp?: string | null
+          updated_at?: string | null
           urgency?: string | null
         }
         Update: {
+          assigned_to?: string | null
+          created_at?: string | null
           description?: string | null
           file_url?: string | null
           id?: string
           is_anonymous?: boolean | null
           location?: string | null
           manual_location?: string | null
+          priority?: string | null
           reporter_type?: string
+          status?: string | null
           threat_type?: string | null
           timestamp?: string | null
+          updated_at?: string | null
           urgency?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
