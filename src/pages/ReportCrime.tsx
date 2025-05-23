@@ -1,12 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation } from 'lucide-react';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
@@ -20,8 +20,88 @@ const ReportCrime = () => {
     reporterName: '',
     reporterContact: '',
   });
+  const [locationData, setLocationData] = useState({
+    latitude: null as number | null,
+    longitude: null as number | null,
+    accuracy: null as number | null,
+    hasPermission: false,
+    isLoading: false,
+    error: null as string | null,
+  });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    requestLocationPermission();
+  }, []);
+
+  const requestLocationPermission = async () => {
+    if (!navigator.geolocation) {
+      setLocationData(prev => ({
+        ...prev,
+        error: 'Geolocation is not supported by this browser'
+      }));
+      return;
+    }
+
+    setLocationData(prev => ({ ...prev, isLoading: true }));
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationData({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          hasPermission: true,
+          isLoading: false,
+          error: null,
+        });
+        
+        // Get readable address from coordinates
+        getAddressFromCoordinates(position.coords.latitude, position.coords.longitude);
+      },
+      (error) => {
+        let errorMessage = 'Failed to get your location. ';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += 'Location access was denied. Please enable location services and refresh the page.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            errorMessage += 'Location request timed out.';
+            break;
+          default:
+            errorMessage += 'An unknown error occurred.';
+            break;
+        }
+        
+        setLocationData(prev => ({
+          ...prev,
+          isLoading: false,
+          error: errorMessage
+        }));
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    );
+  };
+
+  const getAddressFromCoordinates = async (lat: number, lng: number) => {
+    try {
+      // Using a simple reverse geocoding approach - in production you might want to use a proper service
+      setFormData(prev => ({
+        ...prev,
+        location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      }));
+    } catch (error) {
+      console.log('Failed to get address from coordinates:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -32,6 +112,18 @@ const ReportCrime = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if location is available
+    if (!locationData.hasPermission || !locationData.latitude || !locationData.longitude) {
+      toast({
+        title: "Location Required",
+        description: "Please allow location access to submit your report. This helps authorities respond more effectively.",
+        variant: "destructive",
+      });
+      requestLocationPermission();
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -43,15 +135,27 @@ const ReportCrime = () => {
         threat_type: formData.threatType,
         reporter_type: formData.reporterType,
         is_anonymous: formData.isAnonymous,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        location_accuracy: locationData.accuracy,
         timestamp: new Date().toISOString(),
+        status: 'pending',
+        priority: formData.urgency === 'critical' ? 'high' : formData.urgency === 'high' ? 'medium' : 'low',
       };
+
+      console.log('Submitting report data:', reportData);
 
       const { data, error } = await supabase
         .from('reports')
         .insert([reportData])
         .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Report submitted successfully:', data);
 
       toast({
         title: "Report submitted successfully",
@@ -71,10 +175,14 @@ const ReportCrime = () => {
         reporterContact: '',
       });
 
+      // Re-request location for next report
+      requestLocationPermission();
+
     } catch (error: any) {
+      console.error('Error submitting report:', error);
       toast({
         title: "Submission failed",
-        description: error.message,
+        description: error.message || "Failed to submit report. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -100,6 +208,41 @@ const ReportCrime = () => {
           </div>
         </div>
 
+        {/* Location Status Card */}
+        <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Navigation className={`w-5 h-5 ${locationData.hasPermission ? 'text-green-400' : 'text-red-400'}`} />
+              <div>
+                <h3 className="text-white font-medium">Location Status</h3>
+                <p className="text-sm text-gray-400">
+                  {locationData.isLoading 
+                    ? 'Getting your location...'
+                    : locationData.hasPermission 
+                      ? `Location acquired (±${locationData.accuracy?.toFixed(0)}m accuracy)`
+                      : locationData.error || 'Location access required'
+                  }
+                </p>
+              </div>
+            </div>
+            {!locationData.hasPermission && (
+              <Button 
+                onClick={requestLocationPermission}
+                variant="outline"
+                size="sm"
+                className="bg-transparent border-orange-600 text-orange-400"
+              >
+                Enable Location
+              </Button>
+            )}
+          </div>
+          {locationData.error && (
+            <div className="mt-3 p-3 bg-red-900/20 border border-red-700/50 rounded-lg">
+              <p className="text-red-300 text-sm">{locationData.error}</p>
+            </div>
+          )}
+        </Card>
+
         <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4">Submit Intelligence Report</h2>
           
@@ -107,7 +250,7 @@ const ReportCrime = () => {
             {/* Report Type */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Report Type
+                Report Type *
               </label>
               <select
                 value={formData.threatType}
@@ -146,15 +289,19 @@ const ReportCrime = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   <MapPin className="w-4 h-4 inline mr-1" />
-                  Location/Address *
+                  Additional Location Info (Optional)
                 </label>
                 <Input
                   value={formData.manualLocation}
                   onChange={(e) => handleInputChange('manualLocation', e.target.value)}
                   className="bg-gray-900/50 border-gray-600 text-white"
-                  placeholder="City, State or specific address"
-                  required
+                  placeholder="Building name, landmark, etc."
                 />
+                {locationData.hasPermission && (
+                  <p className="text-xs text-green-400 mt-1">
+                    GPS coordinates will be automatically included
+                  </p>
+                )}
               </div>
               
               <div>
@@ -245,13 +392,18 @@ const ReportCrime = () => {
             <div className="flex justify-between items-center pt-6 border-t border-gray-700">
               <div className="text-sm text-gray-400">
                 <p>🔒 All reports are encrypted and handled with strict confidentiality</p>
+                <p>📍 Your precise location will be shared with authorities for faster response</p>
                 <p>📋 You will receive a reference ID upon successful submission</p>
               </div>
               
               <Button 
                 type="submit" 
-                className="bg-dhq-blue hover:bg-blue-700 text-white px-8"
-                disabled={loading}
+                className={`px-8 ${
+                  !locationData.hasPermission 
+                    ? 'bg-gray-600 cursor-not-allowed' 
+                    : 'bg-dhq-blue hover:bg-blue-700'
+                } text-white`}
+                disabled={loading || !locationData.hasPermission}
               >
                 {loading ? 'Submitting...' : 'Submit Report'}
               </Button>

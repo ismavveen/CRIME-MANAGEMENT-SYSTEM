@@ -44,7 +44,10 @@ export type Database = {
           file_url: string | null
           id: string
           is_anonymous: boolean | null
+          latitude: number | null
           location: string | null
+          location_accuracy: number | null
+          longitude: number | null
           manual_location: string | null
           priority: string | null
           reporter_type: string
@@ -61,7 +64,10 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_anonymous?: boolean | null
+          latitude?: number | null
           location?: string | null
+          location_accuracy?: number | null
+          longitude?: number | null
           manual_location?: string | null
           priority?: string | null
           reporter_type?: string
@@ -78,7 +84,10 @@ export type Database = {
           file_url?: string | null
           id?: string
           is_anonymous?: boolean | null
+          latitude?: number | null
           location?: string | null
+          location_accuracy?: number | null
+          longitude?: number | null
           manual_location?: string | null
           priority?: string | null
           reporter_type?: string

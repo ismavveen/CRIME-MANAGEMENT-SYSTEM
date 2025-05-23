@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
+import { useReports } from '@/hooks/useReports';
 
 interface Incident {
   id: string;
@@ -12,120 +13,55 @@ interface Incident {
 }
 
 const NigeriaMap = () => {
+  const { reports, loading, error } = useReports();
   const [selectedMapPoint, setSelectedMapPoint] = useState<Incident | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<IncidentDetails | null>(null);
 
-  // Sample incidents for the map
-  const incidents: Incident[] = [
-    { id: 'INC-001', lat: 9.0579, lng: 7.4951, type: 'critical', title: 'Security Alert - FCT', time: '2 hours ago' },
-    { id: 'INC-002', lat: 6.5244, lng: 3.3792, type: 'warning', title: 'Traffic Incident - Lagos', time: '5 hours ago' },
-    { id: 'INC-003', lat: 7.3775, lng: 3.9470, type: 'resolved', title: 'Resolved - Oyo', time: '7 hours ago' },
-    { id: 'INC-004', lat: 11.8469, lng: 13.1571, type: 'critical', title: 'Border Alert - Borno', time: '1 hour ago' },
-    { id: 'INC-005', lat: 5.0197, lng: 6.7849, type: 'warning', title: 'Civil Unrest - Delta', time: '3 hours ago' },
-    { id: 'INC-006', lat: 10.5105, lng: 7.4165, type: 'resolved', title: 'Completed - Kaduna', time: '12 hours ago' },
-    { id: 'INC-007', lat: 4.8156, lng: 7.0498, type: 'critical', title: 'Emergency - Rivers', time: '30 mins ago' },
-    { id: 'INC-008', lat: 12.0022, lng: 8.5919, type: 'warning', title: 'Monitoring - Kano', time: '4 hours ago' },
-  ];
+  // Convert reports to incidents for the map
+  const incidents: Incident[] = reports
+    .filter(report => report.latitude && report.longitude)
+    .map(report => {
+      let type: 'critical' | 'warning' | 'resolved' = 'warning';
+      
+      if (report.status === 'resolved') {
+        type = 'resolved';
+      } else if (report.urgency === 'critical' || report.priority === 'high') {
+        type = 'critical';
+      }
 
-  // Sample detailed incident data that matches map points
-  const incidentDetails: IncidentDetails[] = [
-    {
-      id: 'INC-001',
-      type: 'Armed Robbery',
-      location: 'FCT, Abuja Central',
-      status: 'critical',
-      timestamp: '2024-01-20 14:30',
-      priority: 'high',
-      officer: 'Lt. Col. Johnson',
-      description: 'Armed individuals reported near government complex. Multiple suspects, potentially armed.',
-      coordinates: { lat: 9.0579, lng: 7.4951 },
+      return {
+        id: report.id,
+        lat: report.latitude!,
+        lng: report.longitude!,
+        type,
+        title: report.threat_type || 'Security Report',
+        time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown'
+      };
+    });
+
+  // Convert reports to detailed incident data
+  const incidentDetails: IncidentDetails[] = reports
+    .filter(report => report.latitude && report.longitude)
+    .map(report => ({
+      id: report.id,
+      type: report.threat_type || 'Security Report',
+      location: report.location || report.manual_location || `${report.latitude}, ${report.longitude}`,
+      status: report.status === 'resolved' ? 'resolved' : 
+              report.urgency === 'critical' ? 'critical' : 'warning',
+      timestamp: report.created_at || report.timestamp || new Date().toISOString(),
+      priority: report.priority || 'medium',
+      officer: 'Dispatch Team',
+      description: report.description || 'No description provided',
+      coordinates: { lat: report.latitude!, lng: report.longitude! },
       updates: [
         {
-          time: '2 hours ago',
-          message: 'Tactical team dispatched to location, securing perimeter.',
-          author: 'Dispatch Officer'
+          time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown',
+          message: `Report submitted via ${report.reporter_type} source`,
+          author: 'System'
         }
       ]
-    },
-    {
-      id: 'INC-002',
-      type: 'Traffic Incident',
-      location: 'Lagos, Victoria Island',
-      status: 'warning',
-      timestamp: '2024-01-20 11:15',
-      priority: 'medium',
-      officer: 'Capt. Adeyemi',
-      description: 'Major traffic disruption due to overturned tanker. Fire risk present.',
-      coordinates: { lat: 6.5244, lng: 3.3792 }
-    },
-    {
-      id: 'INC-003',
-      type: 'Public Disturbance', 
-      location: 'Oyo State, Ibadan',
-      status: 'resolved',
-      timestamp: '2024-01-20 09:45',
-      priority: 'low',
-      officer: 'Lt. Ogunbiyi',
-      description: 'Protest that blocked major highway now dispersed. Traffic flowing normally.',
-      coordinates: { lat: 7.3775, lng: 3.9470 }
-    },
-    {
-      id: 'INC-004',
-      type: 'Border Security Breach',
-      location: 'Borno State, Maiduguri',
-      status: 'critical',
-      timestamp: '2024-01-20 15:45',
-      priority: 'high',
-      officer: 'Col. Ahmed',
-      description: 'Reports of unauthorized border crossings with potential security threat.',
-      coordinates: { lat: 11.8469, lng: 13.1571 }
-    },
-    {
-      id: 'INC-005',
-      type: 'Civil Unrest',
-      location: 'Delta State, Warri',
-      status: 'warning',
-      timestamp: '2024-01-20 13:30',
-      priority: 'medium',
-      officer: 'Maj. Okoro',
-      description: 'Demonstrations near oil facility with potential for escalation.',
-      coordinates: { lat: 5.0197, lng: 6.7849 }
-    },
-    {
-      id: 'INC-006',
-      type: 'Security Operation',
-      location: 'Kaduna State, Zaria',
-      status: 'resolved',
-      timestamp: '2024-01-20 04:20',
-      priority: 'medium',
-      officer: 'Maj. Bello',
-      description: 'Planned security operation completed successfully. Area secured.',
-      coordinates: { lat: 10.5105, lng: 7.4165 }
-    },
-    {
-      id: 'INC-007',
-      type: 'Kidnapping',
-      location: 'Rivers State, Port Harcourt',
-      status: 'critical',
-      timestamp: '2024-01-20 15:30',
-      priority: 'high',
-      officer: 'Capt. Okafor',
-      description: 'Expatriate workers reported kidnapped from oil facility. Ransom demand received.',
-      coordinates: { lat: 4.8156, lng: 7.0498 }
-    },
-    {
-      id: 'INC-008',
-      type: 'Suspicious Activity',
-      location: 'Kano State, Kano City',
-      status: 'warning',
-      timestamp: '2024-01-20 12:15',
-      priority: 'medium',
-      officer: 'Lt. Ibrahim',
-      description: 'Suspicious packages reported near market area. Bomb squad investigating.',
-      coordinates: { lat: 12.0022, lng: 8.5919 }
-    }
-  ];
+    }));
 
   const getMarkerColor = (type: string) => {
     switch (type) {
@@ -155,6 +91,32 @@ const NigeriaMap = () => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="dhq-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
+        </div>
+        <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="text-white">Loading reports...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="dhq-card p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
+        </div>
+        <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+          <div className="text-red-400">Error loading reports: {error}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dhq-card p-6">
       <div className="flex items-center justify-between mb-6">
@@ -162,21 +124,21 @@ const NigeriaMap = () => {
         <div className="flex space-x-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-dhq-red rounded-full"></div>
-            <span className="text-gray-400 text-sm">Critical</span>
+            <span className="text-gray-400 text-sm">Critical ({incidents.filter(i => i.type === 'critical').length})</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span className="text-gray-400 text-sm">Warning</span>
+            <span className="text-gray-400 text-sm">Warning ({incidents.filter(i => i.type === 'warning').length})</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-400 text-sm">Resolved</span>
+            <span className="text-gray-400 text-sm">Resolved ({incidents.filter(i => i.type === 'resolved').length})</span>
           </div>
         </div>
       </div>
 
       <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden">
-        {/* Simplified Nigeria Map SVG */}
+        {/* Nigeria Map SVG */}
         <svg
           viewBox="0 0 400 300"
           className="w-full h-full"
@@ -201,29 +163,35 @@ const NigeriaMap = () => {
             <line x1="80" y1="200" x2="250" y2="200" />
           </g>
 
-          {/* Incident markers */}
-          {incidents.map((incident) => (
-            <g key={incident.id}>
-              <circle
-                cx={incident.lng * 40 + 50}
-                cy={incident.lat * 20 + 50}
-                r={getMarkerSize(incident.type)}
-                fill={getMarkerColor(incident.type)}
-                className="incident-marker animate-pulse-glow cursor-pointer"
-                onClick={() => handleMarkerClick(incident)}
-              />
-              <circle
-                cx={incident.lng * 40 + 50}
-                cy={incident.lat * 20 + 50}
-                r={getMarkerSize(incident.type) + 4}
-                fill="none"
-                stroke={getMarkerColor(incident.type)}
-                strokeWidth="1"
-                opacity="0.5"
-                className="animate-ping"
-              />
-            </g>
-          ))}
+          {/* Real incident markers */}
+          {incidents.map((incident) => {
+            // Convert lat/lng to SVG coordinates (simplified projection)
+            const x = ((incident.lng + 15) / 25) * 300 + 50; // Rough Nigeria longitude range
+            const y = ((20 - incident.lat) / 15) * 200 + 50; // Rough Nigeria latitude range
+            
+            return (
+              <g key={incident.id}>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={getMarkerSize(incident.type)}
+                  fill={getMarkerColor(incident.type)}
+                  className="incident-marker animate-pulse-glow cursor-pointer"
+                  onClick={() => handleMarkerClick(incident)}
+                />
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={getMarkerSize(incident.type) + 4}
+                  fill="none"
+                  stroke={getMarkerColor(incident.type)}
+                  strokeWidth="1"
+                  opacity="0.5"
+                  className="animate-ping"
+                />
+              </g>
+            );
+          })}
         </svg>
 
         {/* Incident tooltip */}
@@ -257,6 +225,15 @@ const NigeriaMap = () => {
               >
                 View Details
               </button>
+            </div>
+          </div>
+        )}
+
+        {incidents.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-gray-400 text-center">
+              <p>No reports with location data yet</p>
+              <p className="text-sm mt-1">Reports will appear here as they are submitted</p>
             </div>
           </div>
         )}

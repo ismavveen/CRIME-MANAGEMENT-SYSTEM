@@ -6,9 +6,24 @@ import NigeriaMap from '../components/NigeriaMap';
 import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
+import { useReports } from '@/hooks/useReports';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target } from 'lucide-react';
 
 const Index = () => {
+  const { reports, loading } = useReports();
+
+  // Calculate real-time statistics from actual reports
+  const activeIncidents = reports.filter(r => r.status !== 'resolved').length;
+  const criticalAlerts = reports.filter(r => 
+    r.urgency === 'critical' || r.priority === 'high'
+  ).length;
+  const resolvedToday = reports.filter(r => {
+    const today = new Date().toDateString();
+    const reportDate = new Date(r.created_at || '').toDateString();
+    return r.status === 'resolved' && reportDate === today;
+  }).length;
+  const pendingReports = reports.filter(r => r.status === 'pending').length;
+
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       <DashboardSidebar />
@@ -29,41 +44,43 @@ const Index = () => {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="text-white font-semibold">Last Updated</p>
-                <p className="text-gray-400 text-sm">2 minutes ago</p>
+                <p className="text-gray-400 text-sm">
+                  {loading ? 'Loading...' : 'Live'}
+                </p>
               </div>
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+              <div className={`w-3 h-3 rounded-full ${loading ? 'bg-yellow-400' : 'bg-green-400'} animate-pulse`}></div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid - Updated to focus on incidents */}
+        {/* Stats Grid - Real-time data from reports */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="ACTIVE INCIDENTS"
-            value="27"
+            value={loading ? "..." : activeIncidents.toString()}
             icon={<CircleAlert size={24} />}
             status="critical"
           />
           <StatCard
             title="CRITICAL ALERTS"
-            value="8"
-            subtitle="REGIONS: 4 | UNITS: 3"
+            value={loading ? "..." : criticalAlerts.toString()}
+            subtitle={`TOTAL REPORTS: ${reports.length}`}
             status="critical"
             trend="up"
-            trendValue="3"
+            trendValue={criticalAlerts > 0 ? criticalAlerts.toString() : "0"}
             icon={<CircleArrowUp size={24} />}
           />
           <StatCard
             title="INCIDENTS RESOLVED"
-            value="15"
-            subtitle="PAST 24 HOURS"
+            value={loading ? "..." : resolvedToday.toString()}
+            subtitle="TODAY"
             status="success"
             icon={<CircleCheck size={24} />}
           />
           <StatCard
-            title="RESPONSE TEAMS"
-            value="12"
-            subtitle="DEPLOYED: 8 | STANDBY: 4"
+            title="PENDING REPORTS"
+            value={loading ? "..." : pendingReports.toString()}
+            subtitle="AWAITING REVIEW"
             status="warning"
             icon={<Target size={24} />}
           />
