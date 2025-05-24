@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -5,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock } from 'lucide-react';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
@@ -194,126 +195,173 @@ const ReportCrime = () => {
   const reportingChannels = [
     {
       id: 'web_app',
-      title: 'Web App',
-      icon: <Smartphone className="w-6 h-6" />,
-      description: 'Submit reports directly through this platform',
+      title: 'Web Portal',
+      icon: <Globe className="w-6 h-6" />,
+      description: 'Secure web-based reporting with encryption',
+      status: 'PRIMARY',
       active: formData.reporterType === 'web_app'
     },
     {
       id: 'mobile_app',
       title: 'Mobile App',
-      icon: <Phone className="w-6 h-6" />,
-      description: 'Use our mobile application for quick reporting',
+      icon: <Smartphone className="w-6 h-6" />,
+      description: 'Field-ready mobile application',
+      status: 'OPERATIONAL',
       active: formData.reporterType === 'mobile_app'
     },
     {
       id: 'sms',
-      title: 'SMS',
+      title: 'SMS Gateway',
       icon: <MessageSquare className="w-6 h-6" />,
-      description: 'Send reports via text message to 40404',
+      description: 'Text to 40404 - Network independent',
+      status: 'ACTIVE',
       active: formData.reporterType === 'sms'
     },
     {
       id: 'call_hotline',
-      title: 'Call Hotline',
+      title: 'Emergency Hotline',
       icon: <Phone className="w-6 h-6" />,
-      description: 'Call our 24/7 emergency hotline: 199 | 112',
+      description: '24/7 Operations Center: 199 | 112',
+      status: 'PRIORITY',
       active: formData.reporterType === 'call_hotline'
     },
     {
       id: 'email',
-      title: 'Email',
+      title: 'Secure Email',
       icon: <Mail className="w-6 h-6" />,
-      description: 'Send detailed reports to reports@dhq.gov.ng',
+      description: 'intel@dhq.mil.ng - Encrypted transmission',
+      status: 'SECURE',
       active: formData.reporterType === 'email'
     },
     {
       id: 'manual',
-      title: 'In-Person',
+      title: 'Field Office',
       icon: <UserCheck className="w-6 h-6" />,
-      description: 'Visit any DHQ office or security checkpoint',
+      description: 'Physical reporting at DHQ installations',
+      status: 'AVAILABLE',
       active: formData.reporterType === 'manual'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg p-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-red-800 rounded-lg flex items-center justify-center">
-              <Shield className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-dhq-dark-bg">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Enhanced Military Header */}
+        <div className="text-center mb-8 border-b border-gray-700/50 pb-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-24 h-24 rounded-lg overflow-hidden bg-white p-2 mr-6">
+              <img 
+                src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                alt="Defense Headquarters Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="text-left">
+              <h1 className="text-4xl font-bold text-white mb-2">DEFENSE HEADQUARTERS</h1>
+              <p className="text-xl text-gray-300 mb-2">Intelligence & Crime Reporting Portal</p>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center text-green-400 text-sm font-semibold">
+                  <Lock className="w-4 h-4 mr-2" />
+                  <span>SECURITY LEVEL: CONFIDENTIAL</span>
+                </div>
+                <div className="flex items-center text-blue-400 text-sm">
+                  <Zap className="w-4 h-4 mr-2" />
+                  <span>REAL-TIME PROCESSING</span>
+                </div>
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Defense HQ</h1>
-          <p className="text-gray-400 mb-4">Intelligence & Crime Reporting Portal</p>
-          <div className="flex items-center justify-center text-orange-400 text-sm">
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            <span>Secure & Confidential Reporting</span>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+            <div className="flex items-center justify-center space-x-2 text-orange-400">
+              <AlertTriangle className="w-5 h-5" />
+              <span className="font-semibold">SECURE REPORTING</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-green-400">
+              <Shield className="w-5 h-5" />
+              <span className="font-semibold">ANONYMOUS OPTION</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2 text-blue-400">
+              <Clock className="w-5 h-5" />
+              <span className="font-semibold">24/7 MONITORING</span>
+            </div>
           </div>
         </div>
 
-        {/* Reporting Channels */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Choose Your Reporting Channel</h2>
+        {/* Enhanced Reporting Channels */}
+        <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <MessageSquare className="w-6 h-6 mr-3 text-blue-400" />
+            INTELLIGENCE REPORTING CHANNELS
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {reportingChannels.map((channel) => (
               <button
                 key={channel.id}
                 onClick={() => handleInputChange('reporterType', channel.id)}
-                className={`p-4 rounded-lg border transition-all duration-200 text-left ${
+                className={`p-6 rounded-lg border-2 transition-all duration-300 text-left relative overflow-hidden ${
                   channel.active
-                    ? 'border-dhq-blue bg-dhq-blue/10 text-white'
-                    : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500'
+                    ? 'border-blue-500 bg-blue-500/10 text-white shadow-lg shadow-blue-500/20'
+                    : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500 hover:bg-gray-600/30'
                 }`}
               >
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className={`${channel.active ? 'text-dhq-blue' : 'text-gray-400'}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`${channel.active ? 'text-blue-400' : 'text-gray-400'} transform ${channel.active ? 'scale-110' : ''} transition-transform`}>
                     {channel.icon}
                   </div>
-                  <h3 className="font-semibold">{channel.title}</h3>
+                  <div className={`text-xs px-2 py-1 rounded font-bold ${
+                    channel.status === 'PRIMARY' ? 'bg-blue-600 text-white' :
+                    channel.status === 'PRIORITY' ? 'bg-red-600 text-white' :
+                    channel.status === 'SECURE' ? 'bg-green-600 text-white' :
+                    'bg-gray-600 text-gray-200'
+                  }`}>
+                    {channel.status}
+                  </div>
                 </div>
-                <p className="text-sm text-gray-400">{channel.description}</p>
+                <h3 className="font-bold text-lg mb-2">{channel.title}</h3>
+                <p className="text-sm text-gray-400 leading-relaxed">{channel.description}</p>
+                {channel.active && (
+                  <div className="absolute inset-0 border-2 border-blue-400 rounded-lg animate-pulse pointer-events-none"></div>
+                )}
               </button>
             ))}
           </div>
         </Card>
 
-        {/* Visual Process Flow */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">How Reporting Works</h2>
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-dhq-blue rounded-full flex items-center justify-center mb-2">
-                <span className="text-white font-bold">1</span>
+        {/* Enhanced Process Flow */}
+        <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <Shield className="w-6 h-6 mr-3 text-green-400" />
+            INTELLIGENCE PROCESSING PROTOCOL
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="text-center relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-blue-400/30 shadow-lg">
+                <span className="text-white font-bold text-xl">01</span>
               </div>
-              <p className="text-white font-medium">Submit Report</p>
-              <p className="text-gray-400 text-sm">Provide incident details</p>
+              <h3 className="text-white font-bold text-lg mb-2">SUBMIT INTEL</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Encrypted submission with geo-tagging and classification</p>
             </div>
-            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mb-2">
-                <span className="text-white font-bold">2</span>
+            <div className="text-center relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-yellow-400/30 shadow-lg">
+                <span className="text-white font-bold text-xl">02</span>
               </div>
-              <p className="text-white font-medium">Under Review</p>
-              <p className="text-gray-400 text-sm">DHQ team analyzes report</p>
+              <h3 className="text-white font-bold text-lg mb-2">AI ANALYSIS</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Automated threat assessment and priority classification</p>
             </div>
-            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-2">
-                <span className="text-white font-bold">3</span>
+            <div className="text-center relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-purple-400/30 shadow-lg">
+                <span className="text-white font-bold text-xl">03</span>
               </div>
-              <p className="text-white font-medium">Investigation</p>
-              <p className="text-gray-400 text-sm">Authorities take action</p>
+              <h3 className="text-white font-bold text-lg mb-2">DEPLOYMENT</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Rapid response unit coordination and field operations</p>
             </div>
-            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
-            <div className="flex flex-col items-center text-center">
-              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-2">
-                <span className="text-white font-bold">4</span>
+            <div className="text-center relative">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-green-400/30 shadow-lg">
+                <span className="text-white font-bold text-xl">04</span>
               </div>
-              <p className="text-white font-medium">Resolution</p>
-              <p className="text-gray-400 text-sm">Case closed with feedback</p>
+              <h3 className="text-white font-bold text-lg mb-2">RESOLUTION</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Mission completion with secure archival and analysis</p>
             </div>
           </div>
         </Card>

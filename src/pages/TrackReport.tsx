@@ -1,336 +1,306 @@
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, MessageSquare, MapPin, Clock, CheckCircle, AlertTriangle, Phone, Mail } from 'lucide-react';
+import AIChatbot from '@/components/AIChatbot';
+import { Search, Shield, Clock, MapPin, User, AlertTriangle, CheckCircle, Eye, FileText, MessageCircle } from 'lucide-react';
 
 interface Report {
   id: string;
-  description: string;
-  status: string;
-  created_at: string;
-  threat_type: string;
-  location: string;
-  reporter_type: string;
-  urgency: string;
+  description: string | null;
+  location: string | null;
+  status: string | null;
+  urgency: string | null;
+  threat_type: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 const TrackReport = () => {
   const [reportId, setReportId] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [searchType, setSearchType] = useState<'id' | 'phone'>('id');
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [showChatbot, setShowChatbot] = useState(false);
   const { toast } = useToast();
 
-  const handleSearch = async () => {
-    if (!reportId && !phoneNumber) {
+  const handleTrackReport = async () => {
+    if (!reportId.trim()) {
       toast({
-        title: "Search required",
-        description: "Please enter a report ID or phone number",
-        variant: "destructive"
+        title: "Report ID Required",
+        description: "Please enter a valid report ID to track",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
     try {
-      let query = supabase.from('reports').select('*');
-      
-      if (searchType === 'id' && reportId) {
-        query = query.eq('id', reportId);
-      } else if (searchType === 'phone' && phoneNumber) {
-        // In a real implementation, you'd store phone numbers separately
-        // For now, we'll search by the first few characters of the ID
-        query = query.ilike('id', `${phoneNumber}%`);
-      }
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('id', reportId)
+        .maybeSingle();
 
-      const { data, error } = await query.single();
+      if (error) throw error;
 
-      if (error) {
+      if (!data) {
         toast({
-          title: "Report not found",
-          description: "No report found with the provided information",
-          variant: "destructive"
+          title: "Report Not Found",
+          description: "No report found with the provided ID",
+          variant: "destructive",
         });
         setReport(null);
-        return;
+      } else {
+        setReport(data);
+        toast({
+          title: "Report Located",
+          description: "Successfully retrieved report details",
+        });
       }
-
-      setReport(data);
-    } catch (error) {
-      console.error('Error searching report:', error);
+    } catch (error: any) {
+      console.error('Error tracking report:', error);
       toast({
-        title: "Search failed",
-        description: "Failed to search for report",
-        variant: "destructive"
+        title: "Tracking Failed",
+        description: error.message || "Failed to track report",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | null) => {
     switch (status?.toLowerCase()) {
-      case 'submitted':
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'investigating':
-      case 'being investigated':
-        return 'bg-blue-500';
-      case 'responded':
-        return 'bg-purple-500';
-      case 'closed':
-      case 'resolved':
-        return 'bg-green-500';
-      default:
-        return 'bg-gray-500';
+      case 'pending': return 'bg-yellow-600';
+      case 'under_review': return 'bg-blue-600';
+      case 'investigating': return 'bg-purple-600';
+      case 'resolved': return 'bg-green-600';
+      default: return 'bg-gray-600';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'submitted':
-      case 'pending':
-        return <Clock className="w-4 h-4" />;
-      case 'investigating':
-      case 'being investigated':
-        return <AlertTriangle className="w-4 h-4" />;
-      case 'responded':
-        return <MessageSquare className="w-4 h-4" />;
-      case 'closed':
-      case 'resolved':
-        return <CheckCircle className="w-4 h-4" />;
-      default:
-        return <Clock className="w-4 h-4" />;
+  const getUrgencyIcon = (urgency: string | null) => {
+    switch (urgency?.toLowerCase()) {
+      case 'critical': return <AlertTriangle className="w-4 h-4 text-red-400" />;
+      case 'high': return <AlertTriangle className="w-4 h-4 text-orange-400" />;
+      case 'medium': return <Clock className="w-4 h-4 text-yellow-400" />;
+      case 'low': return <Clock className="w-4 h-4 text-green-400" />;
+      default: return <Clock className="w-4 h-4 text-gray-400" />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Track Your Report</h1>
-          <p className="text-gray-400">Monitor the status of your submitted reports</p>
+    <div className="min-h-screen bg-dhq-dark-bg p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Enhanced Header */}
+        <div className="text-center mb-8 border-b border-gray-700/50 pb-8">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-20 h-20 rounded-lg overflow-hidden bg-white p-2 mr-6">
+              <img 
+                src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                alt="Defense Headquarters Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="text-left">
+              <h1 className="text-4xl font-bold text-white mb-2">DEFENSE HEADQUARTERS</h1>
+              <p className="text-xl text-gray-300">Intelligence Report Tracking System</p>
+              <div className="flex items-center space-x-4 mt-2">
+                <div className="flex items-center text-green-400 text-sm">
+                  <Shield className="w-4 h-4 mr-2" />
+                  <span>SECURE TRACKING</span>
+                </div>
+                <div className="flex items-center text-blue-400 text-sm">
+                  <Eye className="w-4 h-4 mr-2" />
+                  <span>REAL-TIME STATUS</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Search Card */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <div className="space-y-4">
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setSearchType('id')}
-                className={`px-4 py-2 rounded-lg ${
-                  searchType === 'id' 
-                    ? 'bg-dhq-blue text-white' 
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                Report ID
-              </button>
-              <button
-                onClick={() => setSearchType('phone')}
-                className={`px-4 py-2 rounded-lg ${
-                  searchType === 'phone' 
-                    ? 'bg-dhq-blue text-white' 
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                Phone Number
-              </button>
-            </div>
-
-            <div className="flex space-x-4">
-              {searchType === 'id' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Tracking Section */}
+          <div className="lg:col-span-2">
+            {/* Search Section */}
+            <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
+              <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <Search className="w-6 h-6 mr-3 text-blue-400" />
+                TRACK INTELLIGENCE REPORT
+              </h2>
+              
+              <div className="flex space-x-4 mb-6">
                 <Input
                   value={reportId}
                   onChange={(e) => setReportId(e.target.value)}
-                  placeholder="Enter your report ID (e.g., REP-2023-001)"
+                  placeholder="Enter Report ID (e.g., 1a2b3c4d)"
                   className="bg-gray-900/50 border-gray-600 text-white flex-1"
+                  onKeyPress={(e) => e.key === 'Enter' && handleTrackReport()}
                 />
-              ) : (
-                <Input
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  placeholder="Enter your phone number"
-                  className="bg-gray-900/50 border-gray-600 text-white flex-1"
-                />
-              )}
-              <Button 
-                onClick={handleSearch}
-                disabled={loading}
-                className="bg-dhq-blue hover:bg-blue-700"
-              >
-                <Search className="w-4 h-4 mr-2" />
-                {loading ? 'Searching...' : 'Search'}
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Report Details */}
-        {report && (
-          <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-white">Report Details</h2>
-              <Badge className={`${getStatusColor(report.status)} text-white`}>
-                {getStatusIcon(report.status)}
-                <span className="ml-1">{report.status}</span>
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Report ID</label>
-                  <p className="text-white font-mono">{report.id}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Type</label>
-                  <p className="text-white">{report.threat_type}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Urgency</label>
-                  <p className="text-white capitalize">{report.urgency}</p>
-                </div>
+                <Button 
+                  onClick={handleTrackReport}
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 px-8"
+                >
+                  {loading ? 'SEARCHING...' : 'TRACK REPORT'}
+                </Button>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Submitted</label>
-                  <p className="text-white">{new Date(report.created_at).toLocaleString()}</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gray-700/30 rounded-lg border border-gray-600/30">
+                  <FileText className="w-8 h-8 text-blue-400 mx-auto mb-2" />
+                  <p className="text-white font-semibold">Report Status</p>
+                  <p className="text-gray-400 text-sm">Real-time updates</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Location</label>
-                  <p className="text-white flex items-center">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {report.location}
-                  </p>
+                <div className="text-center p-4 bg-gray-700/30 rounded-lg border border-gray-600/30">
+                  <MapPin className="w-8 h-8 text-green-400 mx-auto mb-2" />
+                  <p className="text-white font-semibold">Location Data</p>
+                  <p className="text-gray-400 text-sm">Incident coordinates</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-400">Channel</label>
-                  <p className="text-white capitalize">{report.reporter_type}</p>
+                <div className="text-center p-4 bg-gray-700/30 rounded-lg border border-gray-600/30">
+                  <Clock className="w-8 h-8 text-purple-400 mx-auto mb-2" />
+                  <p className="text-white font-semibold">Timeline</p>
+                  <p className="text-gray-400 text-sm">Processing history</p>
                 </div>
               </div>
-            </div>
+            </Card>
 
-            <div className="mt-6">
-              <label className="text-sm font-medium text-gray-400">Description</label>
-              <p className="text-white mt-1">{report.description}</p>
-            </div>
-
-            {/* Status Timeline */}
-            <div className="mt-6">
-              <h3 className="text-lg font-medium text-white mb-4">Status Timeline</h3>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <CheckCircle className="w-5 h-5 text-green-400" />
-                  <div>
-                    <p className="text-white">Report Submitted</p>
-                    <p className="text-gray-400 text-sm">{new Date(report.created_at).toLocaleString()}</p>
-                  </div>
+            {/* Report Details */}
+            {report && (
+              <Card className="bg-gray-800/50 border-gray-700/50 p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-white flex items-center">
+                    <Shield className="w-5 h-5 mr-2 text-green-400" />
+                    REPORT DETAILS
+                  </h3>
+                  <Badge className={`${getStatusColor(report.status)} text-white font-bold`}>
+                    {report.status?.toUpperCase().replace('_', ' ') || 'UNKNOWN'}
+                  </Badge>
                 </div>
-                {report.status !== 'pending' && (
-                  <div className="flex items-center space-x-3">
-                    <AlertTriangle className="w-5 h-5 text-blue-400" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
                     <div>
-                      <p className="text-white">Under Investigation</p>
-                      <p className="text-gray-400 text-sm">Being reviewed by DHQ team</p>
+                      <label className="text-gray-400 text-sm font-semibold">REPORT ID</label>
+                      <p className="text-white font-mono text-lg">{report.id.slice(0, 8)}</p>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm font-semibold">THREAT TYPE</label>
+                      <p className="text-white">{report.threat_type || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm font-semibold">LOCATION</label>
+                      <p className="text-white">{report.location || 'Coordinates classified'}</p>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        )}
-
-        {/* DHQ AI Chatbot */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-white">DHQ AI Assistant</h2>
-            <Button
-              onClick={() => setShowChat(!showChat)}
-              variant="outline"
-              className="bg-transparent border-dhq-blue text-dhq-blue"
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              {showChat ? 'Hide Chat' : 'Start Chat'}
-            </Button>
-          </div>
-
-          {showChat && (
-            <div className="space-y-4">
-              <div className="bg-gray-900/60 p-4 rounded-lg max-h-96 overflow-y-auto">
-                <div className="space-y-3">
-                  <div className="bg-dhq-blue/20 p-3 rounded-lg">
-                    <p className="text-white text-sm">
-                      <strong>DHQ AI:</strong> Hello! I'm here to help you with your report status and answer any questions about DHQ processes. How can I assist you today?
-                    </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-gray-400 text-sm font-semibold">PRIORITY LEVEL</label>
+                      <div className="flex items-center space-x-2">
+                        {getUrgencyIcon(report.urgency)}
+                        <span className="text-white">{report.urgency?.toUpperCase() || 'STANDARD'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm font-semibold">SUBMITTED</label>
+                      <p className="text-white">
+                        {report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm font-semibold">LAST UPDATED</label>
+                      <p className="text-white">
+                        {report.updated_at ? new Date(report.updated_at).toLocaleString() : 'No updates'}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="flex space-x-2">
-                <Input
-                  placeholder="Type your message..."
-                  className="bg-gray-900/50 border-gray-600 text-white flex-1"
-                />
-                <Button className="bg-dhq-blue hover:bg-blue-700">
-                  Send
-                </Button>
-              </div>
+                <div className="mt-6 pt-6 border-t border-gray-700/50">
+                  <label className="text-gray-400 text-sm font-semibold">INTELLIGENCE SUMMARY</label>
+                  <p className="text-white mt-2 leading-relaxed">
+                    {report.description || 'Details classified for operational security.'}
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 text-left justify-start">
-                  What's the status of my report?
-                </Button>
-                <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 text-left justify-start">
-                  How long does investigation take?
-                </Button>
-                <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 text-left justify-start">
-                  Can I update my report?
-                </Button>
-                <Button variant="outline" className="bg-transparent border-gray-600 text-gray-300 text-left justify-start">
-                  Emergency contact information
-                </Button>
-              </div>
-            </div>
-          )}
+                {/* Status Timeline */}
+                <div className="mt-8">
+                  <h4 className="text-white font-bold mb-4">PROCESSING STATUS</h4>
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <span className="text-green-400 font-semibold">SUBMITTED</span>
+                    </div>
+                    <div className="flex-1 h-0.5 bg-gray-600"></div>
+                    <div className={`flex items-center space-x-2 ${
+                      ['under_review', 'investigating', 'resolved'].includes(report.status || '') 
+                        ? 'text-green-400' : 'text-gray-500'
+                    }`}>
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-semibold">ANALYSIS</span>
+                    </div>
+                    <div className="flex-1 h-0.5 bg-gray-600"></div>
+                    <div className={`flex items-center space-x-2 ${
+                      ['investigating', 'resolved'].includes(report.status || '') 
+                        ? 'text-green-400' : 'text-gray-500'
+                    }`}>
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-semibold">OPERATION</span>
+                    </div>
+                    <div className="flex-1 h-0.5 bg-gray-600"></div>
+                    <div className={`flex items-center space-x-2 ${
+                      report.status === 'resolved' ? 'text-green-400' : 'text-gray-500'
+                    }`}>
+                      <CheckCircle className="w-5 h-5" />
+                      <span className="font-semibold">RESOLVED</span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
 
-          {!showChat && (
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-400">Click "Start Chat" to get instant help from our AI assistant</p>
-            </div>
-          )}
-        </Card>
+          {/* Chatbot Section */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6">
+              <div className="mb-4">
+                <Button 
+                  onClick={() => setShowChatbot(!showChatbot)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center space-x-2"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  <span>{showChatbot ? 'HIDE AI ASSISTANT' : 'DHQ AI ASSISTANT'}</span>
+                </Button>
+              </div>
+              
+              {showChatbot && <AIChatbot />}
 
-        {/* Contact Information */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mt-6">
-          <h3 className="text-lg font-bold text-white mb-4">Emergency Contacts</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center space-x-3">
-              <Phone className="w-5 h-5 text-dhq-blue" />
-              <div>
-                <p className="text-white font-medium">Emergency Hotline</p>
-                <p className="text-gray-400">199 | 112</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Mail className="w-5 h-5 text-dhq-blue" />
-              <div>
-                <p className="text-white font-medium">Report via Email</p>
-                <p className="text-gray-400">reports@dhq.gov.ng</p>
-              </div>
+              {/* Quick Links */}
+              <Card className="bg-gray-800/50 border-gray-700/50 p-4 mt-4">
+                <h4 className="text-white font-bold mb-3">QUICK ACCESS</h4>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Submit New Report
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Emergency Hotline
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" size="sm">
+                    <User className="w-4 h-4 mr-2" />
+                    Contact DHQ
+                  </Button>
+                </div>
+              </Card>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );
