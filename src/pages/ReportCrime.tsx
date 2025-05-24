@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck } from 'lucide-react';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
@@ -15,7 +15,7 @@ const ReportCrime = () => {
     manualLocation: '',
     urgency: 'medium',
     threatType: '',
-    reporterType: 'anonymous',
+    reporterType: 'web_app',
     isAnonymous: true,
     reporterName: '',
     reporterContact: '',
@@ -29,6 +29,7 @@ const ReportCrime = () => {
     error: null as string | null,
   });
   const [loading, setLoading] = useState(false);
+  const [reportId, setReportId] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -156,6 +157,7 @@ const ReportCrime = () => {
       }
 
       console.log('Report submitted successfully:', data);
+      setReportId(data[0].id);
 
       toast({
         title: "Report submitted successfully",
@@ -169,7 +171,7 @@ const ReportCrime = () => {
         manualLocation: '',
         urgency: 'medium',
         threatType: '',
-        reporterType: 'anonymous',
+        reporterType: 'web_app',
         isAnonymous: true,
         reporterName: '',
         reporterContact: '',
@@ -190,9 +192,54 @@ const ReportCrime = () => {
     }
   };
 
+  const reportingChannels = [
+    {
+      id: 'web_app',
+      title: 'Web App',
+      icon: <Smartphone className="w-6 h-6" />,
+      description: 'Submit reports directly through this platform',
+      active: formData.reporterType === 'web_app'
+    },
+    {
+      id: 'mobile_app',
+      title: 'Mobile App',
+      icon: <Phone className="w-6 h-6" />,
+      description: 'Use our mobile application for quick reporting',
+      active: formData.reporterType === 'mobile_app'
+    },
+    {
+      id: 'sms',
+      title: 'SMS',
+      icon: <MessageSquare className="w-6 h-6" />,
+      description: 'Send reports via text message to 40404',
+      active: formData.reporterType === 'sms'
+    },
+    {
+      id: 'call_hotline',
+      title: 'Call Hotline',
+      icon: <Phone className="w-6 h-6" />,
+      description: 'Call our 24/7 emergency hotline: 199 | 112',
+      active: formData.reporterType === 'call_hotline'
+    },
+    {
+      id: 'email',
+      title: 'Email',
+      icon: <Mail className="w-6 h-6" />,
+      description: 'Send detailed reports to reports@dhq.gov.ng',
+      active: formData.reporterType === 'email'
+    },
+    {
+      id: 'manual',
+      title: 'In-Person',
+      icon: <UserCheck className="w-6 h-6" />,
+      description: 'Visit any DHQ office or security checkpoint',
+      active: formData.reporterType === 'manual'
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-dhq-dark-bg p-4">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -207,6 +254,87 @@ const ReportCrime = () => {
             <span>Secure & Confidential Reporting</span>
           </div>
         </div>
+
+        {/* Reporting Channels */}
+        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">Choose Your Reporting Channel</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reportingChannels.map((channel) => (
+              <button
+                key={channel.id}
+                onClick={() => handleInputChange('reporterType', channel.id)}
+                className={`p-4 rounded-lg border transition-all duration-200 text-left ${
+                  channel.active
+                    ? 'border-dhq-blue bg-dhq-blue/10 text-white'
+                    : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                <div className="flex items-center space-x-3 mb-2">
+                  <div className={`${channel.active ? 'text-dhq-blue' : 'text-gray-400'}`}>
+                    {channel.icon}
+                  </div>
+                  <h3 className="font-semibold">{channel.title}</h3>
+                </div>
+                <p className="text-sm text-gray-400">{channel.description}</p>
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Visual Process Flow */}
+        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4">How Reporting Works</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-dhq-blue rounded-full flex items-center justify-center mb-2">
+                <span className="text-white font-bold">1</span>
+              </div>
+              <p className="text-white font-medium">Submit Report</p>
+              <p className="text-gray-400 text-sm">Provide incident details</p>
+            </div>
+            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-yellow-500 rounded-full flex items-center justify-center mb-2">
+                <span className="text-white font-bold">2</span>
+              </div>
+              <p className="text-white font-medium">Under Review</p>
+              <p className="text-gray-400 text-sm">DHQ team analyzes report</p>
+            </div>
+            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mb-2">
+                <span className="text-white font-bold">3</span>
+              </div>
+              <p className="text-white font-medium">Investigation</p>
+              <p className="text-gray-400 text-sm">Authorities take action</p>
+            </div>
+            <div className="flex-1 h-0.5 bg-gray-600 mx-4"></div>
+            <div className="flex flex-col items-center text-center">
+              <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mb-2">
+                <span className="text-white font-bold">4</span>
+              </div>
+              <p className="text-white font-medium">Resolution</p>
+              <p className="text-gray-400 text-sm">Case closed with feedback</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Success Message */}
+        {reportId && (
+          <Card className="bg-green-900/20 border-green-700/50 p-6 mb-6">
+            <div className="text-center">
+              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+              <h3 className="text-lg font-bold text-green-300 mb-2">Report Submitted Successfully!</h3>
+              <p className="text-green-200 mb-4">Your Report ID: <span className="font-mono">{reportId.slice(0, 8)}</span></p>
+              <Button 
+                onClick={() => window.open('/track', '_blank')}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                Track Your Report
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Location Status Card */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
@@ -368,24 +496,6 @@ const ReportCrime = () => {
                     </div>
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Reporter Type
-                  </label>
-                  <select
-                    value={formData.reporterType}
-                    onChange={(e) => handleInputChange('reporterType', e.target.value)}
-                    className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
-                  >
-                    <option value="anonymous">Anonymous Citizen</option>
-                    <option value="witness">Witness</option>
-                    <option value="informant">Informant</option>
-                    <option value="official">Government Official</option>
-                    <option value="security">Security Personnel</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
               </div>
             </div>
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
 import { useReports } from '@/hooks/useReports';
@@ -40,28 +39,38 @@ const NigeriaMap = () => {
       };
     });
 
-  // Convert reports to detailed incident data
+  // Convert reports to detailed incident data with proper priority mapping
   const incidentDetails: IncidentDetails[] = reports
     .filter(report => report.latitude && report.longitude)
-    .map(report => ({
-      id: report.id,
-      type: report.threat_type || 'Security Report',
-      location: report.location || report.manual_location || `${report.latitude}, ${report.longitude}`,
-      status: report.status === 'resolved' ? 'resolved' : 
-              report.urgency === 'critical' ? 'critical' : 'warning',
-      timestamp: report.created_at || report.timestamp || new Date().toISOString(),
-      priority: report.priority || 'medium',
-      officer: 'Dispatch Team',
-      description: report.description || 'No description provided',
-      coordinates: { lat: report.latitude!, lng: report.longitude! },
-      updates: [
-        {
-          time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown',
-          message: `Report submitted via ${report.reporter_type} source`,
-          author: 'System'
-        }
-      ]
-    }));
+    .map(report => {
+      // Map priority to the expected enum values
+      let mappedPriority: 'high' | 'medium' | 'low' = 'medium';
+      if (report.priority === 'high' || report.urgency === 'critical') {
+        mappedPriority = 'high';
+      } else if (report.priority === 'low') {
+        mappedPriority = 'low';
+      }
+
+      return {
+        id: report.id,
+        type: report.threat_type || 'Security Report',
+        location: report.location || report.manual_location || `${report.latitude}, ${report.longitude}`,
+        status: report.status === 'resolved' ? 'resolved' : 
+                report.urgency === 'critical' ? 'critical' : 'warning',
+        timestamp: report.created_at || report.timestamp || new Date().toISOString(),
+        priority: mappedPriority,
+        officer: 'Dispatch Team',
+        description: report.description || 'No description provided',
+        coordinates: { lat: report.latitude!, lng: report.longitude! },
+        updates: [
+          {
+            time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown',
+            message: `Report submitted via ${report.reporter_type} source`,
+            author: 'System'
+          }
+        ]
+      };
+    });
 
   const getMarkerColor = (type: string) => {
     switch (type) {

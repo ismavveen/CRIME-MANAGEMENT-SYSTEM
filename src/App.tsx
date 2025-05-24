@@ -9,6 +9,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import ReportCrime from "./pages/ReportCrime";
+import TrackReport from "./pages/TrackReport";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
 import Calendar from "./pages/Calendar";
@@ -28,6 +29,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/report" element={<ReportCrime />} />
+            <Route path="/track" element={<TrackReport />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
