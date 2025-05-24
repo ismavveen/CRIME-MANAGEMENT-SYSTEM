@@ -55,8 +55,12 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 bg-red-800 rounded-lg flex items-center justify-center">
-              <Shield className="w-8 h-8 text-white" />
+            <div className="w-20 h-20 rounded-lg overflow-hidden bg-white p-2">
+              <img 
+                src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
+                alt="Defense Headquarters Logo" 
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Defense HQ</h1>

@@ -146,9 +146,13 @@ const ReportCrime = () => {
 
       console.log('Submitting report data:', reportData);
 
+      // Use upsert instead of insert to handle any potential conflicts
       const { data, error } = await supabase
         .from('reports')
-        .insert([reportData])
+        .upsert([reportData], { 
+          onConflict: 'id',
+          ignoreDuplicates: false 
+        })
         .select();
 
       if (error) {
@@ -251,7 +255,7 @@ const ReportCrime = () => {
           <div className="flex items-center justify-center mb-6">
             <div className="w-24 h-24 rounded-lg overflow-hidden bg-white p-2 mr-6">
               <img 
-                src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
                 alt="Defense Headquarters Logo" 
                 className="w-full h-full object-contain"
               />
