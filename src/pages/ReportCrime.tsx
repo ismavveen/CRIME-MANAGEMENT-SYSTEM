@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle } from 'lucide-react';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
