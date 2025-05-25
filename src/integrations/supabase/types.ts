@@ -9,6 +9,93 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      military_units: {
+        Row: {
+          commander: string
+          created_at: string
+          id: string
+          latitude: number | null
+          location: string
+          longitude: number | null
+          name: string
+          status: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          commander: string
+          created_at?: string
+          id: string
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          name: string
+          status?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          commander?: string
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          name?: string
+          status?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          report_id: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          report_id?: string | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          report_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -35,6 +122,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      report_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          assigned_to_commander: string
+          assigned_to_unit_id: string
+          created_at: string
+          id: string
+          report_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          assigned_to_commander: string
+          assigned_to_unit_id: string
+          created_at?: string
+          id?: string
+          report_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          assigned_to_commander?: string
+          assigned_to_unit_id?: string
+          created_at?: string
+          id?: string
+          report_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_assignments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {

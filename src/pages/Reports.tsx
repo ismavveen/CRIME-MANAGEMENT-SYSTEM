@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
+import ReportAnalytics from '../components/ReportAnalytics';
+import AssignmentManagement from '../components/AssignmentManagement';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Filter, Search, Download, Map, CheckCircle, XCircle, AlertCircle, Clock, Share2, Printer, Flag } from "lucide-react";
+import { Filter, Search, Download, Map, CheckCircle, XCircle, AlertCircle, Clock, Share2, Printer, Flag, TrendingUp, Users, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import AssignReportDialog from '../components/AssignReportDialog';
+import { useReports } from '@/hooks/useReports';
+import { useAssignments } from '@/hooks/useAssignments';
+import AssignmentDialog from '../components/AssignmentDialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Report {
   id: string;
@@ -22,109 +27,36 @@ interface Report {
   assignedTo?: string;
   lastUpdated?: string;
   evidenceCount?: number;
+  threat_type?: string;
+  urgency?: string;
+  created_at?: string;
 }
 
 const Reports = () => {
-  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const { reports } = useReports();
+  const { assignments } = useAssignments();
+  const [selectedReport, setSelectedReport] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const { toast } = useToast();
 
-  // Mock data for reports
-  const reports: Report[] = [
-    { 
-      id: "REP-2023-001", 
-      title: "Suspicious activity in Borno State", 
-      location: "Maiduguri, Borno", 
-      reportType: "Security Threat", 
-      priority: "Critical",
-      reportedAt: "2023-05-22 08:24",
-      status: "Investigating",
-      description: "Multiple individuals spotted surveying military checkpoint locations over the past 48 hours. Behavior indicates possible planning for coordinated attack.",
-      coordinates: { lat: 11.8469, lng: 13.1571 },
-      reportedBy: "Anonymous Source",
-      assignedTo: "Col. Ibrahim Mohammed",
-      lastUpdated: "2023-05-22 10:30",
-      evidenceCount: 3
-    },
-    { 
-      id: "REP-2023-002", 
-      title: "Weapons stockpile found", 
-      location: "Katsina, Katsina", 
-      reportType: "Intelligence", 
-      priority: "High",
-      reportedAt: "2023-05-21 16:40",
-      status: "Verified",
-      description: "Cache of weapons discovered in abandoned warehouse. Includes approximately 24 assault rifles and explosives. Location secured.",
-      coordinates: { lat: 12.9982, lng: 7.6094 },
-      reportedBy: "Lt. Ahmed Yusuf",
-      assignedTo: "Maj. Abubakar Sani",
-      lastUpdated: "2023-05-22 09:15",
-      evidenceCount: 7
-    },
-    { 
-      id: "REP-2023-003", 
-      title: "Vandalism of public property", 
-      location: "Ikeja, Lagos", 
-      reportType: "Criminal Activity", 
-      priority: "Medium",
-      reportedAt: "2023-05-21 09:15",
-      status: "Resolved"
-    },
-    { 
-      id: "REP-2023-004", 
-      title: "Unauthorized checkpoint", 
-      location: "Owerri, Imo", 
-      reportType: "Security Concern", 
-      priority: "High",
-      reportedAt: "2023-05-20 23:10",
-      status: "Dispatched"
-    },
-    { 
-      id: "REP-2023-005", 
-      title: "Suspected trafficking operation", 
-      location: "Calabar, Cross River", 
-      reportType: "Intelligence", 
-      priority: "High",
-      reportedAt: "2023-05-20 19:32",
-      status: "Investigating"
-    },
-    { 
-      id: "REP-2023-006", 
-      title: "Community conflict escalation", 
-      location: "Jos, Plateau", 
-      reportType: "Civil Unrest", 
-      priority: "High",
-      reportedAt: "2023-05-19 14:58",
-      status: "Monitoring"
-    },
-    { 
-      id: "REP-2023-007", 
-      title: "Drug related activity", 
-      location: "Kaduna, Kaduna", 
-      reportType: "Criminal Activity", 
-      priority: "Medium",
-      reportedAt: "2023-05-19 11:23",
-      status: "Verified"
-    },
-    { 
-      id: "REP-2023-008", 
-      title: "Counterfeit document operation", 
-      location: "Port Harcourt, Rivers", 
-      reportType: "Criminal Activity", 
-      priority: "Low",
-      reportedAt: "2023-05-18 08:40",
-      status: "Resolved"
-    }
-  ];
+  // Enhance reports with assignment data
+  const enhancedReports = reports.map(report => {
+    const assignment = assignments.find(a => a.report_id === report.id);
+    return {
+      ...report,
+      assignment,
+      isAssigned: !!assignment,
+      assignmentStatus: assignment?.status || 'unassigned'
+    };
+  });
 
-  const handleViewReport = (report: Report) => {
+  const handleViewReport = (report: any) => {
     setSelectedReport(report);
     setDialogOpen(true);
   };
 
   const handleStatusUpdate = (newStatus: string) => {
-    // In a real implementation, this would update the backend
     toast({
       title: "Status updated",
       description: `Report ${selectedReport?.id} status changed to ${newStatus}`,
@@ -151,7 +83,7 @@ const Reports = () => {
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority.toLowerCase()) {
+    switch (priority?.toLowerCase()) {
       case "critical":
         return "bg-dhq-red text-white";
       case "high":
@@ -165,34 +97,30 @@ const Reports = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "investigating":
+  const getAssignmentStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "assigned":
         return "bg-blue-500 text-white";
-      case "verified":
-        return "bg-purple-500 text-white";
-      case "dispatched":
+      case "in_progress":
         return "bg-orange-500 text-white";
-      case "monitoring":
-        return "bg-yellow-500 text-black";
       case "resolved":
         return "bg-green-500 text-white";
+      case "unassigned":
+        return "bg-gray-500 text-white";
       default:
         return "bg-gray-500 text-white";
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "investigating":
+    switch (status?.toLowerCase()) {
+      case "assigned":
+        return <Users className="h-4 w-4 mr-1" />;
+      case "in_progress":
         return <Clock className="h-4 w-4 mr-1" />;
-      case "verified":
-        return <CheckCircle className="h-4 w-4 mr-1" />;
       case "resolved":
         return <CheckCircle className="h-4 w-4 mr-1" />;
-      case "dispatched":
-        return <Share2 className="h-4 w-4 mr-1" />;
-      case "monitoring":
+      case "unassigned":
         return <AlertCircle className="h-4 w-4 mr-1" />;
       default:
         return <Clock className="h-4 w-4 mr-1" />;
@@ -209,9 +137,9 @@ const Reports = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Reports & Intelligence</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Reports & Intelligence Center</h1>
               <p className="text-gray-400">
-                View and analyze incident reports and intelligence data
+                Comprehensive view and analysis of incident reports and intelligence data
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -238,81 +166,131 @@ const Reports = () => {
           </div>
         </div>
 
-        {/* Reports Table */}
-        <div className="bg-gray-800/30 rounded-lg shadow-lg overflow-hidden mb-8">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Report ID</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Location</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Type</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Priority</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Reported At</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {reports.map((report) => (
-                <tr 
-                  key={report.id} 
-                  className="hover:bg-gray-700/40 transition-colors cursor-pointer"
-                  onClick={() => handleViewReport(report)}
-                >
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-300 font-mono">
-                    {report.id}
-                  </td>
-                  <td className="py-4 px-6 text-white font-medium">
-                    {report.title}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-300">
-                    {report.location}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-300">
-                    {report.reportType}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <Badge className={`${getPriorityColor(report.priority)}`}>
-                      {report.priority}
-                    </Badge>
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-400">
-                    {report.reportedAt}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <Badge className={`${getStatusColor(report.status)}`}>
-                      {report.status}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="bg-gray-800/50 border border-gray-700">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-dhq-blue">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Analytics Overview
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="data-[state=active]:bg-dhq-blue">
+              <Users className="h-4 w-4 mr-2" />
+              Assignment Management
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-dhq-blue">
+              <FileText className="h-4 w-4 mr-2" />
+              All Reports
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Pagination */}
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+          <TabsContent value="overview">
+            <ReportAnalytics />
+          </TabsContent>
+
+          <TabsContent value="assignments">
+            <AssignmentManagement />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            {/* Reports Table */}
+            <div className="bg-gray-800/30 rounded-lg shadow-lg overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Report ID</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Threat Type</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Location</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Priority</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assignment</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Reported At</th>
+                    <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {enhancedReports.map((report) => (
+                    <tr 
+                      key={report.id} 
+                      className="hover:bg-gray-700/40 transition-colors cursor-pointer"
+                      onClick={() => handleViewReport(report)}
+                    >
+                      <td className="py-4 px-6 whitespace-nowrap text-gray-300 font-mono">
+                        {report.id.slice(0, 8)}...
+                      </td>
+                      <td className="py-4 px-6 text-white font-medium">
+                        {report.threat_type || 'Security Report'}
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap text-gray-300">
+                        {report.location || report.manual_location || 'Unknown'}
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <Badge className={`${getPriorityColor(report.priority || report.urgency)}`}>
+                          {report.priority || report.urgency || 'Medium'}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <Badge className={`${getAssignmentStatusColor(report.assignmentStatus)}`}>
+                          {getStatusIcon(report.assignmentStatus)}
+                          {report.assignmentStatus.replace('_', ' ').toUpperCase()}
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap text-gray-400">
+                        {report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown'}
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                          {!report.isAssigned && (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedReport(report);
+                                setAssignDialogOpen(true);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700 text-xs"
+                            >
+                              Assign
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewReport(report)}
+                            className="bg-transparent border-gray-600 text-gray-300 text-xs"
+                          >
+                            View
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious href="#" />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#" isActive>1</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#">2</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationLink href="#">3</PaginationLink>
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
+                <PaginationItem>
+                  <PaginationNext href="#" />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Report Detail Dialog */}
@@ -322,14 +300,21 @@ const Reports = () => {
             <DialogHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <DialogTitle className="text-2xl text-white mb-2">{selectedReport.title}</DialogTitle>
+                  <DialogTitle className="text-2xl text-white mb-2">
+                    {selectedReport.threat_type || 'Security Report'}
+                  </DialogTitle>
                   <DialogDescription className="text-gray-300">
                     Report ID: <span className="font-mono text-dhq-blue">{selectedReport.id}</span>
                   </DialogDescription>
                 </div>
-                <Badge className={`${getPriorityColor(selectedReport.priority)} text-sm`}>
-                  {selectedReport.priority} Priority
-                </Badge>
+                <div className="flex space-x-2">
+                  <Badge className={`${getPriorityColor(selectedReport.priority || selectedReport.urgency)} text-sm`}>
+                    {selectedReport.priority || selectedReport.urgency || 'Medium'} Priority
+                  </Badge>
+                  <Badge className={`${getAssignmentStatusColor(selectedReport.assignmentStatus)} text-sm`}>
+                    {selectedReport.assignmentStatus.replace('_', ' ').toUpperCase()}
+                  </Badge>
+                </div>
               </div>
             </DialogHeader>
             
@@ -452,16 +437,26 @@ const Reports = () => {
               >
                 Close
               </Button>
+              {!selectedReport.isAssigned && (
+                <Button 
+                  onClick={handleAssign}
+                  className="bg-dhq-blue hover:bg-blue-700"
+                >
+                  Assign to Unit
+                </Button>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
       {/* Assignment Dialog */}
-      <AssignReportDialog
+      <AssignmentDialog
         open={assignDialogOpen}
         reportId={selectedReport?.id}
-        reportTitle={selectedReport?.title}
+        reportLocation={selectedReport?.location || selectedReport?.manual_location}
+        reportLatitude={selectedReport?.latitude}
+        reportLongitude={selectedReport?.longitude}
         onOpenChange={setAssignDialogOpen}
       />
     </div>

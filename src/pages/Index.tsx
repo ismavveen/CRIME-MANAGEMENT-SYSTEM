@@ -6,23 +6,28 @@ import NigeriaMap from '../components/NigeriaMap';
 import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
+import NotificationPanel from '../components/NotificationPanel';
 import { useReports } from '@/hooks/useReports';
+import { useAssignments } from '@/hooks/useAssignments';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target } from 'lucide-react';
 
 const Index = () => {
   const { reports, loading } = useReports();
+  const { assignments } = useAssignments();
 
   // Calculate real-time statistics from actual reports
   const activeIncidents = reports.filter(r => r.status !== 'resolved').length;
   const criticalAlerts = reports.filter(r => 
     r.urgency === 'critical' || r.priority === 'high'
   ).length;
-  const resolvedToday = reports.filter(r => {
+  const resolvedToday = assignments.filter(a => {
     const today = new Date().toDateString();
-    const reportDate = new Date(r.created_at || '').toDateString();
-    return r.status === 'resolved' && reportDate === today;
+    const resolvedDate = a.resolved_at ? new Date(a.resolved_at).toDateString() : null;
+    return a.status === 'resolved' && resolvedDate === today;
   }).length;
-  const pendingReports = reports.filter(r => r.status === 'pending').length;
+  const pendingReports = reports.filter(r => 
+    !assignments.some(a => a.report_id === r.id)
+  ).length;
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
@@ -30,7 +35,7 @@ const Index = () => {
       
       {/* Main Content */}
       <div className="ml-64 p-8">
-        {/* Enhanced Header with DHQ Logo */}
+        {/* Enhanced Header with DHQ Logo and Notifications */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
@@ -54,6 +59,7 @@ const Index = () => {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationPanel />
               <div className="text-right">
                 <p className="text-white font-semibold">System Status</p>
                 <p className="text-gray-400 text-sm">
@@ -65,7 +71,7 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Enhanced Stats Grid with Military Terminology */}
+        {/* Enhanced Stats Grid with Real-time Data */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="ACTIVE OPERATIONS"
@@ -91,9 +97,9 @@ const Index = () => {
             icon={<CircleCheck size={24} />}
           />
           <StatCard
-            title="PENDING ANALYSIS"
+            title="PENDING ASSIGNMENT"
             value={loading ? "..." : pendingReports.toString()}
-            subtitle="AWAITING REVIEW"
+            subtitle="AWAITING DEPLOYMENT"
             status="warning"
             icon={<Target size={24} />}
           />
@@ -106,7 +112,7 @@ const Index = () => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-white">TACTICAL SITUATION MAP</h3>
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
                   <span className="text-red-400 text-sm">LIVE INTEL</span>
                 </div>
               </div>

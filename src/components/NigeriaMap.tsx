@@ -1,30 +1,39 @@
+
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
+import AssignmentDialog from './AssignmentDialog';
 import { useReports } from '@/hooks/useReports';
+import { useAssignments } from '@/hooks/useAssignments';
 
 interface Incident {
   id: string;
   lat: number;
   lng: number;
-  type: 'critical' | 'warning' | 'resolved';
+  type: 'critical' | 'warning' | 'resolved' | 'assigned';
   title: string;
   time: string;
+  isAssigned: boolean;
 }
 
 const NigeriaMap = () => {
   const { reports, loading, error } = useReports();
+  const { assignments } = useAssignments();
   const [selectedMapPoint, setSelectedMapPoint] = useState<Incident | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<IncidentDetails | null>(null);
 
-  // Convert reports to incidents for the map
+  // Convert reports to incidents for the map with assignment status
   const incidents: Incident[] = reports
     .filter(report => report.latitude && report.longitude)
     .map(report => {
-      let type: 'critical' | 'warning' | 'resolved' = 'warning';
+      const assignment = assignments.find(a => a.report_id === report.id);
+      let type: 'critical' | 'warning' | 'resolved' | 'assigned' = 'warning';
       
-      if (report.status === 'resolved') {
+      if (assignment?.status === 'resolved') {
         type = 'resolved';
+      } else if (assignment) {
+        type = 'assigned';
       } else if (report.urgency === 'critical' || report.priority === 'high') {
         type = 'critical';
       }
@@ -35,15 +44,16 @@ const NigeriaMap = () => {
         lng: report.longitude!,
         type,
         title: report.threat_type || 'Security Report',
-        time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown'
+        time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown',
+        isAssigned: !!assignment
       };
     });
 
-  // Convert reports to detailed incident data with proper priority mapping
+  // Convert reports to detailed incident data
   const incidentDetails: IncidentDetails[] = reports
     .filter(report => report.latitude && report.longitude)
     .map(report => {
-      // Map priority to the expected enum values
+      const assignment = assignments.find(a => a.report_id === report.id);
       let mappedPriority: 'high' | 'medium' | 'low' = 'medium';
       if (report.priority === 'high' || report.urgency === 'critical') {
         mappedPriority = 'high';
@@ -51,15 +61,23 @@ const NigeriaMap = () => {
         mappedPriority = 'low';
       }
 
+      let status: 'critical' | 'warning' | 'resolved' | 'investigating' = 'warning';
+      if (assignment?.status === 'resolved') {
+        status = 'resolved';
+      } else if (assignment?.status === 'in_progress') {
+        status = 'investigating';
+      } else if (report.urgency === 'critical') {
+        status = 'critical';
+      }
+
       return {
         id: report.id,
         type: report.threat_type || 'Security Report',
         location: report.location || report.manual_location || `${report.latitude}, ${report.longitude}`,
-        status: report.status === 'resolved' ? 'resolved' : 
-                report.urgency === 'critical' ? 'critical' : 'warning',
+        status,
         timestamp: report.created_at || report.timestamp || new Date().toISOString(),
         priority: mappedPriority,
-        officer: 'Dispatch Team',
+        officer: assignment?.assigned_to_commander || 'Unassigned',
         description: report.description || 'No description provided',
         coordinates: { lat: report.latitude!, lng: report.longitude! },
         updates: [
@@ -67,7 +85,17 @@ const NigeriaMap = () => {
             time: report.created_at ? new Date(report.created_at).toLocaleString() : 'Unknown',
             message: `Report submitted via ${report.reporter_type} source`,
             author: 'System'
-          }
+          },
+          ...(assignment ? [{
+            time: new Date(assignment.assigned_at).toLocaleString(),
+            message: `Assigned to ${assignment.assigned_to_commander}`,
+            author: assignment.assigned_by
+          }] : []),
+          ...(assignment?.status === 'resolved' && assignment.resolved_at ? [{
+            time: new Date(assignment.resolved_at).toLocaleString(),
+            message: `Case resolved: ${assignment.resolution_notes || 'No notes provided'}`,
+            author: assignment.resolved_by || 'System'
+          }] : [])
         ]
       };
     });
@@ -75,29 +103,43 @@ const NigeriaMap = () => {
   const getMarkerColor = (type: string) => {
     switch (type) {
       case 'critical':
-        return '#DC2626';
+        return '#DC2626'; // Red - Critical unassigned
       case 'warning':
-        return '#F59E0B';
+        return '#F59E0B'; // Yellow - Normal unassigned
+      case 'assigned':
+        return '#3B82F6'; // Blue - Assigned/In progress
       case 'resolved':
-        return '#10B981';
+        return '#10B981'; // Green - Resolved
       default:
-        return '#6B7280';
+        return '#6B7280'; // Gray - Default
     }
   };
 
-  const getMarkerSize = (type: string) => {
-    return type === 'critical' ? 16 : 12;
+  const getMarkerSize = (type: string, isAssigned: boolean) => {
+    // Make unassigned critical incidents larger
+    if (type === 'critical' && !isAssigned) return 14;
+    if (type === 'critical') return 12;
+    return 8; // Smaller markers for better visibility
   };
 
   const handleMarkerClick = (incident: Incident) => {
     setSelectedMapPoint(incident);
+  };
+
+  const handleViewDetails = () => {
+    if (!selectedMapPoint) return;
     
-    // Find the corresponding detailed incident and open the dialog
-    const detailedIncident = incidentDetails.find(detail => detail.id === incident.id);
+    const detailedIncident = incidentDetails.find(detail => detail.id === selectedMapPoint.id);
     if (detailedIncident) {
       setSelectedIncident(detailedIncident);
-      setShowDialog(true);
+      setShowDetailsDialog(true);
+      setSelectedMapPoint(null);
     }
+  };
+
+  const handleAssignReport = () => {
+    if (!selectedMapPoint) return;
+    setShowAssignDialog(true);
   };
 
   if (loading) {
@@ -132,12 +174,16 @@ const NigeriaMap = () => {
         <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
         <div className="flex space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-dhq-red rounded-full"></div>
+            <div className="w-3 h-3 bg-dhq-red rounded-full animate-pulse"></div>
             <span className="text-gray-400 text-sm">Critical ({incidents.filter(i => i.type === 'critical').length})</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <span className="text-gray-400 text-sm">Warning ({incidents.filter(i => i.type === 'warning').length})</span>
+            <span className="text-gray-400 text-sm">Unassigned ({incidents.filter(i => i.type === 'warning').length})</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+            <span className="text-gray-400 text-sm">Assigned ({incidents.filter(i => i.type === 'assigned').length})</span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
@@ -172,67 +218,99 @@ const NigeriaMap = () => {
             <line x1="80" y1="200" x2="250" y2="200" />
           </g>
 
-          {/* Real incident markers */}
-          {incidents.map((incident) => {
-            // Convert lat/lng to SVG coordinates (simplified projection)
-            const x = ((incident.lng + 15) / 25) * 300 + 50; // Rough Nigeria longitude range
-            const y = ((20 - incident.lat) / 15) * 200 + 50; // Rough Nigeria latitude range
+          {/* Real incident markers with improved spacing */}
+          {incidents.map((incident, index) => {
+            // Convert lat/lng to SVG coordinates with slight randomization to prevent overlap
+            const baseX = ((incident.lng + 15) / 25) * 300 + 50;
+            const baseY = ((20 - incident.lat) / 15) * 200 + 50;
+            
+            // Add slight offset to prevent exact overlaps
+            const offsetX = (index % 5 - 2) * 3; // -6 to +6 pixel offset
+            const offsetY = (Math.floor(index / 5) % 3 - 1) * 3; // -3 to +3 pixel offset
+            
+            const x = baseX + offsetX;
+            const y = baseY + offsetY;
             
             return (
               <g key={incident.id}>
+                {/* Pulsing animation ring for unassigned critical incidents */}
+                {incident.type === 'critical' && !incident.isAssigned && (
+                  <circle
+                    cx={x}
+                    cy={y}
+                    r="20"
+                    fill="none"
+                    stroke={getMarkerColor(incident.type)}
+                    strokeWidth="2"
+                    opacity="0.6"
+                    className="animate-ping"
+                  />
+                )}
+                
+                {/* Main marker */}
                 <circle
                   cx={x}
                   cy={y}
-                  r={getMarkerSize(incident.type)}
+                  r={getMarkerSize(incident.type, incident.isAssigned)}
                   fill={getMarkerColor(incident.type)}
-                  className="incident-marker animate-pulse-glow cursor-pointer"
+                  className="incident-marker cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={() => handleMarkerClick(incident)}
+                  style={{
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                  }}
                 />
+                
+                {/* Outer ring for better visibility */}
                 <circle
                   cx={x}
                   cy={y}
-                  r={getMarkerSize(incident.type) + 4}
+                  r={getMarkerSize(incident.type, incident.isAssigned) + 2}
                   fill="none"
-                  stroke={getMarkerColor(incident.type)}
+                  stroke="rgba(255,255,255,0.3)"
                   strokeWidth="1"
-                  opacity="0.5"
-                  className="animate-ping"
                 />
               </g>
             );
           })}
         </svg>
 
-        {/* Incident tooltip */}
-        {selectedMapPoint && !showDialog && (
+        {/* Enhanced incident tooltip */}
+        {selectedMapPoint && (
           <div className="absolute top-4 right-4 bg-gray-800 border border-gray-600 rounded-lg p-4 max-w-xs">
             <h4 className="text-white font-semibold mb-2">{selectedMapPoint.title}</h4>
             <p className="text-gray-400 text-sm mb-2">{selectedMapPoint.time}</p>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mb-3">
               <div 
                 className={`w-2 h-2 rounded-full`}
                 style={{ backgroundColor: getMarkerColor(selectedMapPoint.type) }}
               ></div>
-              <span className="text-sm capitalize text-gray-300">{selectedMapPoint.type}</span>
+              <span className="text-sm capitalize text-gray-300">
+                {selectedMapPoint.isAssigned ? 'Assigned' : selectedMapPoint.type}
+              </span>
             </div>
-            <div className="mt-3 flex justify-between">
+            
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleViewDetails}
+                className="text-dhq-blue text-sm hover:text-blue-400 text-left"
+              >
+                View Full Details
+              </button>
+              
+              {!selectedMapPoint.isAssigned && (
+                <button
+                  onClick={handleAssignReport}
+                  className="text-green-400 text-sm hover:text-green-300 text-left"
+                >
+                  Assign to Unit
+                </button>
+              )}
+              
               <button
                 onClick={() => setSelectedMapPoint(null)}
-                className="text-gray-400 text-sm hover:text-gray-300"
+                className="text-gray-400 text-sm hover:text-gray-300 text-left"
               >
                 Close
-              </button>
-              <button
-                onClick={() => {
-                  const detailedIncident = incidentDetails.find(detail => detail.id === selectedMapPoint.id);
-                  if (detailedIncident) {
-                    setSelectedIncident(detailedIncident);
-                    setShowDialog(true);
-                  }
-                }}
-                className="text-dhq-blue text-sm hover:text-blue-400"
-              >
-                View Details
               </button>
             </div>
           </div>
@@ -250,9 +328,19 @@ const NigeriaMap = () => {
 
       {/* Incident details dialog */}
       <IncidentDetailsDialog
-        open={showDialog}
-        onOpenChange={setShowDialog}
+        open={showDetailsDialog}
+        onOpenChange={setShowDetailsDialog}
         incident={selectedIncident}
+      />
+
+      {/* Assignment dialog */}
+      <AssignmentDialog
+        open={showAssignDialog}
+        onOpenChange={setShowAssignDialog}
+        reportId={selectedMapPoint?.id || null}
+        reportLocation={selectedIncident?.location}
+        reportLatitude={selectedIncident?.coordinates?.lat}
+        reportLongitude={selectedIncident?.coordinates?.lng}
       />
     </div>
   );
