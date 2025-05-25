@@ -1,13 +1,42 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Bell, Shield, User, Lock, Globe, Monitor, BellOff, Eye, PieChart, Key } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Bell, Shield, User, Lock, Globe, Monitor, BellOff, Eye, PieChart, Key, Map, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from '@/hooks/use-toast';
 
 const Settings = () => {
+  const [googleMapsKey, setGoogleMapsKey] = useState('');
+  const [mapboxKey, setMapboxKey] = useState('');
+  const [showGoogleKey, setShowGoogleKey] = useState(false);
+  const [showMapboxKey, setShowMapboxKey] = useState(false);
+  const { toast } = useToast();
+
+  const handleSaveGoogleMapsKey = () => {
+    if (googleMapsKey.trim()) {
+      localStorage.setItem('google_maps_api_key', googleMapsKey);
+      toast({
+        title: "Google Maps API Key Saved",
+        description: "Your API key has been saved locally and will be used for map features.",
+      });
+    }
+  };
+
+  const handleSaveMapboxKey = () => {
+    if (mapboxKey.trim()) {
+      localStorage.setItem('mapbox_api_key', mapboxKey);
+      toast({
+        title: "Mapbox API Key Saved", 
+        description: "Your API key has been saved locally and will be used for map features.",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       <DashboardSidebar />
@@ -30,11 +59,188 @@ const Settings = () => {
         <Tabs defaultValue="general" className="w-full">
           <TabsList className="bg-gray-800/50 border border-gray-700 mb-6">
             <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="integrations">API Integration</TabsTrigger>
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="api">API Access</TabsTrigger>
           </TabsList>
+
+          {/* API Integration Tab */}
+          <TabsContent value="integrations">
+            <div className="bg-gray-800/30 rounded-lg p-6">
+              <div className="flex items-center mb-6">
+                <Map className="h-6 w-6 text-dhq-blue mr-3" />
+                <h3 className="text-lg font-medium text-white">Map Services Integration</h3>
+              </div>
+              
+              <p className="text-gray-400 mb-8">
+                Configure API keys for map services to enable location-based features in the application.
+              </p>
+
+              <div className="space-y-8">
+                {/* Google Maps API Configuration */}
+                <div className="bg-gray-700/30 p-6 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
+                        <span className="text-white font-bold">G</span>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium">Google Maps API</h4>
+                        <p className="text-gray-400 text-sm">Interactive maps with detailed location data</p>
+                      </div>
+                    </div>
+                    <a 
+                      href="https://console.cloud.google.com/google/maps-apis" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dhq-blue hover:text-blue-400 flex items-center gap-1"
+                    >
+                      Get API Key <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-300 block mb-2">Google Maps API Key</label>
+                      <div className="flex gap-3">
+                        <div className="flex-1 relative">
+                          <Input
+                            type={showGoogleKey ? 'text' : 'password'}
+                            value={googleMapsKey}
+                            onChange={(e) => setGoogleMapsKey(e.target.value)}
+                            placeholder="Enter your Google Maps API key"
+                            className="bg-gray-600 border-gray-500 text-white pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            onClick={() => setShowGoogleKey(!showGoogleKey)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button 
+                          onClick={handleSaveGoogleMapsKey}
+                          className="bg-dhq-blue hover:bg-blue-700"
+                          disabled={!googleMapsKey.trim()}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Required for Google Maps integration and location services
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-600/30 p-4 rounded-md">
+                      <h5 className="text-white text-sm font-medium mb-2">Required APIs:</h5>
+                      <ul className="text-gray-300 text-xs space-y-1">
+                        <li>• Maps JavaScript API</li>
+                        <li>• Places API</li>
+                        <li>• Geocoding API</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mapbox API Configuration */}
+                <div className="bg-gray-700/30 p-6 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gray-600 rounded-lg flex items-center justify-center mr-4">
+                        <span className="text-white font-bold">M</span>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-medium">Mapbox API</h4>
+                        <p className="text-gray-400 text-sm">Alternative mapping service with custom styling</p>
+                      </div>
+                    </div>
+                    <a 
+                      href="https://account.mapbox.com/access-tokens/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-dhq-blue hover:text-blue-400 flex items-center gap-1"
+                    >
+                      Get API Key <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm text-gray-300 block mb-2">Mapbox Access Token</label>
+                      <div className="flex gap-3">
+                        <div className="flex-1 relative">
+                          <Input
+                            type={showMapboxKey ? 'text' : 'password'}
+                            value={mapboxKey}
+                            onChange={(e) => setMapboxKey(e.target.value)}
+                            placeholder="pk.eyJ1IjoieW91cnVzZXJuYW1lIi..."
+                            className="bg-gray-600 border-gray-500 text-white pr-10"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                            onClick={() => setShowMapboxKey(!showMapboxKey)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Button 
+                          onClick={handleSaveMapboxKey}
+                          className="bg-dhq-blue hover:bg-blue-700"
+                          disabled={!mapboxKey.trim()}
+                        >
+                          Save
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-2">
+                        Public access token for Mapbox services
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Connection Status */}
+                <div className="bg-gray-700/30 p-6 rounded-lg">
+                  <h4 className="text-white font-medium mb-4">Integration Status</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                        <span className="text-gray-300">Supabase Database</span>
+                      </div>
+                      <Badge className="bg-green-500 text-white">Connected</Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${googleMapsKey ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                        <span className="text-gray-300">Google Maps</span>
+                      </div>
+                      <Badge className={googleMapsKey ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
+                        {googleMapsKey ? 'Configured' : 'Not Configured'}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full mr-3 ${mapboxKey ? 'bg-green-500' : 'bg-gray-500'}`}></div>
+                        <span className="text-gray-300">Mapbox</span>
+                      </div>
+                      <Badge className={mapboxKey ? "bg-green-500 text-white" : "bg-gray-500 text-white"}>
+                        {mapboxKey ? 'Configured' : 'Not Configured'}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
           
           {/* General Settings */}
           <TabsContent value="general">

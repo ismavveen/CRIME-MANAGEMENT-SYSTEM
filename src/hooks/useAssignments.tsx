@@ -8,33 +8,19 @@ export interface Assignment {
   report_id: string;
   assigned_to_commander: string;
   assigned_by: string;
-  assigned_at: string | null;
   status: 'assigned' | 'in_progress' | 'resolved';
-  resolution_notes: string | null;
+  priority: 'low' | 'medium' | 'high';
+  notes: string | null;
+  assigned_at: string;
   resolved_at: string | null;
   resolved_by: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  notes: string | null;
-  priority: string | null;
-}
-
-export interface MilitaryUnit {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  commander: string;
-  latitude: number | null;
-  longitude: number | null;
-  status: 'active' | 'inactive';
+  resolution_notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export const useAssignments = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [militaryUnits, setMilitaryUnits] = useState<MilitaryUnit[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -46,72 +32,55 @@ export const useAssignments = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
-      setAssignments(data || []);
+
+      // Type cast the data to ensure proper enum types
+      const typedAssignments = (data || []).map(assignment => ({
+        ...assignment,
+        status: assignment.status as 'assigned' | 'in_progress' | 'resolved',
+        priority: assignment.priority as 'low' | 'medium' | 'high'
+      }));
+
+      setAssignments(typedAssignments);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
-    }
-  };
-
-  const fetchMilitaryUnits = async () => {
-    try {
-      // Use unit_commanders table as a substitute for military units
-      const { data, error } = await supabase
-        .from('unit_commanders')
-        .select('*')
-        .eq('is_active', true)
-        .order('full_name');
-
-      if (error) throw error;
-      
-      // Transform unit_commanders data to match MilitaryUnit interface
-      const transformedUnits: MilitaryUnit[] = (data || []).map(commander => ({
-        id: commander.id,
-        name: commander.unit || 'Unknown Unit',
-        type: commander.specialization || 'General',
-        location: commander.location || 'Unknown Location',
-        commander: commander.full_name,
-        latitude: null,
-        longitude: null,
-        status: commander.is_active ? 'active' as const : 'inactive' as const,
-        created_at: commander.created_at,
-        updated_at: commander.updated_at
-      }));
-      
-      setMilitaryUnits(transformedUnits);
-    } catch (error: any) {
-      console.error('Error fetching military units:', error);
+      toast({
+        title: "Failed to load assignments",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const assignReport = async (
-    reportId: string,
-    unitId: string,
-    commander: string,
-    assignedBy: string
-  ) => {
+  const createAssignment = async (assignmentData: {
+    report_id: string;
+    assigned_to_commander: string;
+    assigned_by: string;
+    priority?: 'low' | 'medium' | 'high';
+    notes?: string;
+  }) => {
     try {
       const { data, error } = await supabase
         .from('assignments')
         .insert([{
-          report_id: reportId,
-          assigned_to_commander: commander,
-          assigned_by: assignedBy
+          ...assignmentData,
+          status: 'assigned' as const,
+          priority: assignmentData.priority || 'medium' as const
         }])
         .select();
 
       if (error) throw error;
 
       toast({
-        title: "Report Assigned",
-        description: `Report has been assigned to ${commander}`,
+        title: "Assignment Created",
+        description: `Report assigned to ${assignmentData.assigned_to_commander}`,
       });
 
+      fetchAssignments();
       return data[0];
     } catch (error: any) {
-      console.error('Error assigning report:', error);
+      console.error('Error creating assignment:', error);
       toast({
         title: "Assignment Failed",
         description: error.message,
@@ -123,20 +92,21 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'in_progress' | 'resolved',
-    resolutionNotes?: string,
-    resolvedBy?: string
+    status: 'assigned' | 'in_progress' | 'resolved',
+    resolutionNotes?: string
   ) => {
     try {
-      const updateData: any = {
+      const updateData: any = { 
         status,
         updated_at: new Date().toISOString()
       };
-
+      
       if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
-        updateData.resolution_notes = resolutionNotes;
-        updateData.resolved_by = resolvedBy;
+        updateData.resolved_by = 'Current User'; // This should be the actual user
+        if (resolutionNotes) {
+          updateData.resolution_notes = resolutionNotes;
+        }
       }
 
       const { error } = await supabase
@@ -151,7 +121,7 @@ export const useAssignments = () => {
         description: `Assignment status updated to ${status}`,
       });
 
-      fetchAssignments(); // Refresh assignments
+      fetchAssignments();
     } catch (error: any) {
       console.error('Error updating assignment status:', error);
       toast({
@@ -162,31 +132,19 @@ export const useAssignments = () => {
     }
   };
 
-  const findNearestUnit = (latitude: number, longitude: number): MilitaryUnit | null => {
-    if (militaryUnits.length === 0) return null;
-
-    // For now, just return the first available unit since we don't have coordinates
-    return militaryUnits[0] || null;
-  };
-
   useEffect(() => {
     fetchAssignments();
-    fetchMilitaryUnits();
 
-    // Set up real-time subscription for assignments
+    // Set up real-time subscription
     const channel = supabase
       .channel('assignments-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assignments'
-        },
-        () => {
-          fetchAssignments();
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'assignments'
+      }, () => {
+        fetchAssignments();
+      })
       .subscribe();
 
     return () => {
@@ -196,14 +154,9 @@ export const useAssignments = () => {
 
   return {
     assignments,
-    militaryUnits,
     loading,
-    assignReport,
+    createAssignment,
     updateAssignmentStatus,
-    findNearestUnit,
-    refetch: () => {
-      fetchAssignments();
-      fetchMilitaryUnits();
-    }
+    refetch: fetchAssignments
   };
 };

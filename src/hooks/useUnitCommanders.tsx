@@ -46,7 +46,13 @@ export const useUnitCommanders = () => {
 
       if (error) throw error;
       
-      setCommanders(data || []);
+      // Type cast the data to ensure proper enum types
+      const typedCommanders = (data || []).map(commander => ({
+        ...commander,
+        status: commander.status as 'active' | 'suspended' | 'inactive' | 'available'
+      }));
+      
+      setCommanders(typedCommanders);
     } catch (error: any) {
       console.error('Error fetching commanders:', error);
       toast({
@@ -90,7 +96,7 @@ export const useUnitCommanders = () => {
         .from('unit_commanders')
         .insert([{
           ...commanderData,
-          status: commanderData.status || 'active'
+          status: commanderData.status || 'active' as const
         }])
         .select();
 
