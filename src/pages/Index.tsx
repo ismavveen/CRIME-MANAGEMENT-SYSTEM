@@ -7,10 +7,12 @@ import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
 import NotificationPanel from '../components/NotificationPanel';
+import SimpleMap from '../components/SimpleMap';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const { reports, loading: reportsLoading } = useReports();
@@ -18,20 +20,6 @@ const Index = () => {
   const { metrics, loading: metricsLoading } = useSystemMetrics();
 
   const loading = reportsLoading || metricsLoading;
-
-  // Calculate real-time statistics from actual reports and system metrics
-  const activeIncidents = metrics.active_operations || 0;
-  const criticalAlerts = reports.filter(r => 
-    r.urgency === 'critical' || r.priority === 'high'
-  ).length;
-  const resolvedToday = assignments.filter(a => {
-    const today = new Date().toDateString();
-    const resolvedDate = a.resolved_at ? new Date(a.resolved_at).toDateString() : null;
-    return a.status === 'resolved' && resolvedDate === today;
-  }).length;
-  const pendingReports = reports.filter(r => 
-    !assignments.some(a => a.report_id === r.id)
-  ).length;
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
@@ -79,47 +67,66 @@ const Index = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="ACTIVE OPERATIONS"
-            value={loading ? "..." : activeIncidents.toString()}
+            value={loading ? "..." : metrics.active_operations.toString()}
             subtitle="ONGOING INCIDENTS"
             icon={<CircleAlert size={24} />}
             status="critical"
           />
           <StatCard
             title="HIGH PRIORITY ALERTS"
-            value={loading ? "..." : criticalAlerts.toString()}
-            subtitle={`TOTAL INTEL: ${metrics.total_reports || reports.length}`}
+            value={loading ? "..." : metrics.critical_reports.toString()}
+            subtitle={`TOTAL INTEL: ${metrics.total_reports}`}
             status="critical"
             trend="up"
-            trendValue={criticalAlerts > 0 ? criticalAlerts.toString() : "0"}
+            trendValue={metrics.critical_reports > 0 ? metrics.critical_reports.toString() : "0"}
             icon={<CircleArrowUp size={24} />}
           />
           <StatCard
             title="MISSIONS COMPLETED"
-            value={loading ? "..." : (metrics.resolved_reports || resolvedToday).toString()}
+            value={loading ? "..." : metrics.resolved_reports.toString()}
             subtitle="TOTAL RESOLVED"
             status="success"
             icon={<CircleCheck size={24} />}
           />
           <StatCard
             title="PENDING ASSIGNMENT"
-            value={loading ? "..." : pendingReports.toString()}
+            value={loading ? "..." : metrics.pending_reports.toString()}
             subtitle="AWAITING DEPLOYMENT"
             status="warning"
             icon={<Target size={24} />}
           />
         </div>
 
-        {/* Google Maps Heatmap and Intelligence Feed */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="lg:col-span-2">
-            <GoogleMapsHeatmap />
-          </div>
-          <div className="lg:col-span-1">
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
-              <h3 className="text-xl font-bold text-white mb-4">INTELLIGENCE FEED</h3>
-              <NewsLiveFeed />
-            </div>
-          </div>
+        {/* Map Visualization Options */}
+        <div className="mb-8">
+          <Tabs defaultValue="simple" className="space-y-6">
+            <TabsList className="bg-gray-800/50 border border-gray-700">
+              <TabsTrigger value="simple" className="data-[state=active]:bg-dhq-blue">
+                Simple Map View
+              </TabsTrigger>
+              <TabsTrigger value="google" className="data-[state=active]:bg-dhq-blue">
+                Google Maps Heatmap
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="simple">
+              <SimpleMap showAllReports={true} />
+            </TabsContent>
+
+            <TabsContent value="google">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                  <GoogleMapsHeatmap />
+                </div>
+                <div className="lg:col-span-1">
+                  <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
+                    <h3 className="text-xl font-bold text-white mb-4">INTELLIGENCE FEED</h3>
+                    <NewsLiveFeed />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Charts Section */}

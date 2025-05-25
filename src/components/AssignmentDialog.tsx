@@ -1,17 +1,13 @@
 
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useAssignments } from '@/hooks/useAssignments';
-import { useAuth } from '@/contexts/AuthContext';
-import { MapPin, Users, User } from 'lucide-react';
+import { useUnitCommanders } from '@/hooks/useUnitCommanders';
+import { useToast } from '@/hooks/use-toast';
 
 interface AssignmentDialogProps {
   open: boolean;
@@ -30,137 +26,110 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   reportLatitude,
   reportLongitude
 }) => {
-  const [selectedUnitId, setSelectedUnitId] = useState<string>('');
-  const [isAssigning, setIsAssigning] = useState(false);
-  const { militaryUnits, assignReport, findNearestUnit } = useAssignments();
-  const { user } = useAuth();
+  const { createAssignment } = useAssignments();
+  const { commanders } = useUnitCommanders();
+  const { toast } = useToast();
+  
+  const [selectedCommander, setSelectedCommander] = useState('');
+  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const nearestUnit = reportLatitude && reportLongitude 
-    ? findNearestUnit(reportLatitude, reportLongitude)
-    : null;
+  const availableCommanders = commanders.filter(c => 
+    c.status === 'active' || c.status === 'available'
+  );
 
   const handleAssign = async () => {
-    if (!reportId || !selectedUnitId || !user) return;
+    if (!reportId || !selectedCommander) return;
 
-    setIsAssigning(true);
+    setIsSubmitting(true);
     try {
-      const selectedUnit = militaryUnits.find(unit => unit.id === selectedUnitId);
-      if (selectedUnit) {
-        await assignReport(
-          reportId,
-          selectedUnitId,
-          selectedUnit.commander,
-          user.email || 'System'
-        );
-        onOpenChange(false);
-        setSelectedUnitId('');
-      }
+      await createAssignment({
+        report_id: reportId,
+        assigned_to_commander: selectedCommander,
+        assigned_by: 'System Admin',
+        priority,
+        notes: notes.trim() || undefined
+      });
+
+      toast({
+        title: "Assignment Created",
+        description: `Report assigned to ${selectedCommander}`,
+      });
+
+      onOpenChange(false);
+      setSelectedCommander('');
+      setNotes('');
+      setPriority('medium');
     } catch (error) {
-      console.error('Assignment failed:', error);
+      toast({
+        title: "Assignment Failed",
+        description: "Failed to create assignment",
+        variant: "destructive",
+      });
     } finally {
-      setIsAssigning(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle className="text-xl">Assign Report to Military Unit</DialogTitle>
+          <DialogTitle>Assign Report to Unit Commander</DialogTitle>
         </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Report Information */}
-          <div className="bg-gray-900/60 p-4 rounded-lg">
-            <h3 className="font-medium mb-2">Report Details</h3>
-            <div className="flex items-center space-x-2 text-sm text-gray-300">
-              <MapPin className="h-4 w-4" />
-              <span>{reportLocation || 'Location not specified'}</span>
-            </div>
-          </div>
-
-          {/* Nearest Unit Recommendation */}
-          {nearestUnit && (
-            <div className="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg">
-              <h3 className="font-medium text-blue-300 mb-2">Recommended Unit (Nearest)</h3>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-blue-400" />
-                  <span className="font-medium">{nearestUnit.name}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-blue-400" />
-                  <span>Commander: {nearestUnit.commander}</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4 text-blue-400" />
-                  <span>{nearestUnit.location}</span>
-                </div>
-              </div>
-              <Button
-                onClick={() => setSelectedUnitId(nearestUnit.id)}
-                variant="outline"
-                size="sm"
-                className="mt-3 bg-blue-900/30 border-blue-600 text-blue-300"
-              >
-                Select Recommended Unit
-              </Button>
-            </div>
-          )}
-
-          {/* Unit Selection */}
+        
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">Select Military Unit</label>
-            <Select value={selectedUnitId} onValueChange={setSelectedUnitId}>
-              <SelectTrigger className="bg-gray-900/50 border-gray-600">
-                <SelectValue placeholder="Choose a military unit..." />
+            <Label htmlFor="commander">Select Commander</Label>
+            <Select value={selectedCommander} onValueChange={setSelectedCommander}>
+              <SelectTrigger className="bg-gray-700 border-gray-600">
+                <SelectValue placeholder="Choose a commander..." />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                {militaryUnits.map((unit) => (
-                  <SelectItem key={unit.id} value={unit.id} className="text-white">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{unit.name}</span>
-                      <span className="text-sm text-gray-400">
-                        {unit.commander} • {unit.location}
-                      </span>
-                    </div>
+              <SelectContent>
+                {availableCommanders.map((commander) => (
+                  <SelectItem key={commander.id} value={commander.full_name}>
+                    {commander.full_name} - {commander.unit}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Selected Unit Details */}
-          {selectedUnitId && (
-            <div className="bg-green-900/20 border border-green-700/50 p-4 rounded-lg">
-              <h3 className="font-medium text-green-300 mb-2">Selected Unit</h3>
-              {(() => {
-                const selectedUnit = militaryUnits.find(unit => unit.id === selectedUnitId);
-                return selectedUnit ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <Users className="h-4 w-4 text-green-400" />
-                      <span className="font-medium">{selectedUnit.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <User className="h-4 w-4 text-green-400" />
-                      <span>Commander: {selectedUnit.commander}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-green-400" />
-                      <span>{selectedUnit.location}</span>
-                    </div>
-                    <div className="text-sm text-gray-400">
-                      Type: {selectedUnit.type}
-                    </div>
-                  </div>
-                ) : null;
-              })()}
+          <div>
+            <Label htmlFor="priority">Priority Level</Label>
+            <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
+              <SelectTrigger className="bg-gray-700 border-gray-600">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low Priority</SelectItem>
+                <SelectItem value="medium">Medium Priority</SelectItem>
+                <SelectItem value="high">High Priority</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Assignment Notes</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Additional instructions or notes..."
+              className="bg-gray-700 border-gray-600"
+              rows={3}
+            />
+          </div>
+
+          {reportLocation && (
+            <div className="text-sm text-gray-400">
+              <strong>Report Location:</strong> {reportLocation}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex justify-end space-x-3">
+        <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -170,10 +139,10 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
           </Button>
           <Button
             onClick={handleAssign}
-            disabled={!selectedUnitId || isAssigning}
-            className="bg-dhq-blue hover:bg-blue-700"
+            disabled={!selectedCommander || isSubmitting}
+            className="bg-blue-600 hover:bg-blue-700"
           >
-            {isAssigning ? 'Assigning...' : 'Assign Report'}
+            {isSubmitting ? 'Assigning...' : 'Assign Report'}
           </Button>
         </DialogFooter>
       </DialogContent>

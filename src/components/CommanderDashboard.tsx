@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import SimpleMap from './SimpleMap';
 import { 
   Shield, 
   FileText, 
@@ -18,7 +18,8 @@ import {
   MapPin,
   Calendar,
   Phone,
-  Mail
+  Mail,
+  Map
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -253,8 +254,12 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="reports" className="space-y-6">
+        <Tabs defaultValue="map" className="space-y-6">
           <TabsList className="bg-gray-800/50 border border-gray-700">
+            <TabsTrigger value="map" className="data-[state=active]:bg-dhq-blue">
+              <Map className="h-4 w-4 mr-2" />
+              Threat Map
+            </TabsTrigger>
             <TabsTrigger value="reports" className="data-[state=active]:bg-dhq-blue">
               <FileText className="h-4 w-4 mr-2" />
               My Reports
@@ -273,6 +278,10 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
               Profile
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="map">
+            <SimpleMap commanderState={commander.state} showAllReports={false} />
+          </TabsContent>
 
           <TabsContent value="reports">
             <div className="space-y-4">
@@ -424,7 +433,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
           </TabsContent>
         </Tabs>
 
-        {/* Acknowledgment Dialog */}
         <Dialog open={acknowledgmentDialog} onOpenChange={setAcknowledgmentDialog}>
           <DialogContent className="bg-gray-800 text-white border-gray-700">
             <DialogHeader>
@@ -449,7 +457,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
           </DialogContent>
         </Dialog>
 
-        {/* Resolution Dialog */}
         <Dialog open={resolutionDialog} onOpenChange={setResolutionDialog}>
           <DialogContent className="bg-gray-800 text-white border-gray-700">
             <DialogHeader>

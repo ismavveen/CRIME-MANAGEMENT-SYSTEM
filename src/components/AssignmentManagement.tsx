@@ -8,12 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { User, MapPin, Clock, CheckCircle, AlertCircle, FileText } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 const AssignmentManagement = () => {
   const { assignments, updateAssignmentStatus } = useAssignments();
   const { reports } = useReports();
-  const { user } = useAuth();
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
@@ -45,12 +43,7 @@ const AssignmentManagement = () => {
     setIsUpdating(true);
     try {
       if (status === 'resolved') {
-        await updateAssignmentStatus(
-          assignmentId,
-          status,
-          resolutionNotes,
-          user?.email || 'System'
-        );
+        await updateAssignmentStatus(assignmentId, status, resolutionNotes);
         setResolveDialogOpen(false);
         setResolutionNotes('');
         setSelectedAssignment(null);
