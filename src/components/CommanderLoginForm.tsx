@@ -24,17 +24,18 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
     setLoading(true);
 
     try {
-      // In a real app, you would hash and compare passwords properly
-      const { data: commander, error } = await supabase
+      // Find commander by contact info (email-like identifier)
+      const { data: commanders, error } = await supabase
         .from('unit_commanders')
         .select('*')
-        .eq('email', email)
-        .eq('status', 'active')
-        .single();
+        .eq('contact_info', email)
+        .eq('status', 'active');
 
-      if (error || !commander) {
+      if (error || !commanders || commanders.length === 0) {
         throw new Error('Invalid credentials or account suspended');
       }
+
+      const commander = commanders[0];
 
       // Here you would verify the password hash
       // For demo purposes, we'll just check if password is not empty

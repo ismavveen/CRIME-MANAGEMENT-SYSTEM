@@ -6,49 +6,19 @@ import { useToast } from '@/hooks/use-toast';
 export interface UnitCommander {
   id: string;
   full_name: string;
-  email: string;
-  phone_number: string;
-  state: string;
-  status: 'active' | 'suspended' | 'inactive';
+  rank: string;
+  unit: string;
+  specialization: string | null;
+  location: string | null;
+  contact_info: string | null;
+  status: 'active' | 'suspended' | 'inactive' | 'available';
+  is_active: boolean;
+  total_assignments: number;
+  active_assignments: number;
+  success_rate: number;
+  average_response_time: number;
   created_at: string;
   updated_at: string;
-}
-
-export interface CommanderWarning {
-  id: string;
-  commander_id: string;
-  issued_by: string;
-  reason: string;
-  message: string | null;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  acknowledged: boolean;
-  acknowledged_at: string | null;
-  created_at: string;
-  commander?: UnitCommander;
-}
-
-export interface CommanderNotification {
-  id: string;
-  commander_id: string;
-  type: 'warning' | 'assignment' | 'reminder' | 'system';
-  title: string;
-  message: string;
-  is_read: boolean;
-  created_at: string;
-  commander?: UnitCommander;
-}
-
-export interface AdminAction {
-  id: string;
-  commander_id: string;
-  admin_id: string;
-  action_type: 'warning' | 'suspension' | 'escalation' | 'reactivation';
-  reason: string;
-  details: string | null;
-  effective_from: string | null;
-  effective_until: string | null;
-  created_at: string;
-  commander?: UnitCommander;
 }
 
 export interface SystemMetrics {
@@ -59,9 +29,6 @@ export interface SystemMetrics {
 
 export const useUnitCommanders = () => {
   const [commanders, setCommanders] = useState<UnitCommander[]>([]);
-  const [warnings, setWarnings] = useState<CommanderWarning[]>([]);
-  const [notifications, setNotifications] = useState<CommanderNotification[]>([]);
-  const [adminActions, setAdminActions] = useState<AdminAction[]>([]);
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
     active_operations: 0,
     total_reports: 0,
@@ -75,17 +42,11 @@ export const useUnitCommanders = () => {
       const { data, error } = await supabase
         .from('unit_commanders')
         .select('*')
-        .order('state');
+        .order('full_name');
 
       if (error) throw error;
       
-      // Type assertion to handle the database response
-      const typedData = (data || []).map(commander => ({
-        ...commander,
-        status: commander.status as 'active' | 'suspended' | 'inactive'
-      }));
-      
-      setCommanders(typedData);
+      setCommanders(data || []);
     } catch (error: any) {
       console.error('Error fetching commanders:', error);
       toast({
@@ -93,34 +54,6 @@ export const useUnitCommanders = () => {
         description: error.message,
         variant: "destructive",
       });
-    }
-  };
-
-  const fetchWarnings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('commander_warnings')
-        .select(`
-          *,
-          commander:unit_commanders(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Type assertion to handle the database response
-      const typedData = (data || []).map(warning => ({
-        ...warning,
-        severity: warning.severity as 'low' | 'medium' | 'high' | 'critical',
-        commander: warning.commander ? {
-          ...warning.commander,
-          status: warning.commander.status as 'active' | 'suspended' | 'inactive'
-        } : undefined
-      }));
-      
-      setWarnings(typedData);
-    } catch (error: any) {
-      console.error('Error fetching warnings:', error);
     }
   };
 
@@ -143,41 +76,14 @@ export const useUnitCommanders = () => {
     }
   };
 
-  const fetchAdminActions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('admin_actions')
-        .select(`
-          *,
-          commander:unit_commanders(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Type assertion to handle the database response
-      const typedData = (data || []).map(action => ({
-        ...action,
-        action_type: action.action_type as 'warning' | 'suspension' | 'escalation' | 'reactivation',
-        commander: action.commander ? {
-          ...action.commander,
-          status: action.commander.status as 'active' | 'suspended' | 'inactive'
-        } : undefined
-      }));
-      
-      setAdminActions(typedData);
-    } catch (error: any) {
-      console.error('Error fetching admin actions:', error);
-    }
-  };
-
   const createCommander = async (commanderData: {
     full_name: string;
-    email: string;
-    phone_number: string;
-    state: string;
-    password_hash: string;
-    status?: 'active' | 'suspended' | 'inactive';
+    rank: string;
+    unit: string;
+    specialization?: string;
+    location?: string;
+    contact_info?: string;
+    status?: 'active' | 'suspended' | 'inactive' | 'available';
   }) => {
     try {
       const { data, error } = await supabase
@@ -208,116 +114,28 @@ export const useUnitCommanders = () => {
     }
   };
 
-  const issueWarning = async (
+  const updateCommanderStatus = async (
     commanderId: string,
-    reason: string,
-    message: string,
-    severity: 'low' | 'medium' | 'high' | 'critical',
-    issuedBy: string
+    status: 'active' | 'suspended' | 'inactive' | 'available'
   ) => {
     try {
       const { error } = await supabase
-        .from('commander_warnings')
-        .insert([{
-          commander_id: commanderId,
-          reason,
-          message,
-          severity,
-          issued_by: issuedBy
-        }]);
+        .from('unit_commanders')
+        .update({ status })
+        .eq('id', commanderId);
 
       if (error) throw error;
 
       toast({
-        title: "Warning Issued",
-        description: `${severity.toUpperCase()} warning issued successfully`,
-      });
-
-      fetchWarnings();
-    } catch (error: any) {
-      console.error('Error issuing warning:', error);
-      toast({
-        title: "Failed to Issue Warning",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const takeAdminAction = async (
-    commanderId: string,
-    actionType: 'warning' | 'suspension' | 'escalation' | 'reactivation',
-    reason: string,
-    details: string,
-    adminId: string,
-    effectiveUntil?: string
-  ) => {
-    try {
-      const { error } = await supabase
-        .from('admin_actions')
-        .insert([{
-          commander_id: commanderId,
-          action_type: actionType,
-          reason,
-          details,
-          admin_id: adminId,
-          effective_until: effectiveUntil
-        }]);
-
-      if (error) throw error;
-
-      // Update commander status if suspending
-      if (actionType === 'suspension') {
-        await supabase
-          .from('unit_commanders')
-          .update({ status: 'suspended' })
-          .eq('id', commanderId);
-      } else if (actionType === 'reactivation') {
-        await supabase
-          .from('unit_commanders')
-          .update({ status: 'active' })
-          .eq('id', commanderId);
-      }
-
-      toast({
-        title: "Action Completed",
-        description: `${actionType.charAt(0).toUpperCase() + actionType.slice(1)} action taken successfully`,
+        title: "Status Updated",
+        description: "Commander status has been updated successfully",
       });
 
       fetchCommanders();
-      fetchAdminActions();
     } catch (error: any) {
-      console.error('Error taking admin action:', error);
+      console.error('Error updating commander status:', error);
       toast({
-        title: "Action Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const acknowledgeWarning = async (warningId: string) => {
-    try {
-      const { error } = await supabase
-        .from('commander_warnings')
-        .update({ 
-          acknowledged: true,
-          acknowledged_at: new Date().toISOString()
-        })
-        .eq('id', warningId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Warning Acknowledged",
-        description: "Warning has been acknowledged",
-      });
-
-      fetchWarnings();
-    } catch (error: any) {
-      console.error('Error acknowledging warning:', error);
-      toast({
-        title: "Failed to Acknowledge",
+        title: "Update Failed",
         description: error.message,
         variant: "destructive",
       });
@@ -329,9 +147,7 @@ export const useUnitCommanders = () => {
       setLoading(true);
       await Promise.all([
         fetchCommanders(),
-        fetchWarnings(),
-        fetchSystemMetrics(),
-        fetchAdminActions()
+        fetchSystemMetrics()
       ]);
       setLoading(false);
     };
@@ -350,17 +166,6 @@ export const useUnitCommanders = () => {
       })
       .subscribe();
 
-    const warningsChannel = supabase
-      .channel('warnings-changes')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'commander_warnings'
-      }, () => {
-        fetchWarnings();
-      })
-      .subscribe();
-
     const metricsChannel = supabase
       .channel('metrics-changes')
       .on('postgres_changes', {
@@ -374,27 +179,19 @@ export const useUnitCommanders = () => {
 
     return () => {
       supabase.removeChannel(commandersChannel);
-      supabase.removeChannel(warningsChannel);
       supabase.removeChannel(metricsChannel);
     };
   }, []);
 
   return {
     commanders,
-    warnings,
-    notifications,
-    adminActions,
     systemMetrics,
     loading,
     createCommander,
-    issueWarning,
-    takeAdminAction,
-    acknowledgeWarning,
+    updateCommanderStatus,
     refetch: () => {
       fetchCommanders();
-      fetchWarnings();
       fetchSystemMetrics();
-      fetchAdminActions();
     }
   };
 };

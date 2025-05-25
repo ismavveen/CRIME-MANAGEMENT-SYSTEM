@@ -6,16 +6,17 @@ import { useToast } from '@/hooks/use-toast';
 export interface Assignment {
   id: string;
   report_id: string;
-  assigned_to_unit_id: string;
   assigned_to_commander: string;
   assigned_by: string;
-  assigned_at: string;
+  assigned_at: string | null;
   status: 'assigned' | 'in_progress' | 'resolved';
   resolution_notes: string | null;
   resolved_at: string | null;
   resolved_by: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at: string | null;
+  updated_at: string | null;
+  notes: string | null;
+  priority: string | null;
 }
 
 export interface MilitaryUnit {
@@ -96,7 +97,6 @@ export const useAssignments = () => {
         .from('assignments')
         .insert([{
           report_id: reportId,
-          assigned_to_unit_id: unitId,
           assigned_to_commander: commander,
           assigned_by: assignedBy
         }])

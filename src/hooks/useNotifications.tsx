@@ -5,13 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
-  type: 'new_report' | 'assignment' | 'resolution' | 'update';
+  type: 'new_report' | 'assignment' | 'resolution' | 'update' | 'info';
   title: string;
   message: string;
-  report_id: string | null;
   user_id: string | null;
   is_read: boolean;
   created_at: string;
+  action_url: string | null;
+  priority: string | null;
 }
 
 export const useNotifications = () => {
@@ -33,7 +34,7 @@ export const useNotifications = () => {
       // Type cast the data to ensure proper types
       const typedNotifications = (data || []).map(notification => ({
         ...notification,
-        type: notification.type as 'new_report' | 'assignment' | 'resolution' | 'update'
+        type: notification.type as 'new_report' | 'assignment' | 'resolution' | 'update' | 'info'
       }));
 
       setNotifications(typedNotifications);
@@ -95,7 +96,7 @@ export const useNotifications = () => {
         (payload) => {
           const newNotification = {
             ...payload.new,
-            type: payload.new.type as 'new_report' | 'assignment' | 'resolution' | 'update'
+            type: payload.new.type as 'new_report' | 'assignment' | 'resolution' | 'update' | 'info'
           } as Notification;
           
           setNotifications(prev => [newNotification, ...prev]);
