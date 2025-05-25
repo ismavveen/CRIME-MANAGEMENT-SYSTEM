@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock, Camera, Video, X } from 'lucide-react';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
@@ -19,6 +19,10 @@ const ReportCrime = () => {
     isAnonymous: true,
     reporterName: '',
     reporterContact: '',
+    state: '',
+    localGovernment: '',
+    fullAddress: '',
+    landmark: '',
   });
   const [locationData, setLocationData] = useState({
     latitude: null as number | null,
@@ -28,6 +32,9 @@ const ReportCrime = () => {
     isLoading: false,
     error: null as string | null,
   });
+  const [images, setImages] = useState<File[]>([]);
+  const [videos, setVideos] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportId, setReportId] = useState('');
   const { toast } = useToast();
@@ -111,6 +118,61 @@ const ReportCrime = () => {
     }));
   };
 
+  const handleFileUpload = (files: FileList | null, type: 'image' | 'video') => {
+    if (!files) return;
+
+    const fileArray = Array.from(files);
+    const maxSize = type === 'image' ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB for images, 50MB for videos
+    
+    const validFiles = fileArray.filter(file => {
+      if (file.size > maxSize) {
+        toast({
+          title: `File too large`,
+          description: `${file.name} exceeds the ${type === 'image' ? '5MB' : '50MB'} limit`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    if (type === 'image') {
+      setImages(prev => [...prev, ...validFiles]);
+    } else {
+      setVideos(prev => [...prev, ...validFiles]);
+    }
+  };
+
+  const removeFile = (index: number, type: 'image' | 'video') => {
+    if (type === 'image') {
+      setImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setVideos(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const uploadFiles = async (files: File[], type: 'image' | 'video'): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
+      const filePath = `${type}s/${fileName}`;
+
+      const { error } = await supabase.storage
+        .from('report-files')
+        .upload(filePath, file);
+
+      if (error) throw error;
+
+      const { data } = supabase.storage
+        .from('report-files')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    });
+
+    return Promise.all(uploadPromises);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -126,8 +188,21 @@ const ReportCrime = () => {
     }
 
     setLoading(true);
+    setUploading(true);
 
     try {
+      // Upload files
+      let imageUrls: string[] = [];
+      let videoUrls: string[] = [];
+
+      if (images.length > 0) {
+        imageUrls = await uploadFiles(images, 'image');
+      }
+
+      if (videos.length > 0) {
+        videoUrls = await uploadFiles(videos, 'video');
+      }
+
       const reportData = {
         description: formData.description,
         location: formData.location || formData.manualLocation,
@@ -142,11 +217,16 @@ const ReportCrime = () => {
         timestamp: new Date().toISOString(),
         status: 'pending',
         priority: formData.urgency === 'critical' ? 'high' : formData.urgency === 'high' ? 'medium' : 'low',
+        images: imageUrls,
+        videos: videoUrls,
+        state: formData.state,
+        local_government: formData.localGovernment,
+        full_address: formData.fullAddress,
+        landmark: formData.landmark,
       };
 
       console.log('Submitting report data:', reportData);
 
-      // Use upsert instead of insert to handle any potential conflicts
       const { data, error } = await supabase
         .from('reports')
         .upsert([reportData], { 
@@ -179,7 +259,13 @@ const ReportCrime = () => {
         isAnonymous: true,
         reporterName: '',
         reporterContact: '',
+        state: '',
+        localGovernment: '',
+        fullAddress: '',
+        landmark: '',
       });
+      setImages([]);
+      setVideos([]);
 
       // Re-request location for next report
       requestLocationPermission();
@@ -193,6 +279,7 @@ const ReportCrime = () => {
       });
     } finally {
       setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -245,6 +332,13 @@ const ReportCrime = () => {
       status: 'AVAILABLE',
       active: formData.reporterType === 'manual'
     }
+  ];
+
+  const nigerianStates = [
+    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta',
+    'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi',
+    'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+    'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'
   ];
 
   return (
@@ -329,44 +423,6 @@ const ReportCrime = () => {
                 )}
               </button>
             ))}
-          </div>
-        </Card>
-
-        {/* Enhanced Process Flow */}
-        <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-            <Shield className="w-6 h-6 mr-3 text-green-400" />
-            INTELLIGENCE PROCESSING PROTOCOL
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-blue-400/30 shadow-lg">
-                <span className="text-white font-bold text-xl">01</span>
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">SUBMIT INTEL</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Encrypted submission with geo-tagging and classification</p>
-            </div>
-            <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-yellow-400/30 shadow-lg">
-                <span className="text-white font-bold text-xl">02</span>
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">AI ANALYSIS</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Automated threat assessment and priority classification</p>
-            </div>
-            <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-purple-400/30 shadow-lg">
-                <span className="text-white font-bold text-xl">03</span>
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">DEPLOYMENT</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Rapid response unit coordination and field operations</p>
-            </div>
-            <div className="text-center relative">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-800 rounded-full flex items-center justify-center mb-4 mx-auto border-4 border-green-400/30 shadow-lg">
-                <span className="text-white font-bold text-xl">04</span>
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2">RESOLUTION</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Mission completion with secure archival and analysis</p>
-            </div>
           </div>
         </Card>
 
@@ -463,42 +519,173 @@ const ReportCrime = () => {
               />
             </div>
 
-            {/* Location */}
+            {/* Location Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Additional Location Info (Optional)
-                </label>
-                <Input
-                  value={formData.manualLocation}
-                  onChange={(e) => handleInputChange('manualLocation', e.target.value)}
-                  className="bg-gray-900/50 border-gray-600 text-white"
-                  placeholder="Building name, landmark, etc."
-                />
-                {locationData.hasPermission && (
-                  <p className="text-xs text-green-400 mt-1">
-                    GPS coordinates will be automatically included
-                  </p>
-                )}
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Urgency Level *
+                  State *
                 </label>
                 <select
-                  value={formData.urgency}
-                  onChange={(e) => handleInputChange('urgency', e.target.value)}
+                  value={formData.state}
+                  onChange={(e) => handleInputChange('state', e.target.value)}
                   className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
                   required
                 >
-                  <option value="low">Low - General Information</option>
-                  <option value="medium">Medium - Requires Attention</option>
-                  <option value="high">High - Urgent Response</option>
-                  <option value="critical">Critical - Immediate Action</option>
+                  <option value="">Select State</option>
+                  {nigerianStates.map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Local Government Area *
+                </label>
+                <Input
+                  value={formData.localGovernment}
+                  onChange={(e) => handleInputChange('localGovernment', e.target.value)}
+                  className="bg-gray-900/50 border-gray-600 text-white"
+                  placeholder="Enter LGA"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Full Address *
+                </label>
+                <Input
+                  value={formData.fullAddress}
+                  onChange={(e) => handleInputChange('fullAddress', e.target.value)}
+                  className="bg-gray-900/50 border-gray-600 text-white"
+                  placeholder="Complete address"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Landmark (Optional)
+                </label>
+                <Input
+                  value={formData.landmark}
+                  onChange={(e) => handleInputChange('landmark', e.target.value)}
+                  className="bg-gray-900/50 border-gray-600 text-white"
+                  placeholder="Nearby landmark"
+                />
+              </div>
+            </div>
+
+            {/* Additional Location Info */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <MapPin className="w-4 h-4 inline mr-1" />
+                Additional Location Info (Optional)
+              </label>
+              <Input
+                value={formData.manualLocation}
+                onChange={(e) => handleInputChange('manualLocation', e.target.value)}
+                className="bg-gray-900/50 border-gray-600 text-white"
+                placeholder="Building name, floor, room, etc."
+              />
+              {locationData.hasPermission && (
+                <p className="text-xs text-green-400 mt-1">
+                  GPS coordinates will be automatically included
+                </p>
+              )}
+            </div>
+
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Camera className="w-4 h-4 inline mr-1" />
+                Upload Images (Optional)
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={(e) => handleFileUpload(e.target.files, 'image')}
+                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+              />
+              <p className="text-xs text-gray-400 mt-1">Maximum 5MB per image. Supported formats: JPG, PNG, GIF</p>
+              
+              {images.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {images.map((image, index) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={URL.createObjectURL(image)}
+                        alt={`Upload ${index + 1}`}
+                        className="w-full h-20 object-cover rounded-md"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index, 'image')}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                <Video className="w-4 h-4 inline mr-1" />
+                Upload Videos (Optional)
+              </label>
+              <input
+                type="file"
+                multiple
+                accept="video/*"
+                onChange={(e) => handleFileUpload(e.target.files, 'video')}
+                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+              />
+              <p className="text-xs text-gray-400 mt-1">Maximum 50MB per video. Supported formats: MP4, AVI, MOV</p>
+              
+              {videos.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {videos.map((video, index) => (
+                    <div key={index} className="flex items-center justify-between bg-gray-900/30 p-3 rounded-md">
+                      <div className="flex items-center space-x-3">
+                        <Video className="w-5 h-5 text-blue-400" />
+                        <span className="text-sm text-gray-300">{video.name}</span>
+                        <span className="text-xs text-gray-500">({(video.size / 1024 / 1024).toFixed(1)} MB)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index, 'video')}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Urgency Level */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Urgency Level *
+              </label>
+              <select
+                value={formData.urgency}
+                onChange={(e) => handleInputChange('urgency', e.target.value)}
+                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
+                required
+              >
+                <option value="low">Low - General Information</option>
+                <option value="medium">Medium - Requires Attention</option>
+                <option value="high">High - Urgent Response</option>
+                <option value="critical">Critical - Immediate Action</option>
+              </select>
             </div>
 
             {/* Reporter Information */}
@@ -555,6 +742,9 @@ const ReportCrime = () => {
                 <p>🔒 All reports are encrypted and handled with strict confidentiality</p>
                 <p>📍 Your precise location will be shared with authorities for faster response</p>
                 <p>📋 You will receive a reference ID upon successful submission</p>
+                {(images.length > 0 || videos.length > 0) && (
+                  <p>📁 Files will be securely stored and accessible to authorized personnel only</p>
+                )}
               </div>
               
               <Button 
@@ -564,9 +754,9 @@ const ReportCrime = () => {
                     ? 'bg-gray-600 cursor-not-allowed' 
                     : 'bg-dhq-blue hover:bg-blue-700'
                 } text-white`}
-                disabled={loading || !locationData.hasPermission}
+                disabled={loading || !locationData.hasPermission || uploading}
               >
-                {loading ? 'Submitting...' : 'Submit Report'}
+                {loading ? 'Submitting...' : uploading ? 'Uploading...' : 'Submit Report'}
               </Button>
             </div>
           </form>

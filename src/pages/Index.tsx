@@ -38,7 +38,7 @@ const Index = () => {
             <div className="flex items-center space-x-8">
               <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/10 p-3 backdrop-blur-sm border border-white/20">
                 <img 
-                  src="/lovable-uploads/3a43392d-f923-4787-9d0b-535a9a9a56a4.png" 
+                  src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
                   alt="Defense Headquarters Logo" 
                   className="w-full h-full object-contain"
                 />
@@ -109,56 +109,34 @@ const Index = () => {
           />
         </div>
 
-        {/* Enhanced Map Section */}
+        {/* Enhanced Map Section - Only Google Maps */}
         <div className="mb-10 animate-slide-in-right">
-          <Tabs defaultValue="simple" className="space-y-8">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-4">
-                <Activity className="h-6 w-6 text-cyan-400" />
-                <h2 className="text-2xl font-bold text-white dhq-heading">Interactive Threat Map</h2>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
-                  <span className="text-green-400 text-sm font-semibold dhq-caption uppercase">LIVE</span>
-                </div>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <Activity className="h-6 w-6 text-cyan-400" />
+              <h2 className="text-2xl font-bold text-white dhq-heading">Live Crime Intelligence Map</h2>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
+                <span className="text-green-400 text-sm font-semibold dhq-caption uppercase">LIVE</span>
               </div>
-              <TabsList className="bg-gray-800/60 border border-gray-700/50 backdrop-blur-sm">
-                <TabsTrigger 
-                  value="simple" 
-                  className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white dhq-caption font-medium"
-                >
-                  Map View
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="google" 
-                  className="data-[state=active]:bg-cyan-500 data-[state=active]:text-white dhq-caption font-medium"
-                >
-                  CIA Tactical View
-                </TabsTrigger>
-              </TabsList>
             </div>
-
-            <TabsContent value="simple" className="space-y-0">
-              <SimpleMap showAllReports={true} />
-            </TabsContent>
-
-            <TabsContent value="google" className="space-y-0">
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                <div className="lg:col-span-3">
-                  <GoogleMapsHeatmap />
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="lg:col-span-3">
+              <GoogleMapsHeatmap />
+            </div>
+            <div className="lg:col-span-1">
+              <div className="dhq-card p-6 h-full">
+                <div className="flex items-center space-x-3 mb-6">
+                  <FileText className="h-5 w-5 text-cyan-400" />
+                  <h3 className="text-xl font-bold text-white dhq-heading">INTELLIGENCE FEED</h3>
+                  <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
                 </div>
-                <div className="lg:col-span-1">
-                  <div className="dhq-card p-6 h-full">
-                    <div className="flex items-center space-x-3 mb-6">
-                      <FileText className="h-5 w-5 text-cyan-400" />
-                      <h3 className="text-xl font-bold text-white dhq-heading">INTELLIGENCE FEED</h3>
-                      <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
-                    </div>
-                    <NewsLiveFeed />
-                  </div>
-                </div>
+                <NewsLiveFeed />
               </div>
-            </TabsContent>
-          </Tabs>
+            </div>
+          </div>
         </div>
 
         {/* Real-Time Reports Section */}

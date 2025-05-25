@@ -1,333 +1,390 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useReports } from '@/hooks/useReports';
-import { Button } from '@/components/ui/button';
-import { MapPin, AlertTriangle, Settings } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Calendar, AlertTriangle, Image as ImageIcon, Video, User, Phone } from 'lucide-react';
+import { format } from 'date-fns';
 
-declare global {
-  interface Window {
-    google: any;
-    initMap: () => void;
-  }
+interface SelectedReport {
+  id: string;
+  description: string;
+  threat_type: string;
+  location: string;
+  full_address?: string;
+  state?: string;
+  local_government?: string;
+  landmark?: string;
+  urgency: string;
+  status: string;
+  created_at: string;
+  images?: string[];
+  videos?: string[];
+  latitude?: number;
+  longitude?: number;
 }
 
 const GoogleMapsHeatmap = () => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const heatmapRef = useRef<any>(null);
-  const { reports, loading } = useReports();
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showHeatmap, setShowHeatmap] = useState(true);
-  const [apiKey, setApiKey] = useState<string>('');
+  const { reports } = useReports();
+  const [selectedReport, setSelectedReport] = useState<SelectedReport | null>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
 
   useEffect(() => {
-    // Try to get API key from localStorage first
-    const savedKey = localStorage.getItem('google_maps_api_key');
-    if (savedKey) {
-      setApiKey(savedKey);
-    }
-  }, []);
-
-  const loadGoogleMapsScript = (key: string) => {
-    return new Promise<void>((resolve, reject) => {
-      // Check if script is already loaded
-      if (window.google && window.google.maps) {
-        setIsLoaded(true);
-        resolve();
+    // Initialize Google Maps
+    const initMap = () => {
+      if (!window.google) {
+        console.error('Google Maps API not loaded');
         return;
       }
 
-      // Remove existing script if any
-      const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-      if (existingScript) {
-        existingScript.remove();
-      }
+      const mapElement = document.getElementById('google-map');
+      if (!mapElement) return;
 
-      window.initMap = () => {
-        setIsLoaded(true);
-        resolve();
-      };
-
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=visualization&callback=initMap`;
-      script.async = true;
-      script.defer = true;
-      script.onerror = () => {
-        setError('Failed to load Google Maps API. Please check your API key.');
-        reject(new Error('Failed to load Google Maps API'));
-      };
-      
-      document.head.appendChild(script);
-    });
-  };
-
-  const initializeMap = () => {
-    if (!mapRef.current || !window.google) return;
-
-    try {
-      // Initialize map centered on Nigeria
-      const map = new window.google.maps.Map(mapRef.current, {
-        zoom: 6,
+      const mapInstance = new google.maps.Map(mapElement, {
         center: { lat: 9.0765, lng: 7.3986 }, // Nigeria center
-        mapTypeId: 'roadmap',
+        zoom: 6,
         styles: [
           {
             "elementType": "geometry",
-            "stylers": [{"color": "#1d2c4d"}]
-          },
-          {
-            "elementType": "labels.text.fill",
-            "stylers": [{"color": "#8ec3b9"}]
+            "stylers": [{"color": "#1f2937"}]
           },
           {
             "elementType": "labels.text.stroke",
-            "stylers": [{"color": "#1a3646"}]
+            "stylers": [{"color": "#1f2937"}]
+          },
+          {
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#8b949e"}]
+          },
+          {
+            "featureType": "administrative.locality",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#d1d5db"}]
+          },
+          {
+            "featureType": "poi",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#d1d5db"}]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "geometry",
+            "stylers": [{"color": "#263a3c"}]
+          },
+          {
+            "featureType": "poi.park",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#6b7280"}]
+          },
+          {
+            "featureType": "road",
+            "elementType": "geometry",
+            "stylers": [{"color": "#374151"}]
+          },
+          {
+            "featureType": "road",
+            "elementType": "geometry.stroke",
+            "stylers": [{"color": "#212a37"}]
+          },
+          {
+            "featureType": "road",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#9ca3af"}]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "geometry",
+            "stylers": [{"color": "#746855"}]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "geometry.stroke",
+            "stylers": [{"color": "#1f2937"}]
+          },
+          {
+            "featureType": "road.highway",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#f3f4f6"}]
+          },
+          {
+            "featureType": "transit",
+            "elementType": "geometry",
+            "stylers": [{"color": "#2f3948"}]
+          },
+          {
+            "featureType": "transit.station",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#d1d5db"}]
+          },
+          {
+            "featureType": "water",
+            "elementType": "geometry",
+            "stylers": [{"color": "#0ea5e9"}]
+          },
+          {
+            "featureType": "water",
+            "elementType": "labels.text.fill",
+            "stylers": [{"color": "#515c6d"}]
+          },
+          {
+            "featureType": "water",
+            "elementType": "labels.text.stroke",
+            "stylers": [{"color": "#17263c"}]
           }
         ]
       });
 
-      mapInstanceRef.current = map;
+      setMap(mapInstance);
+    };
 
-      // Create heatmap data from reports
-      const heatmapData = reports
-        .filter(report => report.latitude && report.longitude)
-        .map(report => ({
-          location: new window.google.maps.LatLng(
-            parseFloat(report.latitude!.toString()),
-            parseFloat(report.longitude!.toString())
-          ),
-          weight: report.urgency === 'critical' ? 3 : report.priority === 'high' ? 2 : 1
-        }));
+    // Load Google Maps script if not already loaded
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places,visualization`;
+      script.async = true;
+      script.defer = true;
+      script.onload = initMap;
+      document.head.appendChild(script);
+    } else {
+      initMap();
+    }
+  }, []);
 
-      if (heatmapData.length > 0) {
-        const heatmap = new window.google.maps.visualization.HeatmapLayer({
-          data: heatmapData.map(point => point.location),
-          map: showHeatmap ? map : null,
-          radius: 50,
-          opacity: 0.8
+  useEffect(() => {
+    if (!map || !reports.length) return;
+
+    // Clear existing markers
+    markers.forEach(marker => marker.setMap(null));
+    
+    const newMarkers: google.maps.Marker[] = [];
+
+    reports.forEach((report) => {
+      if (report.latitude && report.longitude) {
+        const getMarkerColor = (urgency: string) => {
+          switch (urgency) {
+            case 'critical': return '#ef4444'; // red
+            case 'high': return '#f97316'; // orange
+            case 'medium': return '#eab308'; // yellow
+            case 'low': return '#22c55e'; // green
+            default: return '#6b7280'; // gray
+          }
+        };
+
+        const marker = new google.maps.Marker({
+          position: { lat: Number(report.latitude), lng: Number(report.longitude) },
+          map: map,
+          title: report.threat_type,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: getMarkerColor(report.urgency),
+            fillOpacity: 0.8,
+            strokeWeight: 2,
+            strokeColor: '#ffffff'
+          }
         });
 
-        heatmapRef.current = heatmap;
+        marker.addListener('click', () => {
+          setSelectedReport(report);
+        });
 
-        // Add markers for individual reports
-        reports
-          .filter(report => report.latitude && report.longitude)
-          .forEach(report => {
-            const marker = new window.google.maps.Marker({
-              position: {
-                lat: parseFloat(report.latitude!.toString()),
-                lng: parseFloat(report.longitude!.toString())
-              },
-              map: map,
-              title: report.threat_type || 'Security Report',
-              icon: {
-                path: window.google.maps.SymbolPath.CIRCLE,
-                fillColor: report.urgency === 'critical' ? '#dc2626' : 
-                          report.priority === 'high' ? '#f59e0b' : '#10b981',
-                fillOpacity: 0.8,
-                strokeWeight: 2,
-                strokeColor: '#ffffff',
-                scale: report.urgency === 'critical' ? 8 : 6
-              }
-            });
-
-            const infoWindow = new window.google.maps.InfoWindow({
-              content: `
-                <div style="color: #000; padding: 8px;">
-                  <h4 style="margin: 0 0 8px 0; color: #1f2937;">${report.threat_type || 'Security Report'}</h4>
-                  <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Priority:</strong> ${report.priority || 'medium'}</p>
-                  <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Urgency:</strong> ${report.urgency || 'medium'}</p>
-                  <p style="margin: 0 0 4px 0; font-size: 12px;"><strong>Location:</strong> ${report.location || 'Unknown'}</p>
-                  <p style="margin: 0; font-size: 12px;"><strong>Time:</strong> ${new Date(report.created_at || '').toLocaleDateString()}</p>
-                </div>
-              `
-            });
-
-            marker.addListener('click', () => {
-              infoWindow.open(map, marker);
-            });
-          });
+        newMarkers.push(marker);
       }
+    });
 
-      setError(null);
-    } catch (err) {
-      console.error('Error initializing map:', err);
-      setError('Failed to initialize map');
+    setMarkers(newMarkers);
+  }, [map, reports]);
+
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'critical': return 'bg-red-500';
+      case 'high': return 'bg-orange-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  useEffect(() => {
-    if (apiKey && !isLoaded) {
-      loadGoogleMapsScript(apiKey).catch(console.error);
-    }
-  }, [apiKey, isLoaded]);
-
-  useEffect(() => {
-    if (isLoaded && !loading) {
-      initializeMap();
-    }
-  }, [isLoaded, loading, reports, showHeatmap]);
-
-  const toggleHeatmap = () => {
-    setShowHeatmap(!showHeatmap);
-    if (heatmapRef.current && mapInstanceRef.current) {
-      heatmapRef.current.setMap(showHeatmap ? null : mapInstanceRef.current);
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'resolved': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'investigating': return 'bg-blue-500';
+      default: return 'bg-gray-500';
     }
   };
-
-  const handleApiKeySubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const key = formData.get('apiKey') as string;
-    if (key.trim()) {
-      localStorage.setItem('google_maps_api_key', key.trim());
-      setApiKey(key.trim());
-      setIsLoaded(false);
-      setError(null);
-    }
-  };
-
-  if (!apiKey) {
-    return (
-      <div className="dhq-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Google Maps Configuration</h2>
-          <Settings className="h-5 w-5 text-gray-400" />
-        </div>
-        
-        <div className="text-center py-8">
-          <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Google Maps API Key Required</h3>
-          <p className="text-gray-400 mb-6">
-            To view interactive maps, please configure your Google Maps API key in the settings.
-          </p>
-          
-          <form onSubmit={handleApiKeySubmit} className="max-w-md mx-auto">
-            <div className="flex gap-2">
-              <input
-                name="apiKey"
-                type="text"
-                placeholder="Enter Google Maps API Key"
-                className="flex-1 bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white placeholder-gray-400"
-                required
-              />
-              <Button type="submit" className="bg-dhq-blue hover:bg-blue-700">
-                Save
-              </Button>
-            </div>
-          </form>
-          
-          <p className="text-xs text-gray-500 mt-4">
-            Get your API key from{' '}
-            <a 
-              href="https://console.cloud.google.com/google/maps-apis" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-dhq-blue hover:underline"
-            >
-              Google Cloud Console
-            </a>
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="dhq-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Google Maps</h2>
-          <AlertTriangle className="h-5 w-5 text-red-400" />
-        </div>
-        
-        <div className="text-center py-8">
-          <AlertTriangle className="h-16 w-16 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Maps Loading Error</h3>
-          <p className="text-gray-400 mb-4">{error}</p>
-          <Button 
-            onClick={() => {
-              setError(null);
-              setIsLoaded(false);
-              if (apiKey) {
-                loadGoogleMapsScript(apiKey).catch(console.error);
-              }
-            }}
-            className="bg-dhq-blue hover:bg-blue-700"
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isLoaded) {
-    return (
-      <div className="dhq-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Google Maps</h2>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
-            <span className="text-yellow-400 text-sm">Loading Maps...</span>
-          </div>
-        </div>
-        
-        <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dhq-blue mx-auto mb-4"></div>
-            <p className="text-gray-400">Initializing Google Maps...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="dhq-card p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">🗺️ Interactive Threat Map</h2>
+        <div className="flex items-center space-x-3">
+          <MapPin className="h-6 w-6 text-cyan-400" />
+          <h3 className="text-2xl font-bold text-white dhq-heading">Live Intelligence Map</h3>
+        </div>
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={toggleHeatmap}
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
-          >
-            {showHeatmap ? 'Hide Heatmap' : 'Show Heatmap'}
-          </Button>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-            <span className="text-green-400 text-sm">LIVE</span>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+            <span className="text-gray-300">Critical</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+            <span className="text-gray-300">High</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+            <span className="text-gray-300">Medium</span>
+          </div>
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+            <span className="text-gray-300">Low</span>
           </div>
         </div>
       </div>
-
-      <div className="flex items-center space-x-4 mb-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">Critical</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">High Priority</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span className="text-gray-400 text-sm">Normal</span>
-        </div>
-        <Badge variant="secondary" className="ml-auto">
-          {reports.filter(r => r.latitude && r.longitude).length} Locations
-        </Badge>
-      </div>
-
+      
       <div 
-        ref={mapRef} 
-        className="w-full h-96 rounded-lg border border-gray-700 bg-gray-900"
+        id="google-map" 
+        className="w-full h-96 rounded-lg border border-gray-700"
         style={{ minHeight: '400px' }}
       />
+
+      {/* Report Details Modal */}
+      <Dialog open={!!selectedReport} onOpenChange={() => setSelectedReport(null)}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-white flex items-center space-x-2">
+              <AlertTriangle className="h-6 w-6 text-orange-400" />
+              <span>Intelligence Report Details</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedReport && (
+            <div className="space-y-6">
+              {/* Header Info */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Badge className={`${getUrgencyColor(selectedReport.urgency)} text-white px-3 py-1`}>
+                    {selectedReport.urgency.toUpperCase()}
+                  </Badge>
+                  <Badge className={`${getStatusColor(selectedReport.status)} text-white px-3 py-1`}>
+                    {selectedReport.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-2 text-sm text-gray-300">
+                  <Calendar className="h-4 w-4" />
+                  <span>{format(new Date(selectedReport.created_at), 'MMM dd, yyyy HH:mm')}</span>
+                </div>
+              </div>
+
+              {/* Threat Type */}
+              <div>
+                <h4 className="text-lg font-semibold text-cyan-400 mb-2">Threat Classification</h4>
+                <p className="text-white font-medium">{selectedReport.threat_type}</p>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h4 className="text-lg font-semibold text-cyan-400 mb-2">Intelligence Details</h4>
+                <p className="text-gray-300 leading-relaxed">{selectedReport.description}</p>
+              </div>
+
+              {/* Location Information */}
+              <div>
+                <h4 className="text-lg font-semibold text-cyan-400 mb-2">Location Intelligence</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedReport.state && (
+                    <div>
+                      <span className="text-sm text-gray-400">State:</span>
+                      <p className="text-white">{selectedReport.state}</p>
+                    </div>
+                  )}
+                  {selectedReport.local_government && (
+                    <div>
+                      <span className="text-sm text-gray-400">LGA:</span>
+                      <p className="text-white">{selectedReport.local_government}</p>
+                    </div>
+                  )}
+                  {selectedReport.full_address && (
+                    <div className="md:col-span-2">
+                      <span className="text-sm text-gray-400">Full Address:</span>
+                      <p className="text-white">{selectedReport.full_address}</p>
+                    </div>
+                  )}
+                  {selectedReport.landmark && (
+                    <div className="md:col-span-2">
+                      <span className="text-sm text-gray-400">Landmark:</span>
+                      <p className="text-white">{selectedReport.landmark}</p>
+                    </div>
+                  )}
+                  {selectedReport.latitude && selectedReport.longitude && (
+                    <div className="md:col-span-2">
+                      <span className="text-sm text-gray-400">Coordinates:</span>
+                      <p className="text-white font-mono">{selectedReport.latitude}, {selectedReport.longitude}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Images */}
+              {selectedReport.images && selectedReport.images.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold text-cyan-400 mb-2 flex items-center space-x-2">
+                    <ImageIcon className="h-5 w-5" />
+                    <span>Evidence Images ({selectedReport.images.length})</span>
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {selectedReport.images.map((imageUrl, index) => (
+                      <img
+                        key={index}
+                        src={imageUrl}
+                        alt={`Evidence ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border border-gray-600 cursor-pointer hover:border-cyan-400 transition-colors"
+                        onClick={() => window.open(imageUrl, '_blank')}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Videos */}
+              {selectedReport.videos && selectedReport.videos.length > 0 && (
+                <div>
+                  <h4 className="text-lg font-semibold text-cyan-400 mb-2 flex items-center space-x-2">
+                    <Video className="h-5 w-5" />
+                    <span>Evidence Videos ({selectedReport.videos.length})</span>
+                  </h4>
+                  <div className="space-y-3">
+                    {selectedReport.videos.map((videoUrl, index) => (
+                      <div key={index} className="bg-gray-900/50 rounded-lg p-3">
+                        <video
+                          src={videoUrl}
+                          controls
+                          className="w-full h-48 rounded-lg"
+                        />
+                        <p className="text-sm text-gray-400 mt-2">Video Evidence {index + 1}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Details */}
+              <div className="border-t border-gray-700 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-400">Report ID:</span>
+                    <p className="text-white font-mono">{selectedReport.id.slice(0, 8)}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400">Priority Level:</span>
+                    <p className="text-white capitalize">{selectedReport.urgency}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
