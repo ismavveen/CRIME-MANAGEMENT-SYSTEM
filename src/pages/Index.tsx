@@ -3,11 +3,11 @@ import React from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
-import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
 import NotificationPanel from '../components/NotificationPanel';
 import SimpleMap from '../components/SimpleMap';
+import RealTimeReports from '../components/RealTimeReports';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
@@ -32,13 +32,13 @@ const Index = () => {
       
       {/* Main Content */}
       <div className="ml-64 p-8 space-y-8">
-        {/* Enhanced Header with improved spacing and typography */}
+        {/* Enhanced Header with DHQ Logo */}
         <div className="mb-10 animate-fade-in-up">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-8">
               <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/10 p-3 backdrop-blur-sm border border-white/20">
                 <img 
-                  src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                  src="/lovable-uploads/3a43392d-f923-4787-9d0b-535a9a9a56a4.png" 
                   alt="Defense Headquarters Logo" 
                   className="w-full h-full object-contain"
                 />
@@ -48,7 +48,7 @@ const Index = () => {
                   Defense Headquarters Intelligence Portal
                 </h1>
                 <p className="text-gray-300 text-xl dhq-body font-medium">
-                  Real-time Crime Reporting & Threat Assessment System
+                  Crime Reporting & Intelligence Portal
                 </p>
                 <div className="flex items-center space-x-3 mt-3">
                   <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
@@ -73,45 +73,43 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Enhanced Stats Grid with improved cards and spacing */}
+        {/* Enhanced Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
           <StatCard
-            title="ACTIVE OPERATIONS"
-            value={loading ? "..." : metrics.active_operations.toString()}
-            subtitle="ONGOING INCIDENTS"
-            icon={<CircleAlert size={28} />}
-            status="critical"
-            onClick={() => handleStatCardClick('active_operations')}
+            title="TOTAL REPORTS"
+            value={loading ? "..." : metrics.total_reports.toString()}
+            subtitle="ALL INCIDENTS"
+            icon={<FileText size={28} />}
+            status="neutral"
+            onClick={() => handleStatCardClick('total_reports')}
           />
           <StatCard
-            title="HIGH PRIORITY ALERTS"
-            value={loading ? "..." : metrics.critical_reports.toString()}
-            subtitle={`TOTAL INTEL: ${metrics.total_reports}`}
-            status="critical"
-            trend="up"
-            trendValue={metrics.critical_reports > 0 ? metrics.critical_reports.toString() : "0"}
-            icon={<CircleArrowUp size={28} />}
-            onClick={() => handleStatCardClick('critical_reports')}
-          />
-          <StatCard
-            title="MISSIONS COMPLETED"
+            title="RESOLVED"
             value={loading ? "..." : metrics.resolved_reports.toString()}
-            subtitle="TOTAL RESOLVED"
+            subtitle="COMPLETED MISSIONS"
             status="success"
             icon={<CircleCheck size={28} />}
             onClick={() => handleStatCardClick('resolved_reports')}
           />
           <StatCard
-            title="PENDING ASSIGNMENT"
+            title="PENDING"
             value={loading ? "..." : metrics.pending_reports.toString()}
-            subtitle="AWAITING DEPLOYMENT"
+            subtitle="AWAITING ACTION"
             status="warning"
-            icon={<Target size={28} />}
+            icon={<CircleAlert size={28} />}
             onClick={() => handleStatCardClick('pending_reports')}
+          />
+          <StatCard
+            title="RESPONSE TIME"
+            value="15 min"
+            subtitle="AVERAGE RESPONSE"
+            status="success"
+            icon={<Target size={28} />}
+            onClick={() => handleStatCardClick('response_time')}
           />
         </div>
 
-        {/* Enhanced Map Section with improved styling */}
+        {/* Enhanced Map Section */}
         <div className="mb-10 animate-slide-in-right">
           <Tabs defaultValue="simple" className="space-y-8">
             <div className="flex items-center justify-between mb-6">
@@ -163,9 +161,9 @@ const Index = () => {
           </Tabs>
         </div>
 
-        {/* Enhanced Charts Section */}
+        {/* Real-Time Reports Section */}
         <div className="mb-10 animate-fade-in-up">
-          <ChartsSection />
+          <RealTimeReports />
         </div>
 
         {/* Enhanced Intelligence Reports Table */}

@@ -23,6 +23,7 @@ const DashboardSidebar = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/reports', label: 'Reports & Intel', icon: FileText },
+    { path: '/charts', label: 'Analytics & Charts', icon: BarChart3 },
     { path: '/unit-commanders', label: 'Unit Commanders', icon: Shield },
     { path: '/users', label: 'Users', icon: Users },
     { path: '/calendar', label: 'Calendar', icon: Calendar },

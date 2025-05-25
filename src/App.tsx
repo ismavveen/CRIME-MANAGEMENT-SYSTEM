@@ -12,6 +12,7 @@ import ReportCrime from "./pages/ReportCrime";
 import TrackReport from "./pages/TrackReport";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
+import Charts from "./pages/Charts";
 import UnitCommanders from "./pages/UnitCommanders";
 import CommanderPortal from "./pages/CommanderPortal";
 import Calendar from "./pages/Calendar";
@@ -46,6 +47,11 @@ const App = () => (
             <Route path="/reports" element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/charts" element={
+              <ProtectedRoute>
+                <Charts />
               </ProtectedRoute>
             } />
             <Route path="/unit-commanders" element={
