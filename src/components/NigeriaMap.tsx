@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
 import AssignmentDialog from './AssignmentDialog';
@@ -16,7 +15,7 @@ interface Incident {
 }
 
 const NigeriaMap = () => {
-  const { reports, loading, error } = useReports();
+  const { reports, loading } = useReports();
   const { assignments } = useAssignments();
   const [selectedMapPoint, setSelectedMapPoint] = useState<Incident | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
@@ -154,19 +153,6 @@ const NigeriaMap = () => {
         </div>
         <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
           <div className="text-white">Loading reports...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="dhq-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
-        </div>
-        <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
-          <div className="text-red-400">Error loading reports: {error}</div>
         </div>
       </div>
     );

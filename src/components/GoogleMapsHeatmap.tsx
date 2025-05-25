@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useReports } from '@/hooks/useReports';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +41,8 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
     lng: (NIGERIA_BOUNDS.east + NIGERIA_BOUNDS.west) / 2
   };
 
+  const GOOGLE_MAPS_API_KEY = 'AIzaSyDwhXSGX7S9ISS4LF2UUzRnXQobS2MYWMI';
+
   useEffect(() => {
     const loadGoogleMaps = () => {
       // Check if Google Maps is already loaded
@@ -52,7 +53,7 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
 
       // Load Google Maps script
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${getGoogleMapsApiKey()}&libraries=visualization&callback=initGoogleMaps`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=visualization&callback=initGoogleMaps`;
       script.async = true;
       script.defer = true;
 
@@ -85,18 +86,6 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
       updateHeatmapAndMarkers();
     }
   }, [reports, isMapLoaded]);
-
-  const getGoogleMapsApiKey = () => {
-    // In production, this should come from Supabase secrets
-    // For now, we'll use a placeholder that needs to be replaced
-    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_GOOGLE_MAPS_API_KEY_HERE';
-    
-    if (apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
-      console.warn('Google Maps API key not configured. Please set up your API key in Supabase secrets.');
-    }
-    
-    return apiKey;
-  };
 
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
@@ -398,9 +387,6 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
           <div className="text-center text-white">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
             <p>Initializing Google Maps...</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Please ensure your API key is configured in Supabase secrets
-            </p>
           </div>
         </div>
       )}
