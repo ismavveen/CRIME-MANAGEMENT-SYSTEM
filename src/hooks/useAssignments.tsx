@@ -45,7 +45,14 @@ export const useAssignments = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAssignments(data || []);
+      
+      // Type cast the data to ensure proper types
+      const typedAssignments = (data || []).map(assignment => ({
+        ...assignment,
+        status: assignment.status as 'assigned' | 'in_progress' | 'resolved'
+      }));
+      
+      setAssignments(typedAssignments);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
     }
@@ -60,7 +67,14 @@ export const useAssignments = () => {
         .order('name');
 
       if (error) throw error;
-      setMilitaryUnits(data || []);
+      
+      // Type cast the data to ensure proper types
+      const typedUnits = (data || []).map(unit => ({
+        ...unit,
+        status: unit.status as 'active' | 'inactive'
+      }));
+      
+      setMilitaryUnits(typedUnits);
     } catch (error: any) {
       console.error('Error fetching military units:', error);
     } finally {

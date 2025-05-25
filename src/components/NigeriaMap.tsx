@@ -116,10 +116,10 @@ const NigeriaMap = () => {
   };
 
   const getMarkerSize = (type: string, isAssigned: boolean) => {
-    // Make unassigned critical incidents larger
-    if (type === 'critical' && !isAssigned) return 14;
-    if (type === 'critical') return 12;
-    return 8; // Smaller markers for better visibility
+    // Smaller markers to prevent overlap - reduced from 8-14 to 4-8
+    if (type === 'critical' && !isAssigned) return 8;
+    if (type === 'critical') return 6;
+    return 4; // Much smaller markers for better visibility
   };
 
   const handleMarkerClick = (incident: Incident) => {
@@ -147,6 +147,10 @@ const NigeriaMap = () => {
       <div className="dhq-card p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+            <span className="text-yellow-400 text-sm">SYNCING LIVE DATA</span>
+          </div>
         </div>
         <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
           <div className="text-white">Loading reports...</div>
@@ -171,8 +175,12 @@ const NigeriaMap = () => {
   return (
     <div className="dhq-card p-6">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white">Nigeria Threat Map</h2>
-        <div className="flex space-x-4">
+        <h2 className="text-xl font-bold text-white">🚨 LIVE THREAT MAP</h2>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-green-400 text-sm font-semibold">LIVE</span>
+          </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-dhq-red rounded-full animate-pulse"></div>
             <span className="text-gray-400 text-sm">Critical ({incidents.filter(i => i.type === 'critical').length})</span>
@@ -192,23 +200,23 @@ const NigeriaMap = () => {
         </div>
       </div>
 
-      <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden">
+      <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden border border-green-500/30">
         {/* Nigeria Map SVG */}
         <svg
           viewBox="0 0 400 300"
           className="w-full h-full"
-          style={{ background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)' }}
+          style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)' }}
         >
           {/* Nigeria outline (simplified) */}
           <path
             d="M50 80 L350 80 L350 100 L320 120 L300 140 L280 160 L250 180 L220 200 L200 220 L180 240 L160 250 L140 240 L120 220 L100 200 L80 180 L60 160 L50 140 Z"
-            fill="rgba(55, 65, 81, 0.3)"
-            stroke="rgba(75, 85, 99, 0.5)"
-            strokeWidth="1"
+            fill="rgba(15, 23, 42, 0.8)"
+            stroke="rgba(34, 197, 94, 0.5)"
+            strokeWidth="2"
           />
           
           {/* State boundaries (simplified) */}
-          <g stroke="rgba(75, 85, 99, 0.3)" strokeWidth="0.5" fill="none">
+          <g stroke="rgba(34, 197, 94, 0.3)" strokeWidth="1" fill="none">
             <line x1="120" y1="80" x2="120" y2="200" />
             <line x1="180" y1="80" x2="180" y2="220" />
             <line x1="240" y1="80" x2="240" y2="200" />
@@ -218,18 +226,19 @@ const NigeriaMap = () => {
             <line x1="80" y1="200" x2="250" y2="200" />
           </g>
 
-          {/* Real incident markers with improved spacing */}
+          {/* Real incident markers with improved spacing and smaller size */}
           {incidents.map((incident, index) => {
-            // Convert lat/lng to SVG coordinates with slight randomization to prevent overlap
+            // Convert lat/lng to SVG coordinates with improved spacing algorithm
             const baseX = ((incident.lng + 15) / 25) * 300 + 50;
             const baseY = ((20 - incident.lat) / 15) * 200 + 50;
             
-            // Add slight offset to prevent exact overlaps
-            const offsetX = (index % 5 - 2) * 3; // -6 to +6 pixel offset
-            const offsetY = (Math.floor(index / 5) % 3 - 1) * 3; // -3 to +3 pixel offset
+            // Better spacing algorithm to prevent overlaps
+            const gridSize = 8; // Smaller grid for tighter spacing
+            const gridX = Math.floor(index % 10) * gridSize;
+            const gridY = Math.floor(index / 10) * gridSize;
             
-            const x = baseX + offsetX;
-            const y = baseY + offsetY;
+            const x = Math.max(60, Math.min(340, baseX + (gridX - 40)));
+            const y = Math.max(90, Math.min(240, baseY + (gridY - 20)));
             
             return (
               <g key={incident.id}>
@@ -238,7 +247,7 @@ const NigeriaMap = () => {
                   <circle
                     cx={x}
                     cy={y}
-                    r="20"
+                    r="15"
                     fill="none"
                     stroke={getMarkerColor(incident.type)}
                     strokeWidth="2"
@@ -253,10 +262,10 @@ const NigeriaMap = () => {
                   cy={y}
                   r={getMarkerSize(incident.type, incident.isAssigned)}
                   fill={getMarkerColor(incident.type)}
-                  className="incident-marker cursor-pointer hover:opacity-80 transition-opacity"
+                  className="incident-marker cursor-pointer hover:opacity-80 transition-all hover:scale-150"
                   onClick={() => handleMarkerClick(incident)}
                   style={{
-                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))'
                   }}
                 />
                 
@@ -264,10 +273,10 @@ const NigeriaMap = () => {
                 <circle
                   cx={x}
                   cy={y}
-                  r={getMarkerSize(incident.type, incident.isAssigned) + 2}
+                  r={getMarkerSize(incident.type, incident.isAssigned) + 1}
                   fill="none"
-                  stroke="rgba(255,255,255,0.3)"
-                  strokeWidth="1"
+                  stroke="rgba(255,255,255,0.8)"
+                  strokeWidth="0.5"
                 />
               </g>
             );
@@ -276,33 +285,33 @@ const NigeriaMap = () => {
 
         {/* Enhanced incident tooltip */}
         {selectedMapPoint && (
-          <div className="absolute top-4 right-4 bg-gray-800 border border-gray-600 rounded-lg p-4 max-w-xs">
-            <h4 className="text-white font-semibold mb-2">{selectedMapPoint.title}</h4>
-            <p className="text-gray-400 text-sm mb-2">{selectedMapPoint.time}</p>
+          <div className="absolute top-4 right-4 bg-gray-800 border border-green-500/50 rounded-lg p-4 max-w-xs shadow-lg">
+            <h4 className="text-white font-semibold mb-2">🚨 {selectedMapPoint.title}</h4>
+            <p className="text-gray-400 text-sm mb-2">📅 {selectedMapPoint.time}</p>
             <div className="flex items-center space-x-2 mb-3">
               <div 
                 className={`w-2 h-2 rounded-full`}
                 style={{ backgroundColor: getMarkerColor(selectedMapPoint.type) }}
               ></div>
               <span className="text-sm capitalize text-gray-300">
-                {selectedMapPoint.isAssigned ? 'Assigned' : selectedMapPoint.type}
+                {selectedMapPoint.isAssigned ? '✅ Assigned' : selectedMapPoint.type}
               </span>
             </div>
             
             <div className="flex flex-col gap-2">
               <button
                 onClick={handleViewDetails}
-                className="text-dhq-blue text-sm hover:text-blue-400 text-left"
+                className="text-dhq-blue text-sm hover:text-blue-400 text-left font-medium"
               >
-                View Full Details
+                📋 View Full Details
               </button>
               
               {!selectedMapPoint.isAssigned && (
                 <button
                   onClick={handleAssignReport}
-                  className="text-green-400 text-sm hover:text-green-300 text-left"
+                  className="text-green-400 text-sm hover:text-green-300 text-left font-medium"
                 >
-                  Assign to Unit
+                  👮 Assign to Unit
                 </button>
               )}
               
@@ -310,7 +319,7 @@ const NigeriaMap = () => {
                 onClick={() => setSelectedMapPoint(null)}
                 className="text-gray-400 text-sm hover:text-gray-300 text-left"
               >
-                Close
+                ❌ Close
               </button>
             </div>
           </div>
@@ -319,7 +328,7 @@ const NigeriaMap = () => {
         {incidents.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-gray-400 text-center">
-              <p>No reports with location data yet</p>
+              <p>🔍 No reports with location data yet</p>
               <p className="text-sm mt-1">Reports will appear here as they are submitted</p>
             </div>
           </div>

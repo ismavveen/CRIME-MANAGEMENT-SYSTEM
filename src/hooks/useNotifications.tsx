@@ -30,8 +30,14 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      // Type cast the data to ensure proper types
+      const typedNotifications = (data || []).map(notification => ({
+        ...notification,
+        type: notification.type as 'new_report' | 'assignment' | 'resolution' | 'update'
+      }));
+
+      setNotifications(typedNotifications);
+      setUnreadCount(typedNotifications.filter(n => !n.is_read).length);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -87,7 +93,11 @@ export const useNotifications = () => {
           table: 'notifications'
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
+          const newNotification = {
+            ...payload.new,
+            type: payload.new.type as 'new_report' | 'assignment' | 'resolution' | 'update'
+          } as Notification;
+          
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
