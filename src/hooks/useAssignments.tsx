@@ -40,19 +40,13 @@ export const useAssignments = () => {
   const fetchAssignments = async () => {
     try {
       const { data, error } = await supabase
-        .from('report_assignments')
+        .from('assignments')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       
-      // Type cast the data to ensure proper types
-      const typedAssignments = (data || []).map(assignment => ({
-        ...assignment,
-        status: assignment.status as 'assigned' | 'in_progress' | 'resolved'
-      }));
-      
-      setAssignments(typedAssignments);
+      setAssignments(data || []);
     } catch (error: any) {
       console.error('Error fetching assignments:', error);
     }
@@ -60,21 +54,30 @@ export const useAssignments = () => {
 
   const fetchMilitaryUnits = async () => {
     try {
+      // Use unit_commanders table as a substitute for military units
       const { data, error } = await supabase
-        .from('military_units')
+        .from('unit_commanders')
         .select('*')
-        .eq('status', 'active')
-        .order('name');
+        .eq('is_active', true)
+        .order('full_name');
 
       if (error) throw error;
       
-      // Type cast the data to ensure proper types
-      const typedUnits = (data || []).map(unit => ({
-        ...unit,
-        status: unit.status as 'active' | 'inactive'
+      // Transform unit_commanders data to match MilitaryUnit interface
+      const transformedUnits: MilitaryUnit[] = (data || []).map(commander => ({
+        id: commander.id,
+        name: commander.unit || 'Unknown Unit',
+        type: commander.specialization || 'General',
+        location: commander.location || 'Unknown Location',
+        commander: commander.full_name,
+        latitude: null,
+        longitude: null,
+        status: commander.is_active ? 'active' as const : 'inactive' as const,
+        created_at: commander.created_at,
+        updated_at: commander.updated_at
       }));
       
-      setMilitaryUnits(typedUnits);
+      setMilitaryUnits(transformedUnits);
     } catch (error: any) {
       console.error('Error fetching military units:', error);
     } finally {
@@ -90,7 +93,7 @@ export const useAssignments = () => {
   ) => {
     try {
       const { data, error } = await supabase
-        .from('report_assignments')
+        .from('assignments')
         .insert([{
           report_id: reportId,
           assigned_to_unit_id: unitId,
@@ -137,7 +140,7 @@ export const useAssignments = () => {
       }
 
       const { error } = await supabase
-        .from('report_assignments')
+        .from('assignments')
         .update(updateData)
         .eq('id', assignmentId);
 
@@ -162,22 +165,8 @@ export const useAssignments = () => {
   const findNearestUnit = (latitude: number, longitude: number): MilitaryUnit | null => {
     if (militaryUnits.length === 0) return null;
 
-    let nearestUnit = militaryUnits[0];
-    let minDistance = Infinity;
-
-    militaryUnits.forEach(unit => {
-      if (unit.latitude && unit.longitude) {
-        const distance = Math.sqrt(
-          Math.pow(unit.latitude - latitude, 2) + Math.pow(unit.longitude - longitude, 2)
-        );
-        if (distance < minDistance) {
-          minDistance = distance;
-          nearestUnit = unit;
-        }
-      }
-    });
-
-    return nearestUnit;
+    // For now, just return the first available unit since we don't have coordinates
+    return militaryUnits[0] || null;
   };
 
   useEffect(() => {
@@ -192,7 +181,7 @@ export const useAssignments = () => {
         {
           event: '*',
           schema: 'public',
-          table: 'report_assignments'
+          table: 'assignments'
         },
         () => {
           fetchAssignments();

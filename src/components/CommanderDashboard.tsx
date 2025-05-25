@@ -15,7 +15,6 @@ import {
   Clock, 
   Bell,
   LogOut,
-  Activity,
   MapPin,
   Calendar,
   Phone,

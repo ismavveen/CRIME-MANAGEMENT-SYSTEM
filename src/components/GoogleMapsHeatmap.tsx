@@ -41,6 +41,7 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
     lng: (NIGERIA_BOUNDS.east + NIGERIA_BOUNDS.west) / 2
   };
 
+  // Use the provided Google Maps API key directly
   const GOOGLE_MAPS_API_KEY = 'AIzaSyDwhXSGX7S9ISS4LF2UUzRnXQobS2MYWMI';
 
   useEffect(() => {
@@ -64,7 +65,7 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ className = "" })
       script.onerror = () => {
         toast({
           title: "Maps Loading Error",
-          description: "Failed to load Google Maps. Please check your API key configuration.",
+          description: "Failed to load Google Maps. Please check your internet connection.",
           variant: "destructive",
         });
       };
