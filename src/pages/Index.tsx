@@ -2,7 +2,7 @@
 import React from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
-import NigeriaMap from '../components/NigeriaMap';
+import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
 import ChartsSection from '../components/ChartsSection';
 import IncidentTable from '../components/IncidentTable';
 import NewsLiveFeed from '../components/NewsLiveFeed';
@@ -109,19 +109,10 @@ const Index = () => {
           />
         </div>
 
-        {/* Tactical Map and Intelligence Feed */}
+        {/* Google Maps Heatmap and Intelligence Feed */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           <div className="lg:col-span-2">
-            <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">TACTICAL SITUATION MAP</h3>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-red-400 text-sm">LIVE INTEL</span>
-                </div>
-              </div>
-              <NigeriaMap />
-            </div>
+            <GoogleMapsHeatmap />
           </div>
           <div className="lg:col-span-1">
             <div className="bg-gray-800/50 border border-gray-700/50 rounded-lg p-4">
