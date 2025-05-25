@@ -5,50 +5,48 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Report {
   id: string;
-  description: string | null;
-  location: string | null;
-  manual_location: string | null;
-  threat_type: string | null;
-  urgency: string | null;
-  status: string | null;
-  priority: string | null;
-  latitude: number | null;
-  longitude: number | null;
-  location_accuracy: number | null;
-  created_at: string | null;
-  timestamp: string | null;
-  reporter_type: string;
-  is_anonymous: boolean | null;
+  description: string;
+  threat_type: string;
+  location: string;
+  manual_location?: string;
+  urgency: string;
+  priority: string;
+  status: string;
+  state: string;
+  acknowledged_at?: string;
+  assigned_commander_id?: string;
+  response_time_hours?: number;
+  created_at: string;
+  updated_at: string;
+  latitude?: number;
+  longitude?: number;
+  file_url?: string;
+  reporter_type?: string;
+  is_anonymous?: boolean;
+  timestamp?: string;
+  location_accuracy?: number;
+  assigned_to?: string;
 }
 
 export const useReports = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchReports = async () => {
     try {
-      setLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('reports')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      console.log('Fetched reports:', data);
+      if (error) throw error;
       setReports(data || []);
-    } catch (err: any) {
-      console.error('Error fetching reports:', err);
-      setError(err.message);
+    } catch (error: any) {
+      console.error('Error fetching reports:', error);
       toast({
         title: "Failed to load reports",
-        description: err.message,
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -59,41 +57,16 @@ export const useReports = () => {
   useEffect(() => {
     fetchReports();
 
-    // Set up real-time subscription to listen for new reports
+    // Set up real-time subscription
     const channel = supabase
       .channel('reports-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'reports'
-        },
-        (payload) => {
-          console.log('New report added:', payload.new);
-          setReports(prev => [payload.new as Report, ...prev]);
-          toast({
-            title: "New report received",
-            description: `Report ${(payload.new as Report).id.slice(0, 8)} has been submitted`,
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'reports'
-        },
-        (payload) => {
-          console.log('Report updated:', payload.new);
-          setReports(prev => prev.map(report => 
-            report.id === (payload.new as Report).id 
-              ? payload.new as Report 
-              : report
-          ));
-        }
-      )
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reports'
+      }, () => {
+        fetchReports();
+      })
       .subscribe();
 
     return () => {
@@ -104,7 +77,6 @@ export const useReports = () => {
   return {
     reports,
     loading,
-    error,
     refetch: fetchReports
   };
 };

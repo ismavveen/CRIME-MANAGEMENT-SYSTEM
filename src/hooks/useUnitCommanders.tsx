@@ -78,7 +78,14 @@ export const useUnitCommanders = () => {
         .order('state');
 
       if (error) throw error;
-      setCommanders(data || []);
+      
+      // Type assertion to handle the database response
+      const typedData = (data || []).map(commander => ({
+        ...commander,
+        status: commander.status as 'active' | 'suspended' | 'inactive'
+      }));
+      
+      setCommanders(typedData);
     } catch (error: any) {
       console.error('Error fetching commanders:', error);
       toast({
@@ -100,7 +107,18 @@ export const useUnitCommanders = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setWarnings(data || []);
+      
+      // Type assertion to handle the database response
+      const typedData = (data || []).map(warning => ({
+        ...warning,
+        severity: warning.severity as 'low' | 'medium' | 'high' | 'critical',
+        commander: warning.commander ? {
+          ...warning.commander,
+          status: warning.commander.status as 'active' | 'suspended' | 'inactive'
+        } : undefined
+      }));
+      
+      setWarnings(typedData);
     } catch (error: any) {
       console.error('Error fetching warnings:', error);
     }
@@ -136,17 +154,38 @@ export const useUnitCommanders = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setAdminActions(data || []);
+      
+      // Type assertion to handle the database response
+      const typedData = (data || []).map(action => ({
+        ...action,
+        action_type: action.action_type as 'warning' | 'suspension' | 'escalation' | 'reactivation',
+        commander: action.commander ? {
+          ...action.commander,
+          status: action.commander.status as 'active' | 'suspended' | 'inactive'
+        } : undefined
+      }));
+      
+      setAdminActions(typedData);
     } catch (error: any) {
       console.error('Error fetching admin actions:', error);
     }
   };
 
-  const createCommander = async (commanderData: Omit<UnitCommander, 'id' | 'created_at' | 'updated_at'>) => {
+  const createCommander = async (commanderData: {
+    full_name: string;
+    email: string;
+    phone_number: string;
+    state: string;
+    password_hash: string;
+    status?: 'active' | 'suspended' | 'inactive';
+  }) => {
     try {
       const { data, error } = await supabase
         .from('unit_commanders')
-        .insert([commanderData])
+        .insert([{
+          ...commanderData,
+          status: commanderData.status || 'active'
+        }])
         .select();
 
       if (error) throw error;
