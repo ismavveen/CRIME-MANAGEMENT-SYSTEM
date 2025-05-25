@@ -59,7 +59,7 @@ const ReportAnalytics = () => {
       // Fetch reports in date range
       const { data: reports, error: reportsError } = await supabase
         .from('reports')
-        .select('*, report_assignments(*)')
+        .select('*')
         .gte('created_at', startDate)
         .order('created_at', { ascending: false });
 
@@ -67,7 +67,7 @@ const ReportAnalytics = () => {
 
       // Fetch assignments
       const { data: assignments, error: assignmentsError } = await supabase
-        .from('report_assignments')
+        .from('assignments')
         .select('*')
         .gte('created_at', startDate);
 
@@ -75,9 +75,9 @@ const ReportAnalytics = () => {
 
       // Process data
       const totalReports = reports?.length || 0;
-      const resolvedReports = assignments?.filter(a => a.status === 'resolved').length || 0;
+      const resolvedReports = reports?.filter(r => r.status === 'resolved').length || 0;
       const assignedReports = assignments?.filter(a => a.status === 'assigned' || a.status === 'in_progress').length || 0;
-      const pendingReports = totalReports - assignedReports - resolvedReports;
+      const pendingReports = totalReports - resolvedReports;
 
       // Monthly data
       const monthlyMap = new Map<string, { reports: number; resolved: number }>();
@@ -90,17 +90,9 @@ const ReportAnalytics = () => {
           monthlyMap.set(month, { reports: 0, resolved: 0 });
         }
         monthlyMap.get(month)!.reports++;
-      });
-
-      assignments?.forEach(assignment => {
-        if (assignment.status === 'resolved' && assignment.resolved_at) {
-          const month = new Date(assignment.resolved_at).toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short' 
-          });
-          if (monthlyMap.has(month)) {
-            monthlyMap.get(month)!.resolved++;
-          }
+        
+        if (report.status === 'resolved') {
+          monthlyMap.get(month)!.resolved++;
         }
       });
 

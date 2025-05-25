@@ -32,7 +32,6 @@ interface CommanderDashboardProps {
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLogout }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
-  const [warnings, setWarnings] = useState<any[]>([]);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [acknowledgmentDialog, setAcknowledgmentDialog] = useState(false);
   const [resolutionDialog, setResolutionDialog] = useState(false);
@@ -47,45 +46,29 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
 
   useEffect(() => {
     fetchNotifications();
-    fetchWarnings();
 
-    // Set up real-time subscriptions
+    // Set up real-time subscriptions for notifications
     const notificationsChannel = supabase
       .channel('commander-notifications')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'commander_notifications',
-        filter: `commander_id=eq.${commander.id}`
+        table: 'notifications'
       }, () => {
         fetchNotifications();
       })
       .subscribe();
 
-    const warningsChannel = supabase
-      .channel('commander-warnings')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'commander_warnings',
-        filter: `commander_id=eq.${commander.id}`
-      }, () => {
-        fetchWarnings();
-      })
-      .subscribe();
-
     return () => {
       supabase.removeChannel(notificationsChannel);
-      supabase.removeChannel(warningsChannel);
     };
   }, [commander.id]);
 
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
-        .from('commander_notifications')
+        .from('notifications')
         .select('*')
-        .eq('commander_id', commander.id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -93,21 +76,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
       setNotifications(data || []);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
-    }
-  };
-
-  const fetchWarnings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('commander_warnings')
-        .select('*')
-        .eq('commander_id', commander.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setWarnings(data || []);
-    } catch (error: any) {
-      console.error('Error fetching warnings:', error);
     }
   };
 
@@ -152,7 +120,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
 
       // Also update assignment if exists
       await supabase
-        .from('report_assignments')
+        .from('assignments')
         .update({
           status: 'resolved',
           resolved_at: new Date().toISOString(),
@@ -177,37 +145,10 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
     }
   };
 
-  const acknowledgeWarning = async (warningId: string) => {
-    try {
-      const { error } = await supabase
-        .from('commander_warnings')
-        .update({ 
-          acknowledged: true,
-          acknowledged_at: new Date().toISOString()
-        })
-        .eq('id', warningId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Warning Acknowledged",
-        description: "Warning has been acknowledged",
-      });
-
-      fetchWarnings();
-    } catch (error: any) {
-      toast({
-        title: "Acknowledgment Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const markNotificationRead = async (notificationId: string) => {
     try {
       await supabase
-        .from('commander_notifications')
+        .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId);
 
@@ -227,18 +168,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
     }
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity?.toLowerCase()) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-blue-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
-  const unacknowledgedWarnings = warnings.filter(w => !w.acknowledged).length;
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
@@ -272,19 +202,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
       </div>
 
       <div className="p-8">
-        {/* Warning Alerts */}
-        {unacknowledgedWarnings > 0 && (
-          <div className="mb-6 bg-red-900/20 border border-red-700/50 rounded-lg p-4">
-            <div className="flex items-center">
-              <AlertTriangle className="h-5 w-5 text-red-400 mr-3" />
-              <div>
-                <h3 className="text-red-300 font-semibold">Unacknowledged Warnings</h3>
-                <p className="text-red-200">You have {unacknowledgedWarnings} warning(s) that require your attention.</p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gray-800/50 border-gray-700">
@@ -349,15 +266,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
               {unreadNotifications > 0 && (
                 <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
                   {unreadNotifications}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="warnings" className="data-[state=active]:bg-dhq-blue">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Warnings
-              {unacknowledgedWarnings > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {unacknowledgedWarnings}
                 </span>
               )}
             </TabsTrigger>
@@ -452,7 +360,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                         <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
                         <div className="flex items-center space-x-2 text-xs text-gray-500">
                           <Badge className="bg-gray-600 text-white">
-                            {notification.type.toUpperCase()}
+                            {notification.type?.toUpperCase() || 'INFO'}
                           </Badge>
                           <span>{new Date(notification.created_at).toLocaleString()}</span>
                         </div>
@@ -460,51 +368,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                       {!notification.is_read && (
                         <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
                       )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="warnings">
-            <div className="space-y-4">
-              {warnings.map((warning) => (
-                <Card key={warning.id} className="bg-gray-800/50 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Badge className={`${getSeverityColor(warning.severity)} text-white`}>
-                            {warning.severity.toUpperCase()}
-                          </Badge>
-                          <span className="text-white font-medium">{warning.reason}</span>
-                        </div>
-                        {warning.message && (
-                          <p className="text-gray-300 mb-2">{warning.message}</p>
-                        )}
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
-                          <span>Issued by: {warning.issued_by}</span>
-                          <span>•</span>
-                          <span>{new Date(warning.created_at).toLocaleString()}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {warning.acknowledged ? (
-                          <Badge className="bg-green-500 text-white">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Acknowledged
-                          </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => acknowledgeWarning(warning.id)}
-                            className="bg-blue-600 hover:bg-blue-700"
-                          >
-                            Acknowledge
-                          </Button>
-                        )}
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -531,8 +394,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                     </div>
                     <div>
                       <Label className="text-gray-400">Status</Label>
-                      <Badge className={`${getStatusColor(commander.status)} text-white`}>
-                        {commander.status.toUpperCase()}
+                      <Badge className="bg-green-500 text-white">
+                        ACTIVE
                       </Badge>
                     </div>
                   </div>
@@ -626,15 +489,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
       </div>
     </div>
   );
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'active': return 'bg-green-500';
-    case 'suspended': return 'bg-red-500';
-    case 'inactive': return 'bg-gray-500';
-    default: return 'bg-blue-500';
-  }
 };
 
 export default CommanderDashboard;
