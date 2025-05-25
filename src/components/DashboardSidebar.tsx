@@ -31,37 +31,46 @@ const DashboardSidebar = () => {
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-gray-900 border-r border-gray-700 z-40">
-      {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-dhq-blue rounded-lg flex items-center justify-center">
-            <Shield className="h-6 w-6 text-white" />
+    <div className="fixed left-0 top-0 h-full w-64 dhq-sidebar z-40">
+      {/* Enhanced Logo/Header */}
+      <div className="p-8 border-b border-gray-700/50">
+        <div className="flex items-center space-x-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+            <Shield className="h-7 w-7 text-white" />
           </div>
           <div>
-            <h2 className="text-white font-bold text-lg">DHQ</h2>
-            <p className="text-gray-400 text-xs">Defense HQ Portal</p>
+            <h2 className="text-white font-bold text-xl dhq-heading tracking-tight">DHQ</h2>
+            <p className="text-gray-400 text-sm dhq-caption">Defense HQ Portal</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="mt-6 px-4">
-        <ul className="space-y-2">
+      {/* Enhanced Navigation */}
+      <nav className="mt-8 px-6">
+        <ul className="space-y-3">
           {navItems.map((item) => {
             const Icon = item.icon;
+            const active = isActive(item.path);
             return (
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive(item.path)
-                      ? 'bg-dhq-blue text-white'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                  className={`flex items-center space-x-4 px-4 py-3 rounded-xl transition-all duration-300 group dhq-caption font-medium ${
+                    active
+                      ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/25'
+                      : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-lg'
                   }`}
                 >
-                  <Icon size={20} />
-                  <span className="font-medium">{item.label}</span>
+                  <Icon 
+                    size={22} 
+                    className={`transition-all duration-300 ${
+                      active ? 'text-white' : 'text-gray-400 group-hover:text-cyan-400'
+                    }`}
+                  />
+                  <span className="font-medium tracking-wide">{item.label}</span>
+                  {active && (
+                    <div className="w-2 h-2 bg-white rounded-full ml-auto animate-pulse"></div>
+                  )}
                 </Link>
               </li>
             );
@@ -69,18 +78,22 @@ const DashboardSidebar = () => {
         </ul>
       </nav>
 
-      {/* Quick Actions */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700">
-        <div className="space-y-2">
+      {/* Enhanced Quick Actions */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 border-t border-gray-700/50 bg-gradient-to-t from-gray-900/50 to-transparent">
+        <div className="space-y-4">
           <Link
             to="/commander-portal"
-            className="flex items-center space-x-3 px-4 py-2 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+            className="flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800/50 hover:text-white rounded-xl transition-all duration-300 group"
           >
-            <UserCog size={18} />
-            <span className="text-sm">Commander Portal</span>
+            <UserCog size={20} className="text-gray-400 group-hover:text-cyan-400 transition-colors duration-300" />
+            <span className="text-sm dhq-caption font-medium">Commander Portal</span>
           </Link>
-          <div className="text-center">
-            <p className="text-gray-500 text-xs">v2.1.0 - Secure</p>
+          <div className="text-center pt-2">
+            <p className="text-gray-500 text-xs dhq-caption">v2.1.0 - Secure</p>
+            <div className="flex items-center justify-center space-x-1 mt-1">
+              <div className="w-1 h-1 bg-green-400 rounded-full"></div>
+              <span className="text-green-400 text-xs dhq-caption">OPERATIONAL</span>
+            </div>
           </div>
         </div>
       </div>

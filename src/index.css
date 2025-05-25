@@ -1,3 +1,5 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -90,33 +92,177 @@
 
   body {
     @apply text-foreground;
-    background: #013220;
+    background: linear-gradient(135deg, #013220 0%, #001a0e 50%, #000d07 100%);
     font-family: "Inter", sans-serif;
+    font-weight: 400;
   }
 }
 
 @layer components {
+  /* Enhanced card with frosted glass effect */
   .dhq-card {
-    @apply bg-gray-800/50 border border-gray-700/50 rounded-lg backdrop-blur-sm;
+    @apply bg-gray-800/60 border border-gray-700/50 rounded-xl backdrop-blur-sm shadow-2xl;
+    background: linear-gradient(145deg, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.9));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
+  /* Enhanced sidebar with gradient */
   .dhq-sidebar {
-    background: #01291a;
+    background: linear-gradient(180deg, #01291a 0%, #001a0e 100%);
+    border-right: 1px solid rgba(34, 197, 94, 0.2);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
   }
 
+  /* Interactive map markers */
   .incident-marker {
-    @apply cursor-pointer transition-all duration-200 hover:scale-110;
+    @apply cursor-pointer transition-all duration-300 hover:scale-125;
+    filter: drop-shadow(0 0 8px currentColor);
   }
 
+  .incident-marker:hover {
+    animation: pulse-glow 1.5s infinite;
+  }
+
+  /* Status colors with neon effects */
   .status-active {
-    @apply text-dhq-blue;
+    @apply text-cyan-400;
+    text-shadow: 0 0 10px currentColor;
   }
 
   .status-critical {
-    @apply text-dhq-red;
+    @apply text-red-400;
+    text-shadow: 0 0 10px currentColor;
   }
 
   .status-resolved {
     @apply text-green-400;
+    text-shadow: 0 0 10px currentColor;
   }
+
+  .status-warning {
+    @apply text-yellow-400;
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  /* Enhanced interactive elements */
+  .dhq-button {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-lg;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  .dhq-button:hover {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.5);
+  }
+
+  /* Live indicator with enhanced animation */
+  .live-indicator {
+    @apply relative;
+  }
+
+  .live-indicator::before {
+    content: '';
+    @apply absolute inset-0 rounded-full bg-green-400 opacity-75;
+    animation: ping-glow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+
+  /* Enhanced stat cards */
+  .stat-card {
+    @apply dhq-card transition-all duration-300 hover:scale-105 cursor-pointer;
+    background: linear-gradient(145deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.95));
+  }
+
+  .stat-card:hover {
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
+
+  /* Typography enhancements */
+  .dhq-heading {
+    @apply font-bold tracking-tight;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+
+  .dhq-subheading {
+    @apply font-semibold tracking-tight;
+    font-weight: 600;
+  }
+
+  .dhq-body {
+    @apply font-normal;
+    font-weight: 400;
+  }
+
+  .dhq-caption {
+    @apply font-medium;
+    font-weight: 500;
+  }
+}
+
+/* Enhanced animations */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes ping-glow {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Utility classes for animations */
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out;
+}
+
+/* Enhanced scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(34, 197, 94, 0.6);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 197, 94, 0.8);
 }
