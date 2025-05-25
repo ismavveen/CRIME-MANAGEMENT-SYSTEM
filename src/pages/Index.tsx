@@ -9,14 +9,18 @@ import NewsLiveFeed from '../components/NewsLiveFeed';
 import NotificationPanel from '../components/NotificationPanel';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
+import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target } from 'lucide-react';
 
 const Index = () => {
-  const { reports, loading } = useReports();
+  const { reports, loading: reportsLoading } = useReports();
   const { assignments } = useAssignments();
+  const { metrics, loading: metricsLoading } = useSystemMetrics();
 
-  // Calculate real-time statistics from actual reports
-  const activeIncidents = reports.filter(r => r.status !== 'resolved').length;
+  const loading = reportsLoading || metricsLoading;
+
+  // Calculate real-time statistics from actual reports and system metrics
+  const activeIncidents = metrics.active_operations || 0;
   const criticalAlerts = reports.filter(r => 
     r.urgency === 'critical' || r.priority === 'high'
   ).length;
@@ -83,7 +87,7 @@ const Index = () => {
           <StatCard
             title="HIGH PRIORITY ALERTS"
             value={loading ? "..." : criticalAlerts.toString()}
-            subtitle={`TOTAL INTEL: ${reports.length}`}
+            subtitle={`TOTAL INTEL: ${metrics.total_reports || reports.length}`}
             status="critical"
             trend="up"
             trendValue={criticalAlerts > 0 ? criticalAlerts.toString() : "0"}
@@ -91,8 +95,8 @@ const Index = () => {
           />
           <StatCard
             title="MISSIONS COMPLETED"
-            value={loading ? "..." : resolvedToday.toString()}
-            subtitle="TODAY"
+            value={loading ? "..." : (metrics.resolved_reports || resolvedToday).toString()}
+            subtitle="TOTAL RESOLVED"
             status="success"
             icon={<CircleCheck size={24} />}
           />

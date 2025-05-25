@@ -9,6 +9,132 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_actions: {
+        Row: {
+          action_type: string
+          admin_id: string
+          commander_id: string
+          created_at: string
+          details: string | null
+          effective_from: string | null
+          effective_until: string | null
+          id: string
+          reason: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          commander_id: string
+          created_at?: string
+          details?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
+          id?: string
+          reason: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          commander_id?: string
+          created_at?: string
+          details?: string | null
+          effective_from?: string | null
+          effective_until?: string | null
+          id?: string
+          reason?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_actions_commander_id_fkey"
+            columns: ["commander_id"]
+            isOneToOne: false
+            referencedRelation: "unit_commanders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_notifications: {
+        Row: {
+          commander_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Insert: {
+          commander_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          title: string
+          type: string
+        }
+        Update: {
+          commander_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_notifications_commander_id_fkey"
+            columns: ["commander_id"]
+            isOneToOne: false
+            referencedRelation: "unit_commanders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commander_warnings: {
+        Row: {
+          acknowledged: boolean
+          acknowledged_at: string | null
+          commander_id: string
+          created_at: string
+          id: string
+          issued_by: string
+          message: string | null
+          reason: string
+          severity: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          commander_id: string
+          created_at?: string
+          id?: string
+          issued_by: string
+          message?: string | null
+          reason: string
+          severity?: string
+        }
+        Update: {
+          acknowledged?: boolean
+          acknowledged_at?: string | null
+          commander_id?: string
+          created_at?: string
+          id?: string
+          issued_by?: string
+          message?: string | null
+          reason?: string
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commander_warnings_commander_id_fkey"
+            columns: ["commander_id"]
+            isOneToOne: false
+            referencedRelation: "unit_commanders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       military_units: {
         Row: {
           commander: string
@@ -178,6 +304,8 @@ export type Database = {
       }
       reports: {
         Row: {
+          acknowledged_at: string | null
+          assigned_commander_id: string | null
           assigned_to: string | null
           created_at: string | null
           description: string | null
@@ -191,6 +319,8 @@ export type Database = {
           manual_location: string | null
           priority: string | null
           reporter_type: string
+          response_time_hours: number | null
+          state: string | null
           status: string | null
           threat_type: string | null
           timestamp: string | null
@@ -198,6 +328,8 @@ export type Database = {
           urgency: string | null
         }
         Insert: {
+          acknowledged_at?: string | null
+          assigned_commander_id?: string | null
           assigned_to?: string | null
           created_at?: string | null
           description?: string | null
@@ -211,6 +343,8 @@ export type Database = {
           manual_location?: string | null
           priority?: string | null
           reporter_type?: string
+          response_time_hours?: number | null
+          state?: string | null
           status?: string | null
           threat_type?: string | null
           timestamp?: string | null
@@ -218,6 +352,8 @@ export type Database = {
           urgency?: string | null
         }
         Update: {
+          acknowledged_at?: string | null
+          assigned_commander_id?: string | null
           assigned_to?: string | null
           created_at?: string | null
           description?: string | null
@@ -231,6 +367,8 @@ export type Database = {
           manual_location?: string | null
           priority?: string | null
           reporter_type?: string
+          response_time_hours?: number | null
+          state?: string | null
           status?: string | null
           threat_type?: string | null
           timestamp?: string | null
@@ -239,6 +377,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "reports_assigned_commander_id_fkey"
+            columns: ["assigned_commander_id"]
+            isOneToOne: false
+            referencedRelation: "unit_commanders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reports_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -246,6 +391,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_metrics: {
+        Row: {
+          id: string
+          last_updated: string
+          metric_name: string
+          metric_value: number
+        }
+        Insert: {
+          id?: string
+          last_updated?: string
+          metric_name: string
+          metric_value?: number
+        }
+        Update: {
+          id?: string
+          last_updated?: string
+          metric_name?: string
+          metric_value?: number
+        }
+        Relationships: []
+      }
+      unit_commanders: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          password_hash: string
+          phone_number: string
+          state: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          password_hash: string
+          phone_number: string
+          state: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          password_hash?: string
+          phone_number?: string
+          state?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

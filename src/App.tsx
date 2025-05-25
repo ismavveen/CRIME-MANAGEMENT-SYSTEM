@@ -12,6 +12,8 @@ import ReportCrime from "./pages/ReportCrime";
 import TrackReport from "./pages/TrackReport";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
+import UnitCommanders from "./pages/UnitCommanders";
+import CommanderPortal from "./pages/CommanderPortal";
 import Calendar from "./pages/Calendar";
 import Inbox from "./pages/Inbox";
 import Settings from "./pages/Settings";
@@ -30,6 +32,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/report" element={<ReportCrime />} />
             <Route path="/track" element={<TrackReport />} />
+            <Route path="/commander-portal" element={<CommanderPortal />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Index />
@@ -43,6 +46,11 @@ const App = () => (
             <Route path="/reports" element={
               <ProtectedRoute>
                 <Reports />
+              </ProtectedRoute>
+            } />
+            <Route path="/unit-commanders" element={
+              <ProtectedRoute>
+                <UnitCommanders />
               </ProtectedRoute>
             } />
             <Route path="/calendar" element={
