@@ -22,7 +22,6 @@ const Index = () => {
   const loading = reportsLoading || metricsLoading;
 
   const handleStatCardClick = (type: string) => {
-    // Enhanced interactivity - could navigate to specific filtered views
     console.log(`Clicked on ${type} stat card`);
   };
 
@@ -31,12 +30,12 @@ const Index = () => {
       <DashboardSidebar />
       
       {/* Main Content */}
-      <div className="ml-64 p-8 space-y-8">
+      <div className="ml-64 p-6 space-y-6">
         {/* Enhanced Header with DHQ Logo */}
-        <div className="mb-10 animate-fade-in-up">
+        <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-8">
-              <div className="w-24 h-24 rounded-xl overflow-hidden bg-white/10 p-3 backdrop-blur-sm border border-white/20">
+            <div className="flex items-center space-x-6">
+              <div className="w-20 h-20 rounded-xl overflow-hidden bg-white/10 p-3 backdrop-blur-sm border border-white/20">
                 <img 
                   src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
                   alt="Defense Headquarters Logo" 
@@ -44,13 +43,13 @@ const Index = () => {
                 />
               </div>
               <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-white mb-3 dhq-heading tracking-tight">
+                <h1 className="text-3xl font-bold text-white mb-2 dhq-heading tracking-tight">
                   Defense Headquarters Intelligence Portal
                 </h1>
-                <p className="text-gray-300 text-xl dhq-body font-medium">
+                <p className="text-gray-300 text-lg dhq-body font-medium">
                   Crime Reporting & Intelligence Portal
                 </p>
-                <div className="flex items-center space-x-3 mt-3">
+                <div className="flex items-center space-x-3 mt-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
                   <p className="text-green-400 text-sm font-semibold dhq-caption uppercase tracking-wider">
                     🔒 CLASSIFIED - FOR AUTHORIZED PERSONNEL ONLY
@@ -74,7 +73,7 @@ const Index = () => {
         </div>
 
         {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
             title="TOTAL REPORTS"
             value={loading ? "..." : metrics.total_reports.toString()}
@@ -110,7 +109,7 @@ const Index = () => {
         </div>
 
         {/* Enhanced Map Section - Only Google Maps */}
-        <div className="mb-10 animate-slide-in-right">
+        <div className="mb-8 animate-slide-in-right">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <Activity className="h-6 w-6 text-cyan-400" />
@@ -122,7 +121,7 @@ const Index = () => {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-3">
               <GoogleMapsHeatmap />
             </div>
@@ -140,12 +139,12 @@ const Index = () => {
         </div>
 
         {/* Real-Time Reports Section */}
-        <div className="mb-10 animate-fade-in-up">
+        <div className="mb-8 animate-fade-in-up">
           <RealTimeReports />
         </div>
 
         {/* Enhanced Intelligence Reports Table */}
-        <div className="dhq-card p-8 animate-slide-in-right">
+        <div className="dhq-card p-6 animate-slide-in-right">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
               <FileText className="h-6 w-6 text-cyan-400" />

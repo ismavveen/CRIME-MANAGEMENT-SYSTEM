@@ -9,6 +9,129 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assignments: {
+        Row: {
+          assigned_at: string
+          commander_id: string
+          created_at: string
+          id: string
+          report_id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          commander_id: string
+          created_at?: string
+          id?: string
+          report_id: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          commander_id?: string
+          created_at?: string
+          id?: string
+          report_id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignments_commander_id_fkey"
+            columns: ["commander_id"]
+            isOneToOne: false
+            referencedRelation: "unit_commanders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assignments_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          title: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          title: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          title?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          phone: string | null
+          rank: string | null
+          role: string | null
+          state: string | null
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          rank?: string | null
+          role?: string | null
+          state?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          rank?: string | null
+          role?: string | null
+          state?: string | null
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           acknowledged_at: string | null
@@ -96,6 +219,90 @@ export type Database = {
           updated_at?: string
           urgency?: string
           videos?: string[] | null
+        }
+        Relationships: []
+      }
+      system_metrics: {
+        Row: {
+          created_at: string
+          id: string
+          metric_name: string
+          metric_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_name: string
+          metric_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_name?: string
+          metric_value?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      unit_commanders: {
+        Row: {
+          active_assignments: number | null
+          average_response_time: number | null
+          contact_info: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_active: boolean | null
+          location: string | null
+          rank: string
+          specialization: string | null
+          state: string
+          status: string | null
+          success_rate: number | null
+          total_assignments: number | null
+          unit: string
+          updated_at: string
+        }
+        Insert: {
+          active_assignments?: number | null
+          average_response_time?: number | null
+          contact_info?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          rank: string
+          specialization?: string | null
+          state: string
+          status?: string | null
+          success_rate?: number | null
+          total_assignments?: number | null
+          unit: string
+          updated_at?: string
+        }
+        Update: {
+          active_assignments?: number | null
+          average_response_time?: number | null
+          contact_info?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          is_active?: boolean | null
+          location?: string | null
+          rank?: string
+          specialization?: string | null
+          state?: string
+          status?: string | null
+          success_rate?: number | null
+          total_assignments?: number | null
+          unit?: string
+          updated_at?: string
         }
         Relationships: []
       }

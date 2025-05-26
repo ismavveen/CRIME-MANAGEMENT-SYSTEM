@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ interface CommanderDashboardProps {
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLogout }) => {
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [assignments, setAssignments] = useState<any[]>([]);
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [acknowledgmentDialog, setAcknowledgmentDialog] = useState(false);
   const [resolutionDialog, setResolutionDialog] = useState(false);
@@ -46,8 +48,9 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
 
   useEffect(() => {
     fetchNotifications();
+    fetchAssignments();
 
-    // Set up real-time subscriptions for notifications
+    // Set up real-time subscriptions
     const notificationsChannel = supabase
       .channel('commander-notifications')
       .on('postgres_changes', {
@@ -59,8 +62,20 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
       })
       .subscribe();
 
+    const assignmentsChannel = supabase
+      .channel('commander-assignments')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'assignments'
+      }, () => {
+        fetchAssignments();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(notificationsChannel);
+      supabase.removeChannel(assignmentsChannel);
     };
   }, [commander.id]);
 
@@ -79,36 +94,65 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
     }
   };
 
-  const acknowledgeReport = async (reportId: string) => {
+  const fetchAssignments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('assignments')
+        .select('*')
+        .eq('commander_id', commander.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAssignments(data || []);
+    } catch (error: any) {
+      console.error('Error fetching assignments:', error);
+    }
+  };
+
+  const acceptAssignment = async (assignmentId: string) => {
     try {
       const { error } = await supabase
-        .from('reports')
+        .from('assignments')
         .update({ 
-          acknowledged_at: new Date().toISOString(),
-          assigned_commander_id: commander.id 
+          status: 'accepted',
+          updated_at: new Date().toISOString()
         })
-        .eq('id', reportId);
+        .eq('id', assignmentId);
 
       if (error) throw error;
 
       toast({
-        title: "Report Acknowledged",
-        description: "Report has been acknowledged and assigned to you",
+        title: "Assignment Accepted",
+        description: "You have accepted the assignment and can now work on it",
       });
 
-      setAcknowledgmentDialog(false);
+      fetchAssignments();
     } catch (error: any) {
       toast({
-        title: "Acknowledgment Failed",
+        title: "Accept Failed",
         description: error.message,
         variant: "destructive",
       });
     }
   };
 
-  const resolveReport = async (reportId: string) => {
+  const resolveAssignment = async (assignmentId: string, reportId: string) => {
     try {
-      const { error } = await supabase
+      // Update assignment status
+      const { error: assignmentError } = await supabase
+        .from('assignments')
+        .update({ 
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          resolved_by: commander.full_name,
+          resolution_notes: resolutionNotes
+        })
+        .eq('id', assignmentId);
+
+      if (assignmentError) throw assignmentError;
+
+      // Update report status
+      const { error: reportError } = await supabase
         .from('reports')
         .update({ 
           status: 'resolved',
@@ -116,26 +160,16 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
         })
         .eq('id', reportId);
 
-      if (error) throw error;
-
-      // Also update assignment if exists
-      await supabase
-        .from('assignments')
-        .update({
-          status: 'resolved',
-          resolved_at: new Date().toISOString(),
-          resolved_by: commander.full_name,
-          resolution_notes: resolutionNotes
-        })
-        .eq('report_id', reportId);
+      if (reportError) throw reportError;
 
       toast({
-        title: "Report Resolved",
-        description: "Report has been marked as resolved",
+        title: "Assignment Resolved",
+        description: "Assignment has been marked as resolved successfully",
       });
 
       setResolutionDialog(false);
       setResolutionNotes('');
+      fetchAssignments();
     } catch (error: any) {
       toast({
         title: "Resolution Failed",
@@ -168,7 +202,20 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
     }
   };
 
+  const getAssignmentStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'pending': return 'bg-yellow-500';
+      case 'accepted': return 'bg-blue-500';
+      case 'resolved': return 'bg-green-500';
+      case 'rejected': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   const unreadNotifications = notifications.filter(n => !n.is_read).length;
+  const pendingAssignments = assignments.filter(a => a.status === 'pending');
+  const acceptedAssignments = assignments.filter(a => a.status === 'accepted');
+  const resolvedAssignments = assignments.filter(a => a.status === 'resolved');
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
@@ -201,9 +248,9 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
         </div>
       </div>
 
-      <div className="p-8">
+      <div className="p-6 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gray-800/50 border-gray-700">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -220,8 +267,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-sm">Pending</p>
-                  <p className="text-2xl font-bold text-orange-400">{pendingReports.length}</p>
+                  <p className="text-gray-400 text-sm">Pending Assignments</p>
+                  <p className="text-2xl font-bold text-orange-400">{pendingAssignments.length}</p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-400" />
               </div>
@@ -233,7 +280,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-gray-400 text-sm">Resolved</p>
-                  <p className="text-2xl font-bold text-green-400">{resolvedReports.length}</p>
+                  <p className="text-2xl font-bold text-green-400">{resolvedAssignments.length}</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-400" />
               </div>
@@ -254,15 +301,20 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
         </div>
 
         {/* Main Content */}
-        <Tabs defaultValue="map" className="space-y-6">
+        <Tabs defaultValue="assignments" className="space-y-4">
           <TabsList className="bg-gray-800/50 border border-gray-700">
+            <TabsTrigger value="assignments" className="data-[state=active]:bg-dhq-blue">
+              <FileText className="h-4 w-4 mr-2" />
+              My Assignments
+              {pendingAssignments.length > 0 && (
+                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                  {pendingAssignments.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="map" className="data-[state=active]:bg-dhq-blue">
               <Map className="h-4 w-4 mr-2" />
               Threat Map
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-dhq-blue">
-              <FileText className="h-4 w-4 mr-2" />
-              My Reports
             </TabsTrigger>
             <TabsTrigger value="notifications" className="data-[state=active]:bg-dhq-blue">
               <Bell className="h-4 w-4 mr-2" />
@@ -279,76 +331,82 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="map">
-            <SimpleMap commanderState={commander.state} showAllReports={false} />
-          </TabsContent>
-
-          <TabsContent value="reports">
+          <TabsContent value="assignments">
             <div className="space-y-4">
-              {stateReports.map((report) => (
-                <Card key={report.id} className="bg-gray-800/50 border-gray-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          <Badge className={`${getUrgencyColor(report.urgency || report.priority)} text-white`}>
-                            {(report.urgency || report.priority || 'medium').toUpperCase()}
-                          </Badge>
-                          <span className="text-white font-medium">{report.threat_type || 'Security Report'}</span>
-                          <span className="text-gray-400">•</span>
-                          <span className="text-gray-400">{report.id.slice(0, 8)}</span>
-                        </div>
-                        <p className="text-gray-300 mb-2">{report.description}</p>
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
-                          <div className="flex items-center">
-                            <MapPin className="h-4 w-4 mr-1" />
-                            {report.location || report.manual_location || 'Unknown location'}
+              {assignments.map((assignment) => {
+                const report = reports.find(r => r.id === assignment.report_id);
+                return (
+                  <Card key={assignment.id} className="bg-gray-800/50 border-gray-700">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <Badge className={`${getAssignmentStatusColor(assignment.status)} text-white`}>
+                              {assignment.status.toUpperCase()}
+                            </Badge>
+                            <span className="text-white font-medium">{report?.threat_type || 'Security Report'}</span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-400">{assignment.id.slice(0, 8)}</span>
                           </div>
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {new Date(report.created_at || '').toLocaleString()}
+                          <p className="text-gray-300 mb-2">{report?.description}</p>
+                          <div className="flex items-center space-x-4 text-sm text-gray-400">
+                            <div className="flex items-center">
+                              <MapPin className="h-4 w-4 mr-1" />
+                              {report?.location || report?.manual_location || 'Unknown location'}
+                            </div>
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {new Date(assignment.assigned_at).toLocaleString()}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {report.status !== 'resolved' && (
-                          <>
-                            {!report.acknowledged_at && (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setSelectedReport(report);
-                                  setAcknowledgmentDialog(true);
-                                }}
-                                className="bg-blue-600 hover:bg-blue-700"
-                              >
-                                Acknowledge
-                              </Button>
-                            )}
+                        <div className="flex items-center space-x-2">
+                          {assignment.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => acceptAssignment(assignment.id)}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Accept
+                            </Button>
+                          )}
+                          {assignment.status === 'accepted' && (
                             <Button
                               size="sm"
                               onClick={() => {
-                                setSelectedReport(report);
+                                setSelectedReport({ ...report, assignmentId: assignment.id });
                                 setResolutionDialog(true);
                               }}
                               className="bg-green-600 hover:bg-green-700"
                             >
-                              Resolve
+                              Mark Resolved
                             </Button>
-                          </>
-                        )}
-                        {report.status === 'resolved' && (
-                          <Badge className="bg-green-500 text-white">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Resolved
-                          </Badge>
-                        )}
+                          )}
+                          {assignment.status === 'resolved' && (
+                            <Badge className="bg-green-500 text-white">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completed
+                            </Badge>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+              
+              {assignments.length === 0 && (
+                <div className="text-center py-12">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No assignments yet</h3>
+                  <p className="text-gray-400">New assignments will appear here when reports are submitted in your state</p>
+                </div>
+              )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="map">
+            <SimpleMap commanderState={commander.state} showAllReports={false} />
           </TabsContent>
 
           <TabsContent value="notifications">
@@ -380,6 +438,14 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                   </CardContent>
                 </Card>
               ))}
+              
+              {notifications.length === 0 && (
+                <div className="text-center py-12">
+                  <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-white mb-2">No notifications</h3>
+                  <p className="text-gray-400">You'll receive notifications here when new reports are assigned</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -401,6 +467,10 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                       <p className="text-white font-medium">{commander.state} State</p>
                     </div>
                     <div>
+                      <Label className="text-gray-400">Unit</Label>
+                      <p className="text-white font-medium">{commander.unit}</p>
+                    </div>
+                    <div>
                       <Label className="text-gray-400">Status</Label>
                       <Badge className="bg-green-500 text-white">
                         ACTIVE
@@ -419,8 +489,12 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
                       <Label className="text-gray-400">Phone</Label>
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                        <p className="text-white">{commander.phone_number}</p>
+                        <p className="text-white">{commander.contact_info || 'Not provided'}</p>
                       </div>
+                    </div>
+                    <div>
+                      <Label className="text-gray-400">Rank</Label>
+                      <p className="text-white">{commander.rank}</p>
                     </div>
                     <div>
                       <Label className="text-gray-400">Joined</Label>
@@ -433,36 +507,12 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
           </TabsContent>
         </Tabs>
 
-        <Dialog open={acknowledgmentDialog} onOpenChange={setAcknowledgmentDialog}>
-          <DialogContent className="bg-gray-800 text-white border-gray-700">
-            <DialogHeader>
-              <DialogTitle>Acknowledge Report</DialogTitle>
-              <DialogDescription>
-                Acknowledge that you have received and will handle this report
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-2">
-              <p className="text-gray-300">Report ID: {selectedReport?.id}</p>
-              <p className="text-gray-300">Type: {selectedReport?.threat_type}</p>
-              <p className="text-gray-300">Location: {selectedReport?.location || selectedReport?.manual_location}</p>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAcknowledgmentDialog(false)} className="bg-transparent border-gray-600">
-                Cancel
-              </Button>
-              <Button onClick={() => acknowledgeReport(selectedReport?.id)} className="bg-blue-600 hover:bg-blue-700">
-                Acknowledge Report
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         <Dialog open={resolutionDialog} onOpenChange={setResolutionDialog}>
           <DialogContent className="bg-gray-800 text-white border-gray-700">
             <DialogHeader>
-              <DialogTitle>Resolve Report</DialogTitle>
+              <DialogTitle>Resolve Assignment</DialogTitle>
               <DialogDescription>
-                Mark this report as resolved and provide resolution notes
+                Mark this assignment as resolved and provide resolution notes
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -486,7 +536,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
               <Button variant="outline" onClick={() => setResolutionDialog(false)} className="bg-transparent border-gray-600">
                 Cancel
               </Button>
-              <Button onClick={() => resolveReport(selectedReport?.id)} className="bg-green-600 hover:bg-green-700">
+              <Button onClick={() => resolveAssignment(selectedReport?.assignmentId, selectedReport?.id)} className="bg-green-600 hover:bg-green-700">
                 Mark as Resolved
               </Button>
             </DialogFooter>

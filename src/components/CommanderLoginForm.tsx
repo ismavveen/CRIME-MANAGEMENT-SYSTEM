@@ -24,21 +24,23 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
     setLoading(true);
 
     try {
-      // Find commander by contact info (email-like identifier)
+      // Find commander by email
       const { data: commanders, error } = await supabase
         .from('unit_commanders')
         .select('*')
-        .eq('contact_info', email)
+        .eq('email', email)
         .eq('status', 'active');
 
-      if (error || !commanders || commanders.length === 0) {
+      if (error) throw error;
+
+      if (!commanders || commanders.length === 0) {
         throw new Error('Invalid credentials or account suspended');
       }
 
       const commander = commanders[0];
 
-      // Here you would verify the password hash
-      // For demo purposes, we'll just check if password is not empty
+      // For demo purposes, accept any non-empty password
+      // In production, you would verify the password hash
       if (!password) {
         throw new Error('Password is required');
       }

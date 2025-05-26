@@ -24,9 +24,9 @@ const CommanderRegistration = () => {
   });
 
   const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@#$%&*';
     let password = '';
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 16; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
@@ -37,61 +37,52 @@ const CommanderRegistration = () => {
     setIsSubmitting(true);
 
     try {
-      // Generate password
+      // Generate secure password
       const generatedPassword = generatePassword();
 
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: generatedPassword,
-        email_confirm: true,
-        user_metadata: {
-          full_name: formData.full_name,
-          role: 'commander',
-          unit: formData.unit,
-          state: formData.state
-        }
-      });
-
-      if (authError) throw authError;
-
-      // Create commander profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name: formData.full_name,
-          email: formData.email,
-          phone: formData.phone_number,
-          rank: formData.rank,
-          unit: formData.unit,
-          role: 'commander'
-        });
-
-      if (profileError) throw profileError;
-
-      // Create unit commander record
-      const { error: commanderError } = await supabase
+      // Create commander profile in unit_commanders table
+      const { data: commanderData, error: commanderError } = await supabase
         .from('unit_commanders')
         .insert({
           full_name: formData.full_name,
+          email: formData.email,
           rank: formData.rank,
           unit: formData.unit,
+          state: formData.state,
           specialization: formData.specialization || null,
           location: formData.location || null,
           contact_info: formData.phone_number || null,
           status: 'active'
-        });
+        })
+        .select()
+        .single();
 
       if (commanderError) throw commanderError;
 
-      // TODO: Send email with credentials (implement email service)
-      // For now, show the password in the toast
-      toast({
-        title: "Commander Registered Successfully",
-        description: `Password: ${generatedPassword} (Save this password!)`,
-        duration: 10000,
+      // Send credentials via email (without showing password to admin)
+      const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
+        body: {
+          email: formData.email,
+          fullName: formData.full_name,
+          password: generatedPassword,
+          rank: formData.rank,
+          unit: formData.unit
+        }
       });
+
+      if (emailError) {
+        console.error('Email sending failed:', emailError);
+        toast({
+          title: "Registration Successful",
+          description: "Commander registered but email delivery failed. Please contact the commander manually.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Commander Registered Successfully",
+          description: `${formData.full_name} has been registered and login credentials sent via email.`,
+        });
+      }
 
       // Reset form
       setFormData({
@@ -130,20 +121,20 @@ const CommanderRegistration = () => {
   ];
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700 max-w-2xl mx-auto">
+    <Card className="bg-gray-800/50 border-gray-700 max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="text-white flex items-center">
           <Shield className="h-5 w-5 mr-2" />
           Register New Unit Commander
         </CardTitle>
         <CardDescription className="text-gray-400">
-          Register a new commander and automatically generate login credentials
+          Register a new commander and automatically send secure login credentials via email
         </CardDescription>
       </CardHeader>
       
       <CardContent>
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleRegister} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="full_name" className="text-gray-300">Full Name *</Label>
               <Input
@@ -167,7 +158,7 @@ const CommanderRegistration = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="phone_number" className="text-gray-300">Phone Number</Label>
               <Input
@@ -175,6 +166,7 @@ const CommanderRegistration = () => {
                 value={formData.phone_number}
                 onChange={(e) => handleInputChange('phone_number', e.target.value)}
                 className="bg-gray-700 border-gray-600 text-white"
+                placeholder="+234 xxx xxx xxxx"
               />
             </div>
             <div>
@@ -195,7 +187,7 @@ const CommanderRegistration = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="unit" className="text-gray-300">Unit/Division *</Label>
               <Input
@@ -222,7 +214,7 @@ const CommanderRegistration = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="specialization" className="text-gray-300">Specialization</Label>
               <Input
@@ -245,31 +237,33 @@ const CommanderRegistration = () => {
             </div>
           </div>
 
-          <div className="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2 text-blue-300 mb-2">
-              <Key className="h-4 w-4" />
-              <span className="font-medium">Automatic Credential Generation</span>
+          <div className="bg-blue-900/20 border border-blue-700/50 p-6 rounded-lg">
+            <div className="flex items-center space-x-2 text-blue-300 mb-3">
+              <Key className="h-5 w-5" />
+              <span className="font-medium">Secure Credential Management</span>
             </div>
-            <p className="text-sm text-blue-200">
-              A secure password will be automatically generated and displayed after registration. 
-              The commander can use their email and generated password to access their portal.
-            </p>
+            <div className="space-y-2 text-sm text-blue-200">
+              <p>• A secure 16-character password will be automatically generated</p>
+              <p>• Login credentials will be sent directly to the commander's email</p>
+              <p>• DHQ admin panel will NOT display the password for security</p>
+              <p>• Commander can access portal immediately after registration</p>
+            </div>
           </div>
 
           <Button
             type="submit"
             disabled={isSubmitting || !formData.full_name || !formData.email || !formData.rank || !formData.unit || !formData.state}
-            className="w-full bg-green-600 hover:bg-green-700"
+            className="w-full bg-green-600 hover:bg-green-700 h-12"
           >
             {isSubmitting ? (
               <>
-                <User className="h-4 w-4 mr-2 animate-spin" />
+                <User className="h-5 w-5 mr-2 animate-spin" />
                 Registering Commander...
               </>
             ) : (
               <>
-                <Shield className="h-4 w-4 mr-2" />
-                Register Commander
+                <Shield className="h-5 w-5 mr-2" />
+                Register Commander & Send Credentials
               </>
             )}
           </Button>
