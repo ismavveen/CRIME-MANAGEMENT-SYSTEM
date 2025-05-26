@@ -6,12 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 export interface Assignment {
   id: string;
   report_id: string;
-  assigned_to_commander: string;
-  assigned_by: string;
-  status: 'assigned' | 'in_progress' | 'resolved';
-  priority: 'low' | 'medium' | 'high';
-  notes: string | null;
+  commander_id: string;
   assigned_at: string;
+  status: 'pending' | 'accepted' | 'rejected' | 'resolved';
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
@@ -33,11 +30,9 @@ export const useAssignments = () => {
 
       if (error) throw error;
 
-      // Type cast the data to ensure proper enum types
       const typedAssignments = (data || []).map(assignment => ({
         ...assignment,
-        status: assignment.status as 'assigned' | 'in_progress' | 'resolved',
-        priority: assignment.priority as 'low' | 'medium' | 'high'
+        status: assignment.status as 'pending' | 'accepted' | 'rejected' | 'resolved'
       }));
 
       setAssignments(typedAssignments);
@@ -55,18 +50,14 @@ export const useAssignments = () => {
 
   const createAssignment = async (assignmentData: {
     report_id: string;
-    assigned_to_commander: string;
-    assigned_by: string;
-    priority?: 'low' | 'medium' | 'high';
-    notes?: string;
+    commander_id: string;
   }) => {
     try {
       const { data, error } = await supabase
         .from('assignments')
         .insert([{
           ...assignmentData,
-          status: 'assigned' as const,
-          priority: assignmentData.priority || 'medium' as const
+          status: 'pending' as const
         }])
         .select();
 
@@ -74,7 +65,7 @@ export const useAssignments = () => {
 
       toast({
         title: "Assignment Created",
-        description: `Report assigned to ${assignmentData.assigned_to_commander}`,
+        description: `Report assigned successfully`,
       });
 
       fetchAssignments();
@@ -92,7 +83,7 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'assigned' | 'in_progress' | 'resolved',
+    status: 'pending' | 'accepted' | 'rejected' | 'resolved',
     resolutionNotes?: string
   ) => {
     try {
@@ -103,7 +94,7 @@ export const useAssignments = () => {
       
       if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
-        updateData.resolved_by = 'Current User'; // This should be the actual user
+        updateData.resolved_by = 'Current User';
         if (resolutionNotes) {
           updateData.resolution_notes = resolutionNotes;
         }
@@ -135,7 +126,6 @@ export const useAssignments = () => {
   useEffect(() => {
     fetchAssignments();
 
-    // Set up real-time subscription
     const channel = supabase
       .channel('assignments-changes')
       .on('postgres_changes', {

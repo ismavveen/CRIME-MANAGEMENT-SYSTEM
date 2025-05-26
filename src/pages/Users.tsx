@@ -1,133 +1,237 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users as UsersIcon, Search, Filter, Mail, Calendar, Shield } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface UserProfile {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  rank: string | null;
+  unit: string | null;
+  role: string | null;
+  state: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 const Users = () => {
-  // Mock data for users
-  const users = [
-    { id: 1, name: "Murat Alpay", role: "DHQ Analyst", status: "active", email: "murat.alpay@dhq.gov.ng", lastActive: "2 hours ago" },
-    { id: 2, name: "Sarah Okafor", role: "Intelligence Officer", status: "active", email: "sarah.okafor@dhq.gov.ng", lastActive: "5 mins ago" },
-    { id: 3, name: "David Adebayo", role: "Field Agent", status: "offline", email: "david.adebayo@dhq.gov.ng", lastActive: "2 days ago" },
-    { id: 4, name: "Amina Ibrahim", role: "Data Analyst", status: "active", email: "amina.ibrahim@dhq.gov.ng", lastActive: "Just now" },
-    { id: 5, name: "John Okonkwo", role: "DHQ Administrator", status: "away", email: "john.okonkwo@dhq.gov.ng", lastActive: "1 hour ago" },
-    { id: 6, name: "Fatima Bello", role: "Response Coordinator", status: "active", email: "fatima.bello@dhq.gov.ng", lastActive: "30 mins ago" },
-    { id: 7, name: "Michael Eze", role: "Security Specialist", status: "offline", email: "michael.eze@dhq.gov.ng", lastActive: "5 days ago" },
-    { id: 8, name: "Elizabeth Danjuma", role: "Threat Analyst", status: "active", email: "elizabeth.d@dhq.gov.ng", lastActive: "15 mins ago" },
-  ];
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "active":
-        return "bg-green-500";
-      case "away":
-        return "bg-yellow-500";
-      case "offline":
-        return "bg-gray-400";
-      default:
-        return "bg-gray-400";
+  useEffect(() => {
+    fetchUsers();
+
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('profiles-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'profiles'
+      }, () => {
+        fetchUsers();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.unit?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
+
+  const getRoleColor = (role: string | null) => {
+    switch (role) {
+      case 'admin': return 'bg-red-500';
+      case 'commander': return 'bg-blue-500';
+      case 'officer': return 'bg-green-500';
+      case 'user': return 'bg-gray-500';
+      default: return 'bg-gray-400';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-dhq-dark-bg">
+        <DashboardSidebar />
+        <div className="ml-64 p-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-white">Loading users...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       <DashboardSidebar />
       
-      {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div className="ml-64 p-6 space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
-              <p className="text-gray-400">
-                Manage users, roles, and permissions for the DHQ Intelligence Portal
-              </p>
-            </div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-5 w-5 text-gray-500" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search users..."
-                className="pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-gray-300 focus:outline-none focus:ring-2 focus:ring-dhq-blue"
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-2">
+              <img 
+                src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                alt="Defense Headquarters Logo" 
+                className="w-full h-full object-contain"
               />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Registered Users</h1>
+              <p className="text-gray-400">
+                Manage and view all registered users in the system
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Users Table */}
-        <div className="bg-gray-800/30 rounded-lg shadow-lg overflow-hidden mb-8">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-700">
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                <th className="py-4 px-6 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Last Active</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-700">
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-gray-700/40 transition-colors">
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
-                      <Avatar>
-                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
-                        <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                      </Avatar>
-                      <div className="font-medium text-white">{user.name}</div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-300">
-                    {user.role}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <div className={`h-2.5 w-2.5 rounded-full ${getStatusColor(user.status)} mr-2`}></div>
-                      <span className="capitalize text-gray-300">{user.status}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-300">
-                    {user.email}
-                  </td>
-                  <td className="py-4 px-6 whitespace-nowrap text-gray-400">
-                    {user.lastActive}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        {/* Summary Card */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">Total Registered Users</CardTitle>
+            <UsersIcon className="h-4 w-4 text-gray-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{users.length}</div>
+            <p className="text-xs text-gray-400">
+              {users.filter(u => u.role === 'admin').length} admins, {' '}
+              {users.filter(u => u.role === 'commander').length} commanders, {' '}
+              {users.filter(u => u.role === 'user').length} users
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Search and Filter */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-gray-800 border-gray-700 text-white"
+            />
+          </div>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-full sm:w-48 bg-gray-800 border-gray-700 text-white">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="admin">Admin</SelectItem>
+              <SelectItem value="commander">Commander</SelectItem>
+              <SelectItem value="officer">Officer</SelectItem>
+              <SelectItem value="user">User</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Pagination */}
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious href="#" />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#" isActive>1</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">2</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationLink href="#">3</PaginationLink>
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
-            <PaginationItem>
-              <PaginationNext href="#" />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        {/* Users Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filteredUsers.map((user) => (
+            <Card key={user.id} className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-white text-lg truncate">
+                      {user.full_name || 'Unknown User'}
+                    </CardTitle>
+                    <CardDescription className="text-gray-400 truncate">
+                      {user.email}
+                    </CardDescription>
+                  </div>
+                  <Badge className={`${getRoleColor(user.role)} text-white capitalize ml-2 flex-shrink-0`}>
+                    {user.role || 'user'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-3 pt-0">
+                {user.rank && (
+                  <div className="flex items-center text-gray-300">
+                    <Shield className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm truncate">{user.rank}</span>
+                  </div>
+                )}
+                
+                {user.unit && (
+                  <div className="flex items-center text-gray-300">
+                    <UsersIcon className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm truncate">{user.unit}</span>
+                  </div>
+                )}
+                
+                {user.phone && (
+                  <div className="flex items-center text-gray-300">
+                    <Mail className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                    <span className="text-sm truncate">{user.phone}</span>
+                  </div>
+                )}
+                
+                <div className="flex items-center text-gray-300">
+                  <Calendar className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                  <span className="text-sm">
+                    Joined {new Date(user.created_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                {user.state && (
+                  <div className="text-center pt-2 border-t border-gray-700">
+                    <div className="text-sm font-medium text-white">{user.state}</div>
+                    <div className="text-xs text-gray-400">State</div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredUsers.length === 0 && (
+          <div className="text-center py-12">
+            <UsersIcon className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">No users found</h3>
+            <p className="text-gray-400">
+              {searchTerm || roleFilter !== 'all' 
+                ? 'Try adjusting your search or filter criteria'
+                : 'No users have registered yet'
+              }
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

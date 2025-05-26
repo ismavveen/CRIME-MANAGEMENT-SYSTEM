@@ -14,35 +14,88 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useReports } from '@/hooks/useReports';
+import { useAssignments } from '@/hooks/useAssignments';
 
 const ChartsSection = () => {
-  // Sample data for charts
-  const attackData = [
-    { day: 'Mon', attacks: 12 },
-    { day: 'Tue', attacks: 8 },
-    { day: 'Wed', attacks: 15 },
-    { day: 'Thu', attacks: 6 },
-    { day: 'Fri', attacks: 18 },
-    { day: 'Sat', attacks: 9 },
-    { day: 'Sun', attacks: 4 },
-  ];
+  const { reports } = useReports();
+  const { assignments } = useAssignments();
 
-  const trendData = [
-    { month: 'Jan', incidents: 45 },
-    { month: 'Feb', incidents: 38 },
-    { month: 'Mar', incidents: 52 },
-    { month: 'Apr', incidents: 41 },
-    { month: 'May', incidents: 48 },
-    { month: 'Jun', incidents: 35 },
-  ];
+  // Generate real-time data from actual reports
+  const attackData = React.useMemo(() => {
+    const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const attacksByDay = daysOfWeek.map(day => ({ day, attacks: 0 }));
+    
+    reports.forEach(report => {
+      const reportDate = new Date(report.created_at);
+      const dayIndex = (reportDate.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+      attacksByDay[dayIndex].attacks++;
+    });
+    
+    return attacksByDay;
+  }, [reports]);
 
-  const incidentTypes = [
-    { name: 'Terrorism', value: 35, color: '#DC2626' },
-    { name: 'Kidnapping', value: 25, color: '#F59E0B' },
-    { name: 'Armed Robbery', value: 20, color: '#8B5CF6' },
-    { name: 'Civil Unrest', value: 15, color: '#10B981' },
-    { name: 'Other', value: 5, color: '#6B7280' },
-  ];
+  const trendData = React.useMemo(() => {
+    const last6Months = [];
+    const now = new Date();
+    
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = month.toLocaleDateString('en-US', { month: 'short' });
+      
+      const monthReports = reports.filter(report => {
+        const reportDate = new Date(report.created_at);
+        return reportDate.getMonth() === month.getMonth() && 
+               reportDate.getFullYear() === month.getFullYear();
+      }).length;
+      
+      last6Months.push({ month: monthName, incidents: monthReports });
+    }
+    
+    return last6Months;
+  }, [reports]);
+
+  const incidentTypes = React.useMemo(() => {
+    const typeCount: { [key: string]: number } = {};
+    
+    reports.forEach(report => {
+      const type = report.threat_type || 'Other';
+      typeCount[type] = (typeCount[type] || 0) + 1;
+    });
+    
+    const colors = ['#DC2626', '#F59E0B', '#8B5CF6', '#10B981', '#6B7280'];
+    
+    return Object.entries(typeCount).map(([name, value], index) => ({
+      name,
+      value,
+      color: colors[index % colors.length]
+    }));
+  }, [reports]);
+
+  const responseTimeData = React.useMemo(() => {
+    const stateResponseTimes: { [key: string]: { total: number; count: number } } = {};
+    
+    assignments.forEach(assignment => {
+      const report = reports.find(r => r.id === assignment.report_id);
+      if (report && report.state && assignment.resolved_at) {
+        const responseTime = new Date(assignment.resolved_at).getTime() - new Date(assignment.assigned_at).getTime();
+        const responseMinutes = Math.round(responseTime / (1000 * 60));
+        
+        if (!stateResponseTimes[report.state]) {
+          stateResponseTimes[report.state] = { total: 0, count: 0 };
+        }
+        stateResponseTimes[report.state].total += responseMinutes;
+        stateResponseTimes[report.state].count++;
+      }
+    });
+    
+    return Object.entries(stateResponseTimes)
+      .map(([state, data]) => ({
+        state,
+        time: Math.round(data.total / data.count) || 0
+      }))
+      .slice(0, 5); // Top 5 states
+  }, [reports, assignments]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -131,12 +184,8 @@ const ChartsSection = () => {
         <h3 className="text-lg font-semibold text-white mb-4">Average Response Time (Minutes)</h3>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={[
-              { state: 'Lagos', time: 12 },
-              { state: 'FCT', time: 8 },
-              { state: 'Kano', time: 15 },
-              { state: 'Rivers', time: 18 },
-              { state: 'Kaduna', time: 10 },
+            <BarChart data={responseTimeData.length > 0 ? responseTimeData : [
+              { state: 'No Data', time: 0 }
             ]}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis dataKey="state" stroke="#9CA3AF" />

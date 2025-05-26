@@ -8,11 +8,9 @@ export interface Notification {
   type: 'new_report' | 'assignment' | 'resolution' | 'update' | 'info';
   title: string;
   message: string;
-  user_id: string | null;
   is_read: boolean;
   created_at: string;
-  action_url: string | null;
-  priority: string | null;
+  updated_at: string;
 }
 
 export const useNotifications = () => {
@@ -31,7 +29,6 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      // Type cast the data to ensure proper types
       const typedNotifications = (data || []).map(notification => ({
         ...notification,
         type: notification.type as 'new_report' | 'assignment' | 'resolution' | 'update' | 'info'
@@ -83,7 +80,6 @@ export const useNotifications = () => {
   useEffect(() => {
     fetchNotifications();
 
-    // Set up real-time subscription for new notifications
     const channel = supabase
       .channel('notifications-changes')
       .on(
@@ -102,7 +98,6 @@ export const useNotifications = () => {
           setNotifications(prev => [newNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
           
-          // Show toast for new notifications
           toast({
             title: newNotification.title,
             description: newNotification.message,

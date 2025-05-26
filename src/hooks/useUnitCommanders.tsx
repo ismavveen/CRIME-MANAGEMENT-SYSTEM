@@ -17,6 +17,8 @@ export interface UnitCommander {
   active_assignments: number;
   success_rate: number;
   average_response_time: number;
+  state: string;
+  email: string;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +27,7 @@ export interface SystemMetrics {
   active_operations: number;
   total_reports: number;
   resolved_reports: number;
+  pending_reports: number;
 }
 
 export const useUnitCommanders = () => {
@@ -32,7 +35,8 @@ export const useUnitCommanders = () => {
   const [systemMetrics, setSystemMetrics] = useState<SystemMetrics>({
     active_operations: 0,
     total_reports: 0,
-    resolved_reports: 0
+    resolved_reports: 0,
+    pending_reports: 0
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -46,7 +50,6 @@ export const useUnitCommanders = () => {
 
       if (error) throw error;
       
-      // Type cast the data to ensure proper enum types
       const typedCommanders = (data || []).map(commander => ({
         ...commander,
         status: commander.status as 'active' | 'suspended' | 'inactive' | 'available'
@@ -76,7 +79,12 @@ export const useUnitCommanders = () => {
         return acc;
       }, {} as SystemMetrics);
       
-      setSystemMetrics(metrics);
+      setSystemMetrics({
+        active_operations: metrics.active_operations || 0,
+        total_reports: metrics.total_reports || 0,
+        resolved_reports: metrics.resolved_reports || 0,
+        pending_reports: metrics.pending_reports || 0
+      });
     } catch (error: any) {
       console.error('Error fetching system metrics:', error);
     }
@@ -86,6 +94,8 @@ export const useUnitCommanders = () => {
     full_name: string;
     rank: string;
     unit: string;
+    state: string;
+    email: string;
     specialization?: string;
     location?: string;
     contact_info?: string;
@@ -102,10 +112,41 @@ export const useUnitCommanders = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Commander Registered",
-        description: `${commanderData.full_name} has been successfully registered`,
-      });
+      // Generate random password
+      const password = Math.random().toString(36).slice(-12);
+
+      // Send credentials via Supabase edge function
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
+          body: {
+            email: commanderData.email,
+            fullName: commanderData.full_name,
+            password: password,
+            rank: commanderData.rank,
+            unit: commanderData.unit
+          }
+        });
+
+        if (emailError) {
+          console.error('Error sending credentials email:', emailError);
+          toast({
+            title: "Commander Registered",
+            description: `${commanderData.full_name} registered but email failed to send`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Commander Registered",
+            description: `${commanderData.full_name} has been successfully registered and credentials sent`,
+          });
+        }
+      } catch (emailError) {
+        console.error('Error with email service:', emailError);
+        toast({
+          title: "Commander Registered",
+          description: `${commanderData.full_name} registered but email service unavailable`,
+        });
+      }
 
       fetchCommanders();
       return data[0];
@@ -160,7 +201,6 @@ export const useUnitCommanders = () => {
 
     loadData();
 
-    // Set up real-time subscriptions
     const commandersChannel = supabase
       .channel('commanders-changes')
       .on('postgres_changes', {
