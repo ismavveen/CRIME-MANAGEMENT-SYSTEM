@@ -18,7 +18,7 @@ const GoogleMapsHeatmap = () => {
 
     const map = new window.google.maps.Map(mapRef.current, {
       zoom: 6,
-      center: { lat: 9.0765, lng: 7.3986 }, // Nigeria center
+      center: new window.google.maps.LatLng(9.0765, 7.3986), // Nigeria center
       mapTypeId: window.google.maps.MapTypeId.ROADMAP,
     });
 
