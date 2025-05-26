@@ -8,10 +8,18 @@ export interface Assignment {
   report_id: string;
   commander_id: string;
   assigned_at: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'resolved';
+  status: 'pending' | 'accepted' | 'responded_to' | 'resolved';
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
+  response_timestamp: string | null;
+  response_timeframe: number | null;
+  operation_outcome: string | null;
+  casualties: number | null;
+  injured_personnel: number | null;
+  civilians_rescued: number | null;
+  weapons_recovered: number | null;
+  custom_message: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -32,7 +40,7 @@ export const useAssignments = () => {
 
       const typedAssignments = (data || []).map(assignment => ({
         ...assignment,
-        status: assignment.status as 'pending' | 'accepted' | 'rejected' | 'resolved'
+        status: assignment.status as 'pending' | 'accepted' | 'responded_to' | 'resolved'
       }));
 
       setAssignments(typedAssignments);
@@ -83,14 +91,37 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'pending' | 'accepted' | 'rejected' | 'resolved',
-    resolutionNotes?: string
+    status: 'pending' | 'accepted' | 'responded_to' | 'resolved',
+    resolutionNotes?: string,
+    operationData?: {
+      operation_outcome?: string;
+      casualties?: number;
+      injured_personnel?: number;
+      civilians_rescued?: number;
+      weapons_recovered?: number;
+      custom_message?: string;
+    }
   ) => {
     try {
       const updateData: any = { 
         status,
         updated_at: new Date().toISOString()
       };
+      
+      if (status === 'responded_to') {
+        updateData.response_timestamp = new Date().toISOString();
+        // Calculate response timeframe if needed
+        const assignment = assignments.find(a => a.id === assignmentId);
+        if (assignment) {
+          const assignedTime = new Date(assignment.assigned_at);
+          const responseTime = new Date();
+          updateData.response_timeframe = Math.round((responseTime.getTime() - assignedTime.getTime()) / (1000 * 60)); // minutes
+        }
+        
+        if (operationData) {
+          Object.assign(updateData, operationData);
+        }
+      }
       
       if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
@@ -109,7 +140,7 @@ export const useAssignments = () => {
 
       toast({
         title: "Status Updated",
-        description: `Assignment status updated to ${status}`,
+        description: `Assignment status updated to ${status.replace('_', ' ')}`,
       });
 
       fetchAssignments();

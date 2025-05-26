@@ -10,12 +10,17 @@ declare namespace google {
   namespace maps {
     class Map {
       constructor(element: HTMLElement, options?: MapOptions);
+      setCenter(latlng: LatLng): void;
+      setZoom(zoom: number): void;
+      addListener(event: string, handler: Function): void;
     }
     
     class Marker {
       constructor(options?: MarkerOptions);
       setMap(map: Map | null): void;
       addListener(event: string, handler: Function): void;
+      setPosition(latlng: LatLng): void;
+      setIcon(icon: string | Icon): void;
     }
     
     class InfoWindow {
@@ -29,6 +34,18 @@ declare namespace google {
       constructor(width: number, height: number);
     }
     
+    class Icon {
+      url: string;
+      size?: Size;
+      scaledSize?: Size;
+      origin?: Point;
+      anchor?: Point;
+    }
+    
+    class Point {
+      constructor(x: number, y: number);
+    }
+    
     interface MapOptions {
       center: LatLng;
       zoom: number;
@@ -39,10 +56,7 @@ declare namespace google {
       position: LatLng;
       map?: Map;
       title?: string;
-      icon?: string | {
-        url: string;
-        scaledSize: Size;
-      };
+      icon?: string | Icon;
     }
     
     interface InfoWindowOptions {
@@ -51,6 +65,8 @@ declare namespace google {
     
     class LatLng {
       constructor(lat: number, lng: number);
+      lat(): number;
+      lng(): number;
     }
     
     enum MapTypeId {

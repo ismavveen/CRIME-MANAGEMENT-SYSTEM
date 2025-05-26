@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { User, MapPin, Clock, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { User, MapPin, Clock, CheckCircle, AlertCircle, FileText, Shield, Target } from 'lucide-react';
+import OperationOutcomeDialog from './OperationOutcomeDialog';
 
 const AssignmentManagement = () => {
   const { assignments, updateAssignmentStatus } = useAssignments();
@@ -16,12 +17,14 @@ const AssignmentManagement = () => {
   const { commanders } = useUnitCommanders();
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
+  const [operationDialogOpen, setOperationDialogOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Separate assignments by status
   const pendingReports = assignments.filter(a => a.status === 'pending');
   const acceptedReports = assignments.filter(a => a.status === 'accepted');
+  const respondedReports = assignments.filter(a => a.status === 'responded_to');
   const resolvedReports = assignments.filter(a => a.status === 'resolved');
 
   const getReportDetails = (reportId: string) => {
@@ -38,6 +41,8 @@ const AssignmentManagement = () => {
         return 'bg-blue-500 text-white';
       case 'accepted':
         return 'bg-orange-500 text-white';
+      case 'responded_to':
+        return 'bg-purple-500 text-white';
       case 'resolved':
         return 'bg-green-500 text-white';
       default:
@@ -61,6 +66,11 @@ const AssignmentManagement = () => {
     } finally {
       setIsUpdating(false);
     }
+  };
+
+  const openOperationDialog = (assignment: any) => {
+    setSelectedAssignment(assignment);
+    setOperationDialogOpen(true);
   };
 
   const openResolveDialog = (assignment: any) => {
@@ -113,6 +123,7 @@ const AssignmentManagement = () => {
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4 text-blue-400" />
               <span className="text-sm text-blue-300">{commander?.full_name}</span>
+              <span className="text-xs text-gray-400">(Response Unit)</span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-gray-400" />
@@ -120,6 +131,19 @@ const AssignmentManagement = () => {
                 Assigned: {new Date(assignment.assigned_at).toLocaleString()}
               </span>
             </div>
+            {assignment.response_timestamp && (
+              <div className="flex items-center space-x-2">
+                <Target className="h-4 w-4 text-purple-400" />
+                <span className="text-xs text-gray-400">
+                  Responded: {new Date(assignment.response_timestamp).toLocaleString()}
+                </span>
+                {assignment.response_timeframe && (
+                  <span className="text-xs text-purple-400">
+                    ({assignment.response_timeframe} mins)
+                  </span>
+                )}
+              </div>
+            )}
             {assignment.resolved_at && (
               <div className="flex items-center space-x-2">
                 <CheckCircle className="h-4 w-4 text-green-400" />
@@ -129,6 +153,34 @@ const AssignmentManagement = () => {
               </div>
             )}
           </div>
+
+          {/* Operation Outcome */}
+          {assignment.operation_outcome && (
+            <div className="bg-purple-900/20 border border-purple-700/50 p-3 rounded">
+              <p className="text-sm text-purple-300">
+                <strong>Operation Outcome:</strong> {assignment.operation_outcome}
+              </p>
+              {assignment.custom_message && (
+                <p className="text-xs text-purple-400 mt-1">
+                  {assignment.custom_message}
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
+                {assignment.casualties > 0 && (
+                  <span className="text-red-400">Casualties: {assignment.casualties}</span>
+                )}
+                {assignment.injured_personnel > 0 && (
+                  <span className="text-orange-400">Injured: {assignment.injured_personnel}</span>
+                )}
+                {assignment.civilians_rescued > 0 && (
+                  <span className="text-green-400">Rescued: {assignment.civilians_rescued}</span>
+                )}
+                {assignment.weapons_recovered > 0 && (
+                  <span className="text-blue-400">Weapons: {assignment.weapons_recovered}</span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Resolution Notes */}
           {assignment.resolution_notes && (
@@ -157,6 +209,17 @@ const AssignmentManagement = () => {
                   Accept
                 </Button>
               )}
+              {assignment.status === 'accepted' && (
+                <Button
+                  size="sm"
+                  onClick={() => openOperationDialog(assignment)}
+                  className="bg-purple-600 hover:bg-purple-700 flex items-center space-x-1"
+                  disabled={isUpdating}
+                >
+                  <Shield className="h-3 w-3" />
+                  <span>Submit Response</span>
+                </Button>
+              )}
               <Button
                 size="sm"
                 onClick={() => openResolveDialog(assignment)}
@@ -174,7 +237,7 @@ const AssignmentManagement = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-white">Assignment Management</h2>
+      <h2 className="text-2xl font-bold text-white">Response Unit Assignment Management</h2>
 
       {/* Pending Reports */}
       <div>
@@ -214,6 +277,25 @@ const AssignmentManagement = () => {
         </div>
       </div>
 
+      {/* Responded Reports */}
+      <div>
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <Target className="h-5 w-5 mr-2 text-purple-400" />
+          Responded Reports ({respondedReports.length})
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {respondedReports.length === 0 ? (
+            <div className="col-span-full text-center text-gray-500 py-8">
+              No responded reports
+            </div>
+          ) : (
+            respondedReports.map(assignment => (
+              <AssignmentCard key={assignment.id} assignment={assignment} />
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Resolved Reports */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
@@ -239,6 +321,14 @@ const AssignmentManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Operation Outcome Dialog */}
+      <OperationOutcomeDialog
+        open={operationDialogOpen}
+        onOpenChange={setOperationDialogOpen}
+        assignmentId={selectedAssignment?.id || null}
+        reportId={selectedAssignment?.report_id || null}
+      />
 
       {/* Resolve Dialog */}
       <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>

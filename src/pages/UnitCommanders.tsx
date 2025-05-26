@@ -43,7 +43,7 @@ const UnitCommanders = () => {
         <DashboardSidebar />
         <div className="ml-64 p-8">
           <div className="flex items-center justify-center h-64">
-            <div className="text-white">Loading commanders...</div>
+            <div className="text-white">Loading response units...</div>
           </div>
         </div>
       </div>
@@ -60,15 +60,15 @@ const UnitCommanders = () => {
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-2">
               <img 
-                src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" 
+                src="/lovable-uploads/ba3282a6-18f0-407f-baa2-bbdab0014f65.png" 
                 alt="Defense Headquarters Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Unit Commanders Management</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">Response Unit Management</h1>
               <p className="text-gray-400">
-                Register and manage field unit commanders with real-time data updates
+                Register and manage field response units with real-time data updates
               </p>
             </div>
           </div>
@@ -78,7 +78,7 @@ const UnitCommanders = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="bg-gray-800/50 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Total Commanders</CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-300">Total Response Units</CardTitle>
               <Users className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
@@ -104,26 +104,26 @@ const UnitCommanders = () => {
           
           <Card className="bg-gray-800/50 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Total Reports</CardTitle>
-              <Award className="h-4 w-4 text-gray-400" />
+              <CardTitle className="text-sm font-medium text-gray-300">Average Response Time</CardTitle>
+              <Clock className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{metrics.total_reports}</div>
+              <div className="text-2xl font-bold text-white">{metrics.average_response_time}</div>
               <p className="text-xs text-gray-400">
-                {metrics.resolved_reports} resolved
+                minutes average
               </p>
             </CardContent>
           </Card>
           
           <Card className="bg-gray-800/50 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Pending Reports</CardTitle>
-              <Clock className="h-4 w-4 text-gray-400" />
+              <CardTitle className="text-sm font-medium text-gray-300">Responded Reports</CardTitle>
+              <Award className="h-4 w-4 text-gray-400" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{metrics.pending_reports}</div>
+              <div className="text-2xl font-bold text-white">{metrics.responded_reports}</div>
               <p className="text-xs text-gray-400">
-                Awaiting assignment
+                Units responded
               </p>
             </CardContent>
           </Card>
@@ -134,11 +134,11 @@ const UnitCommanders = () => {
           <TabsList className="bg-gray-800/50 border border-gray-700">
             <TabsTrigger value="commanders" className="data-[state=active]:bg-dhq-blue">
               <Users className="h-4 w-4 mr-2" />
-              Active Commanders
+              Active Response Units
             </TabsTrigger>
             <TabsTrigger value="register" className="data-[state=active]:bg-dhq-blue">
               <UserPlus className="h-4 w-4 mr-2" />
-              Register New Commander
+              Register New Response Unit
             </TabsTrigger>
           </TabsList>
 
@@ -148,7 +148,7 @@ const UnitCommanders = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
-                  placeholder="Search commanders..."
+                  placeholder="Search response units..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 bg-gray-800 border-gray-700 text-white"
@@ -169,7 +169,7 @@ const UnitCommanders = () => {
               </Select>
             </div>
 
-            {/* Commanders Grid */}
+            {/* Response Units Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCommanders.map((commander) => (
                 <Card key={commander.id} className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-colors">
@@ -178,7 +178,7 @@ const UnitCommanders = () => {
                       <div>
                         <CardTitle className="text-white text-lg truncate">{commander.full_name}</CardTitle>
                         <CardDescription className="text-gray-400">
-                          {commander.rank} • {commander.unit}
+                          {commander.rank} • Response Unit {commander.unit}
                         </CardDescription>
                       </div>
                       <Badge className={`${getStatusColor(commander.status)} text-white capitalize`}>
@@ -253,11 +253,11 @@ const UnitCommanders = () => {
             {filteredCommanders.length === 0 && (
               <div className="text-center py-12">
                 <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-white mb-2">No commanders found</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">No response units found</h3>
                 <p className="text-gray-400">
                   {searchTerm || statusFilter !== 'all' 
                     ? 'Try adjusting your search or filter criteria'
-                    : 'Register the first commander to get started'
+                    : 'Register the first response unit to get started'
                   }
                 </p>
               </div>
