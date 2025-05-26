@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useReports } from '@/hooks/useReports';
+import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,25 +13,30 @@ import { User, MapPin, Clock, CheckCircle, AlertCircle, FileText } from 'lucide-
 const AssignmentManagement = () => {
   const { assignments, updateAssignmentStatus } = useAssignments();
   const { reports } = useReports();
+  const { commanders } = useUnitCommanders();
   const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Separate assignments by status
-  const assignedReports = assignments.filter(a => a.status === 'assigned');
-  const inProgressReports = assignments.filter(a => a.status === 'in_progress');
+  const pendingReports = assignments.filter(a => a.status === 'pending');
+  const acceptedReports = assignments.filter(a => a.status === 'accepted');
   const resolvedReports = assignments.filter(a => a.status === 'resolved');
 
   const getReportDetails = (reportId: string) => {
     return reports.find(r => r.id === reportId);
   };
 
+  const getCommanderDetails = (commanderId: string) => {
+    return commanders.find(c => c.id === commanderId);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'assigned':
+      case 'pending':
         return 'bg-blue-500 text-white';
-      case 'in_progress':
+      case 'accepted':
         return 'bg-orange-500 text-white';
       case 'resolved':
         return 'bg-green-500 text-white';
@@ -39,7 +45,7 @@ const AssignmentManagement = () => {
     }
   };
 
-  const handleStatusUpdate = async (assignmentId: string, status: 'in_progress' | 'resolved') => {
+  const handleStatusUpdate = async (assignmentId: string, status: 'accepted' | 'resolved') => {
     setIsUpdating(true);
     try {
       if (status === 'resolved') {
@@ -64,6 +70,7 @@ const AssignmentManagement = () => {
 
   const AssignmentCard = ({ assignment, showActions = true }: { assignment: any; showActions?: boolean }) => {
     const report = getReportDetails(assignment.report_id);
+    const commander = getCommanderDetails(assignment.commander_id);
     
     return (
       <Card className="bg-gray-800/50 border-gray-700 p-4">
@@ -105,7 +112,7 @@ const AssignmentManagement = () => {
           <div className="space-y-2 pt-2 border-t border-gray-700">
             <div className="flex items-center space-x-2">
               <User className="h-4 w-4 text-blue-400" />
-              <span className="text-sm text-blue-300">{assignment.assigned_to_commander}</span>
+              <span className="text-sm text-blue-300">{commander?.full_name}</span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-gray-400" />
@@ -140,14 +147,14 @@ const AssignmentManagement = () => {
           {/* Actions */}
           {showActions && assignment.status !== 'resolved' && (
             <div className="flex space-x-2 pt-2">
-              {assignment.status === 'assigned' && (
+              {assignment.status === 'pending' && (
                 <Button
                   size="sm"
-                  onClick={() => handleStatusUpdate(assignment.id, 'in_progress')}
+                  onClick={() => handleStatusUpdate(assignment.id, 'accepted')}
                   className="bg-orange-600 hover:bg-orange-700"
                   disabled={isUpdating}
                 >
-                  Start Progress
+                  Accept
                 </Button>
               )}
               <Button
@@ -169,38 +176,38 @@ const AssignmentManagement = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold text-white">Assignment Management</h2>
 
-      {/* Assigned Reports */}
+      {/* Pending Reports */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <AlertCircle className="h-5 w-5 mr-2 text-blue-400" />
-          Assigned Reports ({assignedReports.length})
+          Pending Reports ({pendingReports.length})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {assignedReports.length === 0 ? (
+          {pendingReports.length === 0 ? (
             <div className="col-span-full text-center text-gray-500 py-8">
-              No assigned reports
+              No pending reports
             </div>
           ) : (
-            assignedReports.map(assignment => (
+            pendingReports.map(assignment => (
               <AssignmentCard key={assignment.id} assignment={assignment} />
             ))
           )}
         </div>
       </div>
 
-      {/* In Progress Reports */}
+      {/* Accepted Reports */}
       <div>
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <Clock className="h-5 w-5 mr-2 text-orange-400" />
-          In Progress ({inProgressReports.length})
+          Accepted Reports ({acceptedReports.length})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {inProgressReports.length === 0 ? (
+          {acceptedReports.length === 0 ? (
             <div className="col-span-full text-center text-gray-500 py-8">
-              No reports in progress
+              No accepted reports
             </div>
           ) : (
-            inProgressReports.map(assignment => (
+            acceptedReports.map(assignment => (
               <AssignmentCard key={assignment.id} assignment={assignment} />
             ))
           )}

@@ -15,6 +15,7 @@ declare namespace google {
     class Marker {
       constructor(options?: MarkerOptions);
       setMap(map: Map | null): void;
+      addListener(event: string, handler: Function): void;
     }
     
     class InfoWindow {
@@ -22,6 +23,10 @@ declare namespace google {
       open(map?: Map, anchor?: Marker): void;
       close(): void;
       setContent(content: string): void;
+    }
+    
+    class Size {
+      constructor(width: number, height: number);
     }
     
     interface MapOptions {
@@ -34,7 +39,10 @@ declare namespace google {
       position: LatLng;
       map?: Map;
       title?: string;
-      icon?: string;
+      icon?: string | {
+        url: string;
+        scaledSize: Size;
+      };
     }
     
     interface InfoWindowOptions {

@@ -3,6 +3,7 @@ import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog'
 import AssignmentDialog from './AssignmentDialog';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
+import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 
 interface Incident {
   id: string;
@@ -17,6 +18,7 @@ interface Incident {
 const NigeriaMap = () => {
   const { reports, loading } = useReports();
   const { assignments } = useAssignments();
+  const { commanders } = useUnitCommanders();
   const [selectedMapPoint, setSelectedMapPoint] = useState<Incident | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -53,6 +55,8 @@ const NigeriaMap = () => {
     .filter(report => report.latitude && report.longitude)
     .map(report => {
       const assignment = assignments.find(a => a.report_id === report.id);
+      const commander = assignment ? commanders.find(c => c.id === assignment.commander_id) : null;
+      
       let mappedPriority: 'high' | 'medium' | 'low' = 'medium';
       if (report.priority === 'high' || report.urgency === 'critical') {
         mappedPriority = 'high';
@@ -63,7 +67,7 @@ const NigeriaMap = () => {
       let status: 'critical' | 'warning' | 'resolved' | 'investigating' = 'warning';
       if (assignment?.status === 'resolved') {
         status = 'resolved';
-      } else if (assignment?.status === 'in_progress') {
+      } else if (assignment?.status === 'accepted') {
         status = 'investigating';
       } else if (report.urgency === 'critical') {
         status = 'critical';
@@ -76,7 +80,7 @@ const NigeriaMap = () => {
         status,
         timestamp: report.created_at || report.timestamp || new Date().toISOString(),
         priority: mappedPriority,
-        officer: assignment?.assigned_to_commander || 'Unassigned',
+        officer: commander?.full_name || 'Unassigned',
         description: report.description || 'No description provided',
         coordinates: { lat: report.latitude!, lng: report.longitude! },
         updates: [
@@ -85,10 +89,10 @@ const NigeriaMap = () => {
             message: `Report submitted via ${report.reporter_type} source`,
             author: 'System'
           },
-          ...(assignment ? [{
+          ...(assignment && commander ? [{
             time: new Date(assignment.assigned_at).toLocaleString(),
-            message: `Assigned to ${assignment.assigned_to_commander}`,
-            author: assignment.assigned_by
+            message: `Assigned to ${commander.full_name}`,
+            author: 'System'
           }] : []),
           ...(assignment?.status === 'resolved' && assignment.resolved_at ? [{
             time: new Date(assignment.resolved_at).toLocaleString(),

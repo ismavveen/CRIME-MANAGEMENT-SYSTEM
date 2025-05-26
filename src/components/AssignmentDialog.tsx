@@ -31,7 +31,6 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   const { toast } = useToast();
   
   const [selectedCommander, setSelectedCommander] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,21 +45,17 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
     try {
       await createAssignment({
         report_id: reportId,
-        assigned_to_commander: selectedCommander,
-        assigned_by: 'System Admin',
-        priority,
-        notes: notes.trim() || undefined
+        commander_id: selectedCommander
       });
 
       toast({
         title: "Assignment Created",
-        description: `Report assigned to ${selectedCommander}`,
+        description: `Report assigned successfully`,
       });
 
       onOpenChange(false);
       setSelectedCommander('');
       setNotes('');
-      setPriority('medium');
     } catch (error) {
       toast({
         title: "Assignment Failed",
@@ -88,24 +83,10 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
               </SelectTrigger>
               <SelectContent>
                 {availableCommanders.map((commander) => (
-                  <SelectItem key={commander.id} value={commander.full_name}>
+                  <SelectItem key={commander.id} value={commander.id}>
                     {commander.full_name} - {commander.unit}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="priority">Priority Level</Label>
-            <Select value={priority} onValueChange={(value: 'low' | 'medium' | 'high') => setPriority(value)}>
-              <SelectTrigger className="bg-gray-700 border-gray-600">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low Priority</SelectItem>
-                <SelectItem value="medium">Medium Priority</SelectItem>
-                <SelectItem value="high">High Priority</SelectItem>
               </SelectContent>
             </Select>
           </div>
