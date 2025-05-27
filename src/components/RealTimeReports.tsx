@@ -5,11 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Clock, AlertTriangle, CheckCircle, Send } from 'lucide-react';
+import DispatchModal from './DispatchModal';
 
 const RealTimeReports = () => {
-  const { reports, loading } = useReports();
+  const { reports, loading, refetch } = useReports();
   const [filter, setFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [reportToDispatch, setReportToDispatch] = useState<any>(null);
 
   // Get the most recent reports
   const recentReports = reports
@@ -27,6 +30,8 @@ const RealTimeReports = () => {
         return <CheckCircle className="h-4 w-4 text-green-400" />;
       case 'pending':
         return <AlertTriangle className="h-4 w-4 text-yellow-400" />;
+      case 'assigned':
+        return <Clock className="h-4 w-4 text-blue-400" />;
       default:
         return <Clock className="h-4 w-4 text-blue-400" />;
     }
@@ -38,6 +43,8 @@ const RealTimeReports = () => {
         return 'bg-green-900/30 text-green-300 border-green-700/50';
       case 'pending':
         return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
+      case 'assigned':
+        return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
       default:
         return 'bg-blue-900/30 text-blue-300 border-blue-700/50';
     }
@@ -68,10 +75,13 @@ const RealTimeReports = () => {
     });
   };
 
-  const handleDispatchUnit = (reportId: string) => {
-    setSelectedReport(reportId);
-    // Add dispatch logic here
-    console.log('Dispatching unit for report:', reportId);
+  const handleDispatchClick = (report: any) => {
+    setReportToDispatch(report);
+    setDispatchModalOpen(true);
+  };
+
+  const handleAssignmentComplete = () => {
+    refetch(); // Refresh the reports list
   };
 
   return (
@@ -96,18 +106,10 @@ const RealTimeReports = () => {
             <SelectContent className="bg-gray-800 border-gray-600">
               <SelectItem value="all">All</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="assigned">Assigned</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
             </SelectContent>
           </Select>
-          
-          <Button 
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => window.location.reload()}
-          >
-            <Send className="h-4 w-4 mr-2" />
-            Dispatch Response Unit
-          </Button>
         </div>
       </div>
 
@@ -119,7 +121,7 @@ const RealTimeReports = () => {
           <div className="col-span-2">Location</div>
           <div className="col-span-2">Threat</div>
           <div className="col-span-2">Status</div>
-          <div className="col-span-2">Filter</div>
+          <div className="col-span-2">Priority</div>
           <div className="col-span-1">Action</div>
         </div>
 
@@ -167,20 +169,24 @@ const RealTimeReports = () => {
                 </div>
                 
                 <div className="col-span-2">
-                  <Badge className={`text-xs px-2 py-1 ${getStatusColor(report.status)}`}>
-                    {report.status || 'Pending'}
+                  <Badge className={`text-xs px-2 py-1 ${
+                    report.priority === 'high' || report.urgency === 'critical'
+                      ? 'bg-red-900/30 text-red-300 border-red-700/50'
+                      : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+                  }`}>
+                    {report.priority || report.urgency || 'Medium'}
                   </Badge>
                 </div>
                 
                 <div className="col-span-1">
-                  {report.status !== 'resolved' && (
+                  {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
                       variant="outline"
                       className="h-6 px-2 text-xs bg-blue-600/20 border-blue-500 text-blue-300 hover:bg-blue-600/30"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDispatchUnit(report.id);
+                        handleDispatchClick(report);
                       }}
                     >
                       Dispatch
@@ -210,6 +216,14 @@ const RealTimeReports = () => {
           })()}
         </div>
       )}
+
+      {/* Dispatch Modal */}
+      <DispatchModal
+        open={dispatchModalOpen}
+        onOpenChange={setDispatchModalOpen}
+        report={reportToDispatch}
+        onAssignmentComplete={handleAssignmentComplete}
+      />
     </div>
   );
 };

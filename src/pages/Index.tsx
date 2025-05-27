@@ -4,16 +4,13 @@ import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
 import IncidentTable from '../components/IncidentTable';
-import NewsLiveFeed from '../components/NewsLiveFeed';
 import NotificationPanel from '../components/NotificationPanel';
-import SimpleMap from '../components/SimpleMap';
 import RealTimeReports from '../components/RealTimeReports';
 import ReportDetailsModal from '../components/ReportDetailsModal';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target, Activity } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const { reports, loading: reportsLoading } = useReports();
@@ -114,7 +111,7 @@ const Index = () => {
           />
         </div>
 
-        {/* Enhanced Map Section - Only Google Maps */}
+        {/* Enhanced Map Section - Full Width */}
         <div className="mb-8 animate-slide-in-right">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-4">
@@ -125,21 +122,30 @@ const Index = () => {
                 <span className="text-green-400 text-sm font-semibold dhq-caption uppercase">LIVE</span>
               </div>
             </div>
+            <div className="flex items-center space-x-4 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <span className="text-gray-300">Pending</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                <span className="text-gray-300">Assigned</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                <span className="text-gray-300">Resolved</span>
+              </div>
+            </div>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
-              <GoogleMapsHeatmap reports={reports} onMarkerClick={handleMarkerClick} />
-            </div>
-            <div className="lg:col-span-1">
-              <div className="dhq-card p-6 h-full">
-                <div className="flex items-center space-x-3 mb-6">
-                  <FileText className="h-5 w-5 text-cyan-400" />
-                  <h3 className="text-xl font-bold text-white dhq-heading">INTELLIGENCE FEED</h3>
-                  <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
-                </div>
-                <NewsLiveFeed />
-              </div>
+          {/* Full Width Map Container */}
+          <div className="w-full">
+            <div className="dhq-card p-6 h-[600px]">
+              <GoogleMapsHeatmap 
+                reports={reports} 
+                onMarkerClick={handleMarkerClick}
+                className="h-full"
+              />
             </div>
           </div>
         </div>
