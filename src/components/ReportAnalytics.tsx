@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Calendar, FileText, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 
@@ -15,7 +17,12 @@ interface ReportAnalytics {
   threatTypeData: Array<{ type: string; count: number; color: string }>;
 }
 
-const ReportAnalytics = () => {
+interface ReportAnalyticsProps {
+  onFilterChange?: (filter: string) => void;
+  selectedFilter?: string;
+}
+
+const ReportAnalytics = ({ onFilterChange, selectedFilter = 'all' }: ReportAnalyticsProps) => {
   const [timeframe, setTimeframe] = useState('3months');
   const [analytics, setAnalytics] = useState<ReportAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,8 +83,8 @@ const ReportAnalytics = () => {
       // Process data
       const totalReports = reports?.length || 0;
       const resolvedReports = reports?.filter(r => r.status === 'resolved').length || 0;
-      const assignedReports = assignments?.filter(a => a.status === 'assigned' || a.status === 'in_progress').length || 0;
-      const pendingReports = totalReports - resolvedReports;
+      const assignedReports = assignments?.filter(a => a.status === 'pending' || a.status === 'accepted' || a.status === 'responded_to').length || 0;
+      const pendingReports = reports?.filter(r => r.status === 'pending').length || 0;
 
       // Monthly data
       const monthlyMap = new Map<string, { reports: number; resolved: number }>();
@@ -134,7 +141,42 @@ const ReportAnalytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('analytics-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reports'
+      }, () => {
+        fetchAnalytics();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'assignments'
+      }, () => {
+        fetchAnalytics();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [timeframe]);
+
+  const handleCardClick = (filter: string) => {
+    if (onFilterChange) {
+      onFilterChange(filter);
+    }
+  };
+
+  const handleRadioChange = (value: string) => {
+    if (onFilterChange) {
+      onFilterChange(value);
+    }
+  };
 
   if (loading) {
     return (
@@ -175,9 +217,35 @@ const ReportAnalytics = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {/* Radio Button Filter */}
+      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-3">Filter Reports</h3>
+        <RadioGroup value={selectedFilter} onValueChange={handleRadioChange} className="flex flex-wrap gap-6">
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="all" id="all" className="border-gray-400 text-blue-400" />
+            <Label htmlFor="all" className="text-gray-300 cursor-pointer">All Reports ({analytics.totalReports})</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="pending" id="pending" className="border-gray-400 text-yellow-400" />
+            <Label htmlFor="pending" className="text-gray-300 cursor-pointer">Pending ({analytics.pendingReports})</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="assigned" id="assigned" className="border-gray-400 text-orange-400" />
+            <Label htmlFor="assigned" className="text-gray-300 cursor-pointer">Assigned ({analytics.assignedReports})</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="resolved" id="resolved" className="border-gray-400 text-green-400" />
+            <Label htmlFor="resolved" className="text-gray-300 cursor-pointer">Resolved ({analytics.resolvedReports})</Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* Summary Cards - Now Clickable */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gray-800/50 border-gray-700 p-4">
+        <Card 
+          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
+          onClick={() => handleCardClick('all')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total Reports</p>
@@ -187,7 +255,10 @@ const ReportAnalytics = () => {
           </div>
         </Card>
 
-        <Card className="bg-gray-800/50 border-gray-700 p-4">
+        <Card 
+          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}`}
+          onClick={() => handleCardClick('pending')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Pending</p>
@@ -197,7 +268,10 @@ const ReportAnalytics = () => {
           </div>
         </Card>
 
-        <Card className="bg-gray-800/50 border-gray-700 p-4">
+        <Card 
+          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'assigned' ? 'ring-2 ring-orange-500' : ''}`}
+          onClick={() => handleCardClick('assigned')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Assigned</p>
@@ -207,7 +281,10 @@ const ReportAnalytics = () => {
           </div>
         </Card>
 
-        <Card className="bg-gray-800/50 border-gray-700 p-4">
+        <Card 
+          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'resolved' ? 'ring-2 ring-green-500' : ''}`}
+          onClick={() => handleCardClick('resolved')}
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Resolved</p>
