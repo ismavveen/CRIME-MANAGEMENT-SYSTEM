@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -48,14 +47,14 @@ export const useAssignments = () => {
         resolved_at: assignment.resolved_at,
         resolved_by: assignment.resolved_by,
         resolution_notes: assignment.resolution_notes,
-        response_timestamp: assignment.response_timestamp || null,
-        response_timeframe: assignment.response_timeframe || null,
-        operation_outcome: assignment.operation_outcome || null,
-        casualties: assignment.casualties || null,
-        injured_personnel: assignment.injured_personnel || null,
-        civilians_rescued: assignment.civilians_rescued || null,
-        weapons_recovered: assignment.weapons_recovered || null,
-        custom_message: assignment.custom_message || null,
+        response_timestamp: (assignment as any).response_timestamp || null,
+        response_timeframe: (assignment as any).response_timeframe || null,
+        operation_outcome: (assignment as any).operation_outcome || null,
+        casualties: (assignment as any).casualties || null,
+        injured_personnel: (assignment as any).injured_personnel || null,
+        civilians_rescued: (assignment as any).civilians_rescued || null,
+        weapons_recovered: (assignment as any).weapons_recovered || null,
+        custom_message: (assignment as any).custom_message || null,
         created_at: assignment.created_at,
         updated_at: assignment.updated_at
       }));
