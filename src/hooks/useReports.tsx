@@ -13,6 +13,9 @@ export interface Report {
   priority: string;
   status: string;
   state: string;
+  local_government?: string;
+  full_address?: string;
+  landmark?: string;
   acknowledged_at?: string;
   assigned_commander_id?: string;
   response_time_hours?: number;
@@ -26,6 +29,8 @@ export interface Report {
   timestamp?: string;
   location_accuracy?: number;
   assigned_to?: string;
+  images?: string[];
+  videos?: string[];
 }
 
 export const useReports = () => {

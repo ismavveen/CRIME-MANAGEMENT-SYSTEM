@@ -85,8 +85,7 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
     if (heatmapData.length > 0) {
       heatmapRef.current = new window.google.maps.visualization.HeatmapLayer({
         data: heatmapData,
-        map: mapInstanceRef.current,
-        opacity: 0.7
+        map: mapInstanceRef.current
       });
     }
   }, [isLoaded, reports, onMarkerClick]);
