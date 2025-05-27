@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
@@ -8,6 +8,7 @@ import NewsLiveFeed from '../components/NewsLiveFeed';
 import NotificationPanel from '../components/NotificationPanel';
 import SimpleMap from '../components/SimpleMap';
 import RealTimeReports from '../components/RealTimeReports';
+import ReportDetailsModal from '../components/ReportDetailsModal';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
@@ -18,11 +19,16 @@ const Index = () => {
   const { reports, loading: reportsLoading } = useReports();
   const { assignments } = useAssignments();
   const { metrics, loading: metricsLoading } = useSystemMetrics();
+  const [selectedReport, setSelectedReport] = useState<any>(null);
 
   const loading = reportsLoading || metricsLoading;
 
   const handleStatCardClick = (type: string) => {
     console.log(`Clicked on ${type} stat card`);
+  };
+
+  const handleMarkerClick = (report: any) => {
+    setSelectedReport(report);
   };
 
   return (
@@ -123,7 +129,7 @@ const Index = () => {
           
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div className="lg:col-span-3">
-              <GoogleMapsHeatmap />
+              <GoogleMapsHeatmap reports={reports} onMarkerClick={handleMarkerClick} />
             </div>
             <div className="lg:col-span-1">
               <div className="dhq-card p-6 h-full">
@@ -160,6 +166,14 @@ const Index = () => {
           <IncidentTable />
         </div>
       </div>
+
+      {/* Report Details Modal */}
+      {selectedReport && (
+        <ReportDetailsModal 
+          report={selectedReport} 
+          onClose={() => setSelectedReport(null)} 
+        />
+      )}
     </div>
   );
 };

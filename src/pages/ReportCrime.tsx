@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,9 +5,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, AlertTriangle, MapPin, Upload, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock, Camera, Video, X } from 'lucide-react';
+import MediaUploadSection from '@/components/MediaUploadSection';
+import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock } from 'lucide-react';
 
 const ReportCrime = () => {
+  // ... keep existing code (state and helper functions)
   const [formData, setFormData] = useState({
     description: '',
     location: '',
@@ -65,7 +66,6 @@ const ReportCrime = () => {
           error: null,
         });
         
-        // Get readable address from coordinates
         getAddressFromCoordinates(position.coords.latitude, position.coords.longitude);
       },
       (error) => {
@@ -94,14 +94,13 @@ const ReportCrime = () => {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000 // 5 minutes
+        maximumAge: 300000
       }
     );
   };
 
   const getAddressFromCoordinates = async (lat: number, lng: number) => {
     try {
-      // Using a simple reverse geocoding approach - in production you might want to use a proper service
       setFormData(prev => ({
         ...prev,
         location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
@@ -116,39 +115,6 @@ const ReportCrime = () => {
       ...prev,
       [field]: value
     }));
-  };
-
-  const handleFileUpload = (files: FileList | null, type: 'image' | 'video') => {
-    if (!files) return;
-
-    const fileArray = Array.from(files);
-    const maxSize = type === 'image' ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB for images, 50MB for videos
-    
-    const validFiles = fileArray.filter(file => {
-      if (file.size > maxSize) {
-        toast({
-          title: `File too large`,
-          description: `${file.name} exceeds the ${type === 'image' ? '5MB' : '50MB'} limit`,
-          variant: "destructive",
-        });
-        return false;
-      }
-      return true;
-    });
-
-    if (type === 'image') {
-      setImages(prev => [...prev, ...validFiles]);
-    } else {
-      setVideos(prev => [...prev, ...validFiles]);
-    }
-  };
-
-  const removeFile = (index: number, type: 'image' | 'video') => {
-    if (type === 'image') {
-      setImages(prev => prev.filter((_, i) => i !== index));
-    } else {
-      setVideos(prev => prev.filter((_, i) => i !== index));
-    }
   };
 
   const uploadFiles = async (files: File[], type: 'image' | 'video'): Promise<string[]> => {
@@ -176,7 +142,6 @@ const ReportCrime = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if location is available
     if (!locationData.hasPermission || !locationData.latitude || !locationData.longitude) {
       toast({
         title: "Location Required",
@@ -191,7 +156,6 @@ const ReportCrime = () => {
     setUploading(true);
 
     try {
-      // Upload files
       let imageUrls: string[] = [];
       let videoUrls: string[] = [];
 
@@ -224,8 +188,6 @@ const ReportCrime = () => {
         full_address: formData.fullAddress,
         landmark: formData.landmark,
       };
-
-      console.log('Submitting report data:', reportData);
 
       const { data, error } = await supabase
         .from('reports')
@@ -267,7 +229,6 @@ const ReportCrime = () => {
       setImages([]);
       setVideos([]);
 
-      // Re-request location for next report
       requestLocationPermission();
 
     } catch (error: any) {
@@ -283,6 +244,7 @@ const ReportCrime = () => {
     }
   };
 
+  // ... keep existing code (reportingChannels, nigerianStates, etc.)
   const reportingChannels = [
     {
       id: 'web_app',
@@ -596,79 +558,14 @@ const ReportCrime = () => {
               )}
             </div>
 
-            {/* Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Camera className="w-4 h-4 inline mr-1" />
-                Upload Images (Optional)
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={(e) => handleFileUpload(e.target.files, 'image')}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-              />
-              <p className="text-xs text-gray-400 mt-1">Maximum 5MB per image. Supported formats: JPG, PNG, GIF</p>
-              
-              {images.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {images.map((image, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={URL.createObjectURL(image)}
-                        alt={`Upload ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-md"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeFile(index, 'image')}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Video Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <Video className="w-4 h-4 inline mr-1" />
-                Upload Videos (Optional)
-              </label>
-              <input
-                type="file"
-                multiple
-                accept="video/*"
-                onChange={(e) => handleFileUpload(e.target.files, 'video')}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-              />
-              <p className="text-xs text-gray-400 mt-1">Maximum 50MB per video. Supported formats: MP4, AVI, MOV</p>
-              
-              {videos.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {videos.map((video, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-900/30 p-3 rounded-md">
-                      <div className="flex items-center space-x-3">
-                        <Video className="w-5 h-5 text-blue-400" />
-                        <span className="text-sm text-gray-300">{video.name}</span>
-                        <span className="text-xs text-gray-500">({(video.size / 1024 / 1024).toFixed(1)} MB)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(index, 'video')}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Media Upload Section */}
+            <MediaUploadSection
+              images={images}
+              videos={videos}
+              onImagesChange={setImages}
+              onVideosChange={setVideos}
+              uploading={uploading}
+            />
 
             {/* Urgency Level */}
             <div>
