@@ -101,10 +101,10 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
     const heatmapData = activeReports.map(report => {
       const lat = Number(report.latitude);
       const lng = Number(report.longitude);
-      return {
-        location: new window.google.maps.LatLng(lat, lng),
-        weight: getWeightByThreatType(report.threat_type, report.status)
-      };
+      return new window.google.maps.visualization.WeightedLocation(
+        new window.google.maps.LatLng(lat, lng),
+        getWeightByThreatType(report.threat_type, report.status)
+      );
     });
 
     // Remove existing heatmap
