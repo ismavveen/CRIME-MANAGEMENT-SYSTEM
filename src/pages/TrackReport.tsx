@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import AIChatbot from '@/components/AIChatbot';
+import AIChatInterface from '@/components/AIChatInterface';
 import { Search, Shield, Clock, MapPin, User, AlertTriangle, CheckCircle, Eye, FileText, MessageCircle } from 'lucide-react';
 
 interface Report {
@@ -24,7 +24,6 @@ const TrackReport = () => {
   const [reportId, setReportId] = useState('');
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showChatbot, setShowChatbot] = useState(false);
   const { toast } = useToast();
 
   const handleTrackReport = async () => {
@@ -265,20 +264,15 @@ const TrackReport = () => {
             )}
           </div>
 
-          {/* Chatbot Section */}
+          {/* AI Chat Assistant */}
           <div className="lg:col-span-1">
             <div className="sticky top-6">
-              <div className="mb-4">
-                <Button 
-                  onClick={() => setShowChatbot(!showChatbot)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center space-x-2"
-                >
-                  <MessageCircle className="w-5 h-5" />
-                  <span>{showChatbot ? 'HIDE AI ASSISTANT' : 'DHQ AI ASSISTANT'}</span>
-                </Button>
-              </div>
-              
-              {showChatbot && <AIChatbot />}
+              <AIChatInterface 
+                userType="user" 
+                context={report ? `User is tracking report ${report.id.slice(0, 8)} with status: ${report.status}, threat type: ${report.threat_type}` : "User is on the report tracking page"}
+                title="DHQ Tracking Assistant"
+                className="h-[600px]"
+              />
 
               {/* Quick Links */}
               <Card className="bg-gray-800/50 border-gray-700/50 p-4 mt-4">

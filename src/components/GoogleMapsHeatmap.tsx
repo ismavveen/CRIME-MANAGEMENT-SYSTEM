@@ -97,11 +97,15 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
       markers.forEach(marker => marker.setMap(mapInstanceRef.current));
     }
 
-    // Create heatmap data
-    const heatmapData = activeReports.map(report => ({
-      location: new window.google.maps.LatLng(Number(report.latitude), Number(report.longitude)),
-      weight: getWeightByThreatType(report.threat_type, report.status)
-    }));
+    // Create heatmap data with fixed coordinates
+    const heatmapData = activeReports.map(report => {
+      const lat = Number(report.latitude);
+      const lng = Number(report.longitude);
+      return {
+        location: new window.google.maps.LatLng(lat, lng),
+        weight: getWeightByThreatType(report.threat_type, report.status)
+      };
+    });
 
     // Remove existing heatmap
     if (heatmapRef.current) {

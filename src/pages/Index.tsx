@@ -7,6 +7,7 @@ import IncidentTable from '../components/IncidentTable';
 import NotificationPanel from '../components/NotificationPanel';
 import RealTimeReports from '../components/RealTimeReports';
 import ReportDetailsModal from '../components/ReportDetailsModal';
+import AIChatInterface from '../components/AIChatInterface';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
@@ -75,40 +76,55 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Enhanced Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard
-            title="TOTAL REPORTS"
-            value={loading ? "..." : metrics.total_reports.toString()}
-            subtitle="ALL INCIDENTS"
-            icon={<FileText size={28} />}
-            status="neutral"
-            onClick={() => handleStatCardClick('total_reports')}
-          />
-          <StatCard
-            title="RESOLVED"
-            value={loading ? "..." : metrics.resolved_reports.toString()}
-            subtitle="COMPLETED MISSIONS"
-            status="success"
-            icon={<CircleCheck size={28} />}
-            onClick={() => handleStatCardClick('resolved_reports')}
-          />
-          <StatCard
-            title="PENDING"
-            value={loading ? "..." : metrics.pending_reports.toString()}
-            subtitle="AWAITING ACTION"
-            status="warning"
-            icon={<CircleAlert size={28} />}
-            onClick={() => handleStatCardClick('pending_reports')}
-          />
-          <StatCard
-            title="RESPONSE TIME"
-            value="15 min"
-            subtitle="AVERAGE RESPONSE"
-            status="success"
-            icon={<Target size={28} />}
-            onClick={() => handleStatCardClick('response_time')}
-          />
+        {/* Stats Grid with AI Chat */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+          <div className="lg:col-span-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard
+                title="TOTAL REPORTS"
+                value={loading ? "..." : metrics.total_reports.toString()}
+                subtitle="ALL INCIDENTS"
+                icon={<FileText size={28} />}
+                status="neutral"
+                onClick={() => handleStatCardClick('total_reports')}
+              />
+              <StatCard
+                title="RESOLVED"
+                value={loading ? "..." : metrics.resolved_reports.toString()}
+                subtitle="COMPLETED MISSIONS"
+                status="success"
+                icon={<CircleCheck size={28} />}
+                onClick={() => handleStatCardClick('resolved_reports')}
+              />
+              <StatCard
+                title="PENDING"
+                value={loading ? "..." : metrics.pending_reports.toString()}
+                subtitle="AWAITING ACTION"
+                status="warning"
+                icon={<CircleAlert size={28} />}
+                onClick={() => handleStatCardClick('pending_reports')}
+              />
+              <StatCard
+                title="RESPONSE TIME"
+                value="15 min"
+                subtitle="AVERAGE RESPONSE"
+                status="success"
+                icon={<Target size={28} />}
+                onClick={() => handleStatCardClick('response_time')}
+              />
+            </div>
+          </div>
+          
+          {/* AI Chat Assistant */}
+          <div className="lg:col-span-1">
+            <AIChatInterface 
+              userType="admin" 
+              context={`Total reports: ${metrics.total_reports}, Pending: ${metrics.pending_reports}, Resolved: ${metrics.resolved_reports}`}
+              title="Intelligence Assistant"
+              className="h-96"
+              compact={true}
+            />
+          </div>
         </div>
 
         {/* Enhanced Map Section - Full Width */}
