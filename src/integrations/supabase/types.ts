@@ -63,6 +63,53 @@ export type Database = {
           },
         ]
       }
+      image_analysis: {
+        Row: {
+          analyzed_at: string
+          created_at: string
+          detected_faces: Json | null
+          detected_objects: Json | null
+          extracted_text: string | null
+          id: string
+          image_url: string
+          labels: Json | null
+          report_id: string
+          updated_at: string
+        }
+        Insert: {
+          analyzed_at?: string
+          created_at?: string
+          detected_faces?: Json | null
+          detected_objects?: Json | null
+          extracted_text?: string | null
+          id?: string
+          image_url: string
+          labels?: Json | null
+          report_id: string
+          updated_at?: string
+        }
+        Update: {
+          analyzed_at?: string
+          created_at?: string
+          detected_faces?: Json | null
+          detected_objects?: Json | null
+          extracted_text?: string | null
+          id?: string
+          image_url?: string
+          labels?: Json | null
+          report_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_image_analysis_report_id"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

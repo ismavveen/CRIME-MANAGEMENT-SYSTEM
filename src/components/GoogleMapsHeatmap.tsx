@@ -80,9 +80,8 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
 
     markersRef.current = markers;
 
-    // Initialize MarkerClusterer if we have markers
+    // Initialize MarkerClusterer if we have markers and the API is available
     if (markers.length > 0 && window.google.maps.marker) {
-      // Use the new Advanced Markers API if available
       try {
         const { MarkerClusterer } = window.google.maps.marker as any;
         markerClustererRef.current = new MarkerClusterer({

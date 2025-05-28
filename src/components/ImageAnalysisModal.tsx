@@ -72,7 +72,17 @@ const ImageAnalysisModal = ({ isOpen, onClose, reportId, imageUrl }: ImageAnalys
         .maybeSingle();
 
       if (error) throw error;
-      setAnalysisResult(data);
+      
+      if (data) {
+        setAnalysisResult({
+          id: data.id,
+          labels: data.labels || [],
+          extracted_text: data.extracted_text || '',
+          detected_objects: data.detected_objects || [],
+          detected_faces: data.detected_faces || [],
+          analyzed_at: data.analyzed_at
+        });
+      }
     } catch (error: any) {
       console.error('Error fetching analysis result:', error);
     } finally {
