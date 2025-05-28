@@ -76,10 +76,10 @@ const ImageAnalysisModal = ({ isOpen, onClose, reportId, imageUrl }: ImageAnalys
       if (data) {
         setAnalysisResult({
           id: data.id,
-          labels: data.labels || [],
+          labels: Array.isArray(data.labels) ? data.labels as Array<{description: string; score: number}> : [],
           extracted_text: data.extracted_text || '',
-          detected_objects: data.detected_objects || [],
-          detected_faces: data.detected_faces || [],
+          detected_objects: Array.isArray(data.detected_objects) ? data.detected_objects as Array<{name: string; score: number; boundingBox: {x: number; y: number; width: number; height: number}}> : [],
+          detected_faces: Array.isArray(data.detected_faces) ? data.detected_faces as Array<{boundingBox: {x: number; y: number; width: number; height: number}; emotions: {joy: number; sorrow: number; anger: number; surprise: number}}> : [],
           analyzed_at: data.analyzed_at
         });
       }
