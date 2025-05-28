@@ -25,6 +25,7 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
   const mapInstanceRef = useRef<any>(null);
   const heatmapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const markerClustererRef = useRef<any>(null);
 
   useEffect(() => {
     if (!isLoaded || !mapRef.current || !window.google) return;
@@ -38,7 +39,10 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
       });
     }
 
-    // Clear existing markers
+    // Clear existing markers and clusterer
+    if (markerClustererRef.current) {
+      markerClustererRef.current.clearMarkers();
+    }
     markersRef.current.forEach(marker => marker.setMap(null));
     markersRef.current = [];
 
@@ -49,12 +53,10 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
       report.status !== 'resolved'
     );
 
-    // Convert reports to heatmap data and markers
-    const heatmapData = activeReports.map(report => {
-      // Create marker for each report
+    // Convert reports to markers
+    const markers = activeReports.map(report => {
       const marker = new window.google.maps.Marker({
         position: { lat: Number(report.latitude), lng: Number(report.longitude) },
-        map: mapInstanceRef.current,
         title: report.threat_type || 'Report',
         icon: {
           url: 'data:image/svg+xml;base64,' + btoa(`
@@ -73,13 +75,34 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
         }
       });
 
-      markersRef.current.push(marker);
-
-      return {
-        location: new window.google.maps.LatLng(Number(report.latitude), Number(report.longitude)),
-        weight: getWeightByThreatType(report.threat_type, report.status)
-      };
+      return marker;
     });
+
+    markersRef.current = markers;
+
+    // Initialize MarkerClusterer if we have markers
+    if (markers.length > 0 && window.google.maps.marker) {
+      // Use the new Advanced Markers API if available
+      try {
+        const { MarkerClusterer } = window.google.maps.marker as any;
+        markerClustererRef.current = new MarkerClusterer({
+          map: mapInstanceRef.current,
+          markers: markers,
+        });
+      } catch (error) {
+        // Fallback: just add markers directly to map
+        markers.forEach(marker => marker.setMap(mapInstanceRef.current));
+      }
+    } else {
+      // Fallback: add markers directly to map
+      markers.forEach(marker => marker.setMap(mapInstanceRef.current));
+    }
+
+    // Create heatmap data
+    const heatmapData = activeReports.map(report => ({
+      location: new window.google.maps.LatLng(Number(report.latitude), Number(report.longitude)),
+      weight: getWeightByThreatType(report.threat_type, report.status)
+    }));
 
     // Remove existing heatmap
     if (heatmapRef.current) {
