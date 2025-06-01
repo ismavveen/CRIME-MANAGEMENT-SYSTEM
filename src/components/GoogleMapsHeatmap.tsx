@@ -4,8 +4,8 @@ import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
 interface Report {
   id: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   threat_type: string;
   urgency: 'low' | 'medium' | 'high';
   priority: 'low' | 'medium' | 'high';
@@ -14,9 +14,14 @@ interface Report {
 interface GoogleMapsHeatmapProps {
   reports: Report[];
   className?: string;
+  onMarkerClick?: (report: Report) => void;
 }
 
-const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ reports, className = '' }) => {
+const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ 
+  reports, 
+  className = '',
+  onMarkerClick 
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [heatmap, setHeatmap] = useState<google.maps.visualization.HeatmapLayer | null>(null);
@@ -49,15 +54,20 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ reports, classNam
       heatmap.setMap(null);
     }
 
-    // Create heatmap data with proper WeightedLocation objects
+    // Create heatmap data with weighted locations
     const heatmapData = reports
       .filter(report => report.latitude && report.longitude)
       .map(report => {
         const weight = getWeightForReport(report);
-        return {
-          location: new window.google.maps.LatLng(report.latitude, report.longitude),
+        const location = new window.google.maps.LatLng(report.latitude!, report.longitude!);
+        
+        // Create WeightedLocation object that conforms to the interface
+        const weightedLocation: google.maps.visualization.WeightedLocation = {
+          location: location,
           weight: weight
         };
+        
+        return weightedLocation;
       });
 
     if (heatmapData.length === 0) return;

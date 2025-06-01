@@ -1,520 +1,387 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Mail, Key, User, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import SetPasswordForm from './SetPasswordForm';
+
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
+  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
+  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
+  'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara'
+];
+
+const SERVICE_CATEGORIES = {
+  'Army': ['Second Lieutenant', 'Lieutenant', 'Captain', 'Major', 'Lieutenant Colonel', 'Colonel'],
+  'Navy': ['Midshipman', 'Sub-Lieutenant', 'Lieutenant', 'Lieutenant Commander', 'Commander', 'Captain'],
+  'Air Force': ['Pilot Officer', 'Flying Officer', 'Flight Lieutenant', 'Squadron Leader', 'Wing Commander', 'Group Captain']
+};
+
+type RegistrationStep = 'form' | 'otp' | 'password' | 'success';
 
 const CommanderRegistration = () => {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [otpStep, setOtpStep] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
-  const [generatedOtp, setGeneratedOtp] = useState('');
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [step, setStep] = useState<RegistrationStep>('form');
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
-    phone_number: '',
-    service_number: '',
+    state: '',
+    unit: '',
     category: '',
     rank: '',
-    unit: '',
-    state: '',
-    specialization: '',
-    location: ''
+    contact_info: '',
+    service_number: ''
   });
+  const [otpCode, setOtpCode] = useState('');
+  const [sentOtp, setSentOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { toast } = useToast();
 
-  const militaryRanks = {
-    "Air Force": [
-      "Air Chief Marshal",
-      "Air Marshal", 
-      "Air Vice Marshal",
-      "Air Commodore",
-      "Group Captain",
-      "Wing Commander",
-      "Squadron Leader",
-      "Flight Lieutenant",
-      "Flying Officer",
-      "Pilot Officer"
-    ],
-    "Navy": [
-      "Admiral",
-      "Vice Admiral",
-      "Rear Admiral",
-      "Commodore", 
-      "Captain",
-      "Commander",
-      "Lieutenant Commander",
-      "Lieutenant",
-      "Sub-Lieutenant",
-      "Midshipman"
-    ],
-    "Army": [
-      "Field Marshal",
-      "General",
-      "Lieutenant General", 
-      "Major General",
-      "Brigadier",
-      "Colonel",
-      "Lieutenant Colonel",
-      "Major",
-      "Captain",
-      "Lieutenant",
-      "Second Lieutenant"
-    ]
+  const generateServiceNumber = (category: string, state: string) => {
+    const categoryCode = category.substring(0, 2).toUpperCase();
+    const stateCode = state.substring(0, 3).toUpperCase();
+    const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `${categoryCode}${stateCode}${randomNum}`;
   };
 
-  const generateOTP = () => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
-  };
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
-  const generateServiceNumber = (category: string) => {
-    const prefix = category === 'Air Force' ? 'AF' : category === 'Navy' ? 'NN' : 'NA';
-    const randomNum = Math.floor(10000 + Math.random() * 90000);
-    return `${prefix}/${new Date().getFullYear()}/${randomNum}`;
-  };
-
-  const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let password = '';
-    for (let i = 0; i < 12; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return password;
-  };
-
-  const sendOTPEmail = async () => {
     try {
-      const otp = generateOTP();
-      setGeneratedOtp(otp);
+      // Generate service number
+      const serviceNumber = generateServiceNumber(formData.category, formData.state);
+      setFormData(prev => ({ ...prev, service_number: serviceNumber }));
+
+      // Generate and send OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setSentOtp(otp);
 
       const { error } = await supabase.functions.invoke('send-otp-verification', {
         body: {
           email: formData.email,
-          fullName: formData.full_name,
-          otpCode: otp
+          name: formData.full_name,
+          otp: otp
         }
       });
 
-      if (error) {
-        console.error('OTP email sending failed:', error);
-        toast({
-          title: "OTP Sending Failed",
-          description: "Failed to send verification code. Please try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
+      if (error) throw error;
 
-      return true;
-    } catch (error) {
-      console.error('OTP generation error:', error);
-      return false;
+      toast({
+        title: "OTP Sent",
+        description: "Please check your email for the verification code",
+      });
+
+      setStep('otp');
+    } catch (error: any) {
+      console.error('Error sending OTP:', error);
+      setError(error.message || 'Failed to send OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSendOTP = async (e: React.FormEvent) => {
+  const handleOtpVerification = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
+    setError('');
 
-    // Validate required fields for OTP step
-    if (!formData.full_name || !formData.email || !formData.category || !formData.rank || !formData.state) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields before verification.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
+    if (otpCode !== sentOtp) {
+      setError('Invalid OTP code');
       return;
     }
 
-    // Check for duplicate email or service number
-    const { data: existingCommanders, error: checkError } = await supabase
-      .from('unit_commanders')
-      .select('email, service_number')
-      .or(`email.eq.${formData.email},service_number.eq.${formData.service_number || generateServiceNumber(formData.category)}`);
-
-    if (checkError) {
-      toast({
-        title: "Verification Failed",
-        description: "Error checking existing records.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (existingCommanders && existingCommanders.length > 0) {
-      toast({
-        title: "Duplicate Entry",
-        description: "Email or service number already exists.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
-    const otpSent = await sendOTPEmail();
-    if (otpSent) {
-      setOtpStep(true);
-      toast({
-        title: "Verification Code Sent",
-        description: `A 6-digit code has been sent to ${formData.email}`,
-      });
-    }
-
-    setIsSubmitting(false);
-  };
-
-  const handleVerifyOTP = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsVerifyingOtp(true);
-
-    if (otpCode !== generatedOtp) {
-      toast({
-        title: "Invalid Code",
-        description: "The verification code is incorrect. Please try again.",
-        variant: "destructive",
-      });
-      setIsVerifyingOtp(false);
-      return;
-    }
+    setIsLoading(true);
 
     try {
-      // Generate credentials
-      const serviceNumber = formData.service_number || generateServiceNumber(formData.category);
-      const generatedPassword = generatePassword();
-
-      // Create commander profile with the new category and service_number columns
-      const { data: commanderData, error: commanderError } = await supabase
+      // Create the commander record without password
+      const { error } = await supabase
         .from('unit_commanders')
-        .insert({
-          full_name: formData.full_name,
-          email: formData.email,
-          service_number: serviceNumber,
-          rank: formData.rank,
-          unit: formData.unit,
-          state: formData.state,
-          category: formData.category, // New column
-          specialization: formData.specialization || null,
-          location: formData.location || null,
-          contact_info: formData.phone_number || null,
-          status: 'active'
-        })
-        .select()
-        .single();
+        .insert([{
+          ...formData,
+          status: 'pending_password' // Mark as pending password setup
+        }]);
 
-      if (commanderError) throw commanderError;
+      if (error) throw error;
 
-      // Send credentials email
-      const { error: credentialsError } = await supabase.functions.invoke('send-commander-credentials', {
-        body: {
-          email: formData.email,
-          fullName: formData.full_name,
-          password: generatedPassword,
-          serviceNumber: serviceNumber,
-          rank: formData.rank,
-          unit: formData.unit,
-          category: formData.category
-        }
-      });
-
-      if (credentialsError) {
-        console.error('Credentials email failed:', credentialsError);
-        toast({
-          title: "Registration Successful",
-          description: "Commander registered but credentials email failed. Please contact them manually.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Registration Complete",
-          description: `${formData.full_name} has been successfully registered and credentials sent.`,
-        });
-      }
-
-      // Reset form
-      setFormData({
-        full_name: '',
-        email: '',
-        phone_number: '',
-        service_number: '',
-        category: '',
-        rank: '',
-        unit: '',
-        state: '',
-        specialization: '',
-        location: ''
-      });
-      setOtpStep(false);
-      setOtpCode('');
-      setGeneratedOtp('');
-
-    } catch (error: any) {
-      console.error('Registration error:', error);
       toast({
-        title: "Registration Failed",
-        description: error.message || "Failed to register commander",
-        variant: "destructive",
+        title: "Email Verified",
+        description: "Please set your password to complete registration",
       });
+
+      setStep('password');
+    } catch (error: any) {
+      console.error('Error creating commander:', error);
+      setError(error.message || 'Failed to create commander account');
     } finally {
-      setIsVerifyingOtp(false);
+      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Reset rank when category changes
-      if (field === 'category') {
-        updated.rank = '';
-        // Auto-generate service number if not provided
-        if (!updated.service_number) {
-          updated.service_number = generateServiceNumber(value);
-        }
-      }
-      
-      return updated;
+  const handlePasswordSet = () => {
+    setStep('success');
+    toast({
+      title: "Registration Complete",
+      description: "Your account has been created successfully. You can now log in.",
     });
   };
 
-  const nigerianStates = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-    'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe', 'Imo',
-    'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa',
-    'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba',
-    'Yobe', 'Zamfara'
-  ];
+  const resetForm = () => {
+    setStep('form');
+    setFormData({
+      full_name: '',
+      email: '',
+      state: '',
+      unit: '',
+      category: '',
+      rank: '',
+      contact_info: '',
+      service_number: ''
+    });
+    setOtpCode('');
+    setSentOtp('');
+    setError('');
+  };
 
-  if (otpStep) {
+  if (step === 'password') {
+    return <SetPasswordForm email={formData.email} onPasswordSet={handlePasswordSet} />;
+  }
+
+  if (step === 'success') {
     return (
-      <Card className="bg-gray-800/50 border-gray-700 max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center">
-            <Mail className="h-5 w-5 mr-2" />
-            Email Verification
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Enter the 6-digit code sent to {formData.email}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <form onSubmit={handleVerifyOTP} className="space-y-4">
-            <div>
-              <Label htmlFor="otp" className="text-gray-300">Verification Code</Label>
-              <Input
-                id="otp"
-                value={otpCode}
-                onChange={(e) => setOtpCode(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white text-center text-2xl tracking-widest"
-                placeholder="000000"
-                maxLength={6}
-                required
-              />
+      <div className="space-y-6">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-8 w-8 text-white" />
             </div>
-
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setOtpStep(false)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                type="submit"
-                disabled={isVerifyingOtp || otpCode.length !== 6}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {isVerifyingOtp ? 'Verifying...' : 'Verify & Register'}
-              </Button>
+            <CardTitle className="text-2xl font-bold text-white">Registration Complete!</CardTitle>
+            <CardDescription className="text-gray-400">
+              Commander account has been successfully created
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-green-900/20 border border-green-700/50 p-4 rounded-lg">
+              <h4 className="font-medium text-green-300 mb-2">Account Details</h4>
+              <div className="space-y-2 text-sm text-gray-300">
+                <p><strong>Name:</strong> {formData.full_name}</p>
+                <p><strong>Email:</strong> {formData.email}</p>
+                <p><strong>Service Number:</strong> {formData.service_number}</p>
+                <p><strong>State:</strong> {formData.state}</p>
+                <p><strong>Rank:</strong> {formData.rank}</p>
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+            <Button 
+              onClick={resetForm} 
+              className="w-full bg-dhq-blue hover:bg-blue-700"
+            >
+              Register Another Commander
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700 max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center">
-          <Shield className="h-5 w-5 mr-2" />
-          Register New Unit Commander
-        </CardTitle>
-        <CardDescription className="text-gray-400">
-          Register a new commander with email verification and automatic credential generation
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleSendOTP} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-6">
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <div className="flex items-center space-x-3">
+            <Users className="h-6 w-6 text-dhq-blue" />
             <div>
-              <Label htmlFor="full_name" className="text-gray-300">Full Name *</Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange('full_name', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="email" className="text-gray-300">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
+              <CardTitle className="text-2xl font-bold text-white">
+                {step === 'form' ? 'Register Response Unit Commander' : 'Verify Email Address'}
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                {step === 'form' 
+                  ? 'Add a new field response unit commander to the system'
+                  : 'Enter the OTP code sent to your email address'
+                }
+              </CardDescription>
             </div>
           </div>
+        </CardHeader>
+        <CardContent>
+          {step === 'form' && (
+            <form onSubmit={handleFormSubmit} className="space-y-4">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name" className="text-white">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="phone_number" className="text-gray-300">Phone Number</Label>
-              <Input
-                id="phone_number"
-                value={formData.phone_number}
-                onChange={(e) => handleInputChange('phone_number', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="+234 xxx xxx xxxx"
-              />
-            </div>
-            <div>
-              <Label htmlFor="service_number" className="text-gray-300">Service Number</Label>
-              <Input
-                id="service_number"
-                value={formData.service_number}
-                onChange={(e) => handleInputChange('service_number', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="Auto-generated if empty"
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-white">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="category" className="text-gray-300">Military Branch *</Label>
-              <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select branch" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Air Force">Air Force</SelectItem>
-                  <SelectItem value="Navy">Navy</SelectItem>
-                  <SelectItem value="Army">Army</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="rank" className="text-gray-300">Rank *</Label>
-              <Select value={formData.rank} onValueChange={(value) => handleInputChange('rank', value)}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select rank" />
-                </SelectTrigger>
-                <SelectContent>
-                  {formData.category && militaryRanks[formData.category as keyof typeof militaryRanks]?.map(rank => (
-                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state" className="text-white">State *</Label>
+                  <Select value={formData.state} onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {NIGERIAN_STATES.map((state) => (
+                        <SelectItem key={state} value={state}>{state}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="unit" className="text-gray-300">Unit/Division</Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) => handleInputChange('unit', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="e.g., 7th Division, 82nd Airborne"
-              />
-            </div>
-            <div>
-              <Label htmlFor="state" className="text-gray-300">State *</Label>
-              <Select value={formData.state} onValueChange={(value) => handleInputChange('state', value)}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select state" />
-                </SelectTrigger>
-                <SelectContent>
-                  {nigerianStates.map(state => (
-                    <SelectItem key={state} value={state}>{state}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-white">Service Category *</Label>
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, category: value, rank: '' }))}
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select service category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.keys(SERVICE_CATEGORIES).map((category) => (
+                        <SelectItem key={category} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="specialization" className="text-gray-300">Specialization</Label>
-              <Input
-                id="specialization"
-                value={formData.specialization}
-                onChange={(e) => handleInputChange('specialization', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="e.g., Counter-terrorism, Intelligence"
-              />
-            </div>
-            <div>
-              <Label htmlFor="location" className="text-gray-300">Base Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="e.g., Lagos Cantonment"
-              />
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rank" className="text-white">Rank *</Label>
+                  <Select 
+                    value={formData.rank} 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, rank: value }))}
+                    disabled={!formData.category}
+                  >
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select rank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {formData.category && SERVICE_CATEGORIES[formData.category as keyof typeof SERVICE_CATEGORIES].map((rank) => (
+                        <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-          <div className="bg-blue-900/20 border border-blue-700/50 p-6 rounded-lg">
-            <div className="flex items-center space-x-2 text-blue-300 mb-3">
-              <CheckCircle className="h-5 w-5" />
-              <span className="font-medium">Registration Process</span>
-            </div>
-            <div className="space-y-2 text-sm text-blue-200">
-              <p>• Email verification required before registration</p>
-              <p>• Service number auto-generated based on military branch</p>
-              <p>• Secure credentials automatically generated and emailed</p>
-              <p>• Login available with email or service number</p>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="unit" className="text-white">Unit/Division *</Label>
+                  <Input
+                    id="unit"
+                    value={formData.unit}
+                    onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="e.g., 82nd Division, Naval Base"
+                    required
+                  />
+                </div>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting || !formData.full_name || !formData.email || !formData.category || !formData.rank || !formData.state}
-            className="w-full bg-blue-600 hover:bg-blue-700 h-12"
-          >
-            {isSubmitting ? (
-              <>
-                <Mail className="h-5 w-5 mr-2 animate-pulse" />
-                Sending Verification Code...
-              </>
-            ) : (
-              <>
-                <Mail className="h-5 w-5 mr-2" />
-                Send Verification Code
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="contact_info" className="text-white">Contact Information</Label>
+                  <Input
+                    id="contact_info"
+                    value={formData.contact_info}
+                    onChange={(e) => setFormData(prev => ({ ...prev, contact_info: e.target.value }))}
+                    className="bg-gray-700 border-gray-600 text-white"
+                    placeholder="Phone number or other contact details"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <Alert className="bg-red-900/20 border-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-red-300">
+                    {error}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-dhq-blue hover:bg-blue-700"
+              >
+                {isLoading ? 'Sending OTP...' : 'Send Verification Code'}
+              </Button>
+            </form>
+          )}
+
+          {step === 'otp' && (
+            <form onSubmit={handleOtpVerification} className="space-y-4">
+              <div className="text-center space-y-2">
+                <p className="text-gray-300">
+                  We've sent a 6-digit verification code to:
+                </p>
+                <p className="font-semibold text-white">{formData.email}</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="otp" className="text-white">Verification Code</Label>
+                <Input
+                  id="otp"
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  className="bg-gray-700 border-gray-600 text-white text-center text-2xl tracking-widest"
+                  placeholder="000000"
+                  maxLength={6}
+                  required
+                />
+              </div>
+
+              {error && (
+                <Alert className="bg-red-900/20 border-red-700">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-red-300">
+                    {error}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex space-x-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep('form')}
+                  className="flex-1 bg-transparent border-gray-600 text-gray-300"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isLoading || otpCode.length !== 6}
+                  className="flex-1 bg-dhq-blue hover:bg-blue-700"
+                >
+                  {isLoading ? 'Verifying...' : 'Verify Code'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
