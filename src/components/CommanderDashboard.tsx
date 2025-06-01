@@ -1,30 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import SimpleMap from './SimpleMap';
-import { 
-  Shield, 
-  FileText, 
-  AlertTriangle, 
-  CheckCircle, 
-  Clock, 
-  Bell,
-  LogOut,
-  MapPin,
-  Calendar,
-  Phone,
-  Mail,
-  Map
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, MapPin, FileText, Clock, CheckCircle, AlertTriangle, User } from 'lucide-react';
 import { useReports } from '@/hooks/useReports';
+import { useAssignments } from '@/hooks/useAssignments';
+import SimpleMap from './SimpleMap';
 
 interface CommanderDashboardProps {
   commander: any;
@@ -32,215 +15,41 @@ interface CommanderDashboardProps {
 }
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLogout }) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [assignments, setAssignments] = useState<any[]>([]);
-  const [selectedReport, setSelectedReport] = useState<any>(null);
-  const [acknowledgmentDialog, setAcknowledgmentDialog] = useState(false);
-  const [resolutionDialog, setResolutionDialog] = useState(false);
-  const [resolutionNotes, setResolutionNotes] = useState('');
   const { reports } = useReports();
-  const { toast } = useToast();
+  const { assignments } = useAssignments();
 
-  const stateReports = reports.filter(r => r.state === commander.state);
-  const pendingReports = stateReports.filter(r => r.status !== 'resolved');
-  const resolvedReports = stateReports.filter(r => r.status === 'resolved');
-  const urgentReports = stateReports.filter(r => r.urgency === 'critical' || r.priority === 'high');
+  // Filter reports for commander's state
+  const stateReports = reports.filter(report => report.state === commander.state);
+  const pendingReports = stateReports.filter(report => report.status === 'pending');
+  const assignedReports = assignments.filter(assignment => assignment.commander_id === commander.id);
+  const resolvedReports = assignedReports.filter(assignment => assignment.status === 'resolved');
 
-  useEffect(() => {
-    fetchNotifications();
-    fetchAssignments();
-
-    // Set up real-time subscriptions
-    const notificationsChannel = supabase
-      .channel('commander-notifications')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'notifications'
-      }, () => {
-        fetchNotifications();
-      })
-      .subscribe();
-
-    const assignmentsChannel = supabase
-      .channel('commander-assignments')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'assignments'
-      }, () => {
-        fetchAssignments();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(notificationsChannel);
-      supabase.removeChannel(assignmentsChannel);
-    };
-  }, [commander.id]);
-
-  const fetchNotifications = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      setNotifications(data || []);
-    } catch (error: any) {
-      console.error('Error fetching notifications:', error);
-    }
+  const getInitials = (name: string) => {
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
-
-  const fetchAssignments = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('*')
-        .eq('commander_id', commander.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setAssignments(data || []);
-    } catch (error: any) {
-      console.error('Error fetching assignments:', error);
-    }
-  };
-
-  const acceptAssignment = async (assignmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('assignments')
-        .update({ 
-          status: 'accepted',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Assignment Accepted",
-        description: "You have accepted the assignment and can now work on it",
-      });
-
-      fetchAssignments();
-    } catch (error: any) {
-      toast({
-        title: "Accept Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const resolveAssignment = async (assignmentId: string, reportId: string) => {
-    try {
-      // Update assignment status
-      const { error: assignmentError } = await supabase
-        .from('assignments')
-        .update({ 
-          status: 'resolved',
-          resolved_at: new Date().toISOString(),
-          resolved_by: commander.full_name,
-          resolution_notes: resolutionNotes
-        })
-        .eq('id', assignmentId);
-
-      if (assignmentError) throw assignmentError;
-
-      // Update report status
-      const { error: reportError } = await supabase
-        .from('reports')
-        .update({ 
-          status: 'resolved',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', reportId);
-
-      if (reportError) throw reportError;
-
-      toast({
-        title: "Assignment Resolved",
-        description: "Assignment has been marked as resolved successfully",
-      });
-
-      setResolutionDialog(false);
-      setResolutionNotes('');
-      fetchAssignments();
-    } catch (error: any) {
-      toast({
-        title: "Resolution Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const markNotificationRead = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ is_read: true })
-        .eq('id', notificationId);
-
-      fetchNotifications();
-    } catch (error: any) {
-      console.error('Error marking notification as read:', error);
-    }
-  };
-
-  const getUrgencyColor = (urgency: string) => {
-    switch (urgency?.toLowerCase()) {
-      case 'critical': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-blue-500';
-    }
-  };
-
-  const getAssignmentStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending': return 'bg-yellow-500';
-      case 'accepted': return 'bg-blue-500';
-      case 'resolved': return 'bg-green-500';
-      case 'rejected': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const unreadNotifications = notifications.filter(n => !n.is_read).length;
-  const pendingAssignments = assignments.filter(a => a.status === 'pending');
-  const acceptedAssignments = assignments.filter(a => a.status === 'accepted');
-  const resolvedAssignments = assignments.filter(a => a.status === 'resolved');
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       {/* Header */}
-      <div className="bg-gray-800 border-b border-gray-700 p-4">
+      <div className="bg-gray-800/50 border-b border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-dhq-blue rounded-full flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
-            </div>
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={commander.profile_image} />
+              <AvatarFallback className="bg-dhq-blue text-white">
+                {getInitials(commander.full_name)}
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <h1 className="text-xl font-bold text-white">{commander.full_name}</h1>
-              <p className="text-gray-400">{commander.state} State Command Center</p>
+              <h1 className="text-xl font-bold text-white">{commander.rank} {commander.full_name}</h1>
+              <p className="text-gray-400">{commander.unit} • {commander.state} State</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Bell className="h-5 w-5 text-gray-400" />
-              {unreadNotifications > 0 && (
-                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {unreadNotifications}
-                </span>
-              )}
-            </div>
-            <Button onClick={onLogout} variant="outline" className="bg-transparent border-gray-600 text-gray-300">
+            <Badge variant="outline" className="text-green-400 border-green-400">
+              Active
+            </Badge>
+            <Button variant="outline" onClick={onLogout} className="text-white">
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
@@ -252,296 +61,128 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLo
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gray-800/50 border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Total Reports</p>
-                  <p className="text-2xl font-bold text-white">{stateReports.length}</p>
-                </div>
-                <FileText className="h-8 w-8 text-blue-400" />
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">State Reports</CardTitle>
+              <FileText className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{stateReports.length}</div>
+              <p className="text-xs text-gray-400">Total for {commander.state}</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gray-800/50 border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Pending Assignments</p>
-                  <p className="text-2xl font-bold text-orange-400">{pendingAssignments.length}</p>
-                </div>
-                <Clock className="h-8 w-8 text-orange-400" />
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Pending</CardTitle>
+              <Clock className="h-4 w-4 text-yellow-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-400">{pendingReports.length}</div>
+              <p className="text-xs text-gray-400">Awaiting action</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gray-800/50 border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Resolved</p>
-                  <p className="text-2xl font-bold text-green-400">{resolvedAssignments.length}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-green-400" />
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Assigned to Me</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-blue-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-400">{assignedReports.length}</div>
+              <p className="text-xs text-gray-400">Active assignments</p>
             </CardContent>
           </Card>
 
           <Card className="bg-gray-800/50 border-gray-700">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Urgent</p>
-                  <p className="text-2xl font-bold text-red-400">{urgentReports.length}</p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-400" />
-              </div>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-300">Resolved</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-400">{resolvedReports.length}</div>
+              <p className="text-xs text-gray-400">Successfully completed</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="assignments" className="space-y-4">
-          <TabsList className="bg-gray-800/50 border border-gray-700">
-            <TabsTrigger value="assignments" className="data-[state=active]:bg-dhq-blue">
-              <FileText className="h-4 w-4 mr-2" />
-              My Assignments
-              {pendingAssignments.length > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {pendingAssignments.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="map" className="data-[state=active]:bg-dhq-blue">
-              <Map className="h-4 w-4 mr-2" />
-              Threat Map
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-dhq-blue">
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications
-              {unreadNotifications > 0 && (
-                <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
-                  {unreadNotifications}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="data-[state=active]:bg-dhq-blue">
-              <Shield className="h-4 w-4 mr-2" />
-              Profile
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="assignments">
-            <div className="space-y-4">
-              {assignments.map((assignment) => {
-                const report = reports.find(r => r.id === assignment.report_id);
-                return (
-                  <Card key={assignment.id} className="bg-gray-800/50 border-gray-700">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3 mb-2">
-                            <Badge className={`${getAssignmentStatusColor(assignment.status)} text-white`}>
-                              {assignment.status.toUpperCase()}
-                            </Badge>
-                            <span className="text-white font-medium">{report?.threat_type || 'Security Report'}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-gray-400">{assignment.id.slice(0, 8)}</span>
-                          </div>
-                          <p className="text-gray-300 mb-2">{report?.description}</p>
-                          <div className="flex items-center space-x-4 text-sm text-gray-400">
-                            <div className="flex items-center">
-                              <MapPin className="h-4 w-4 mr-1" />
-                              {report?.location || report?.manual_location || 'Unknown location'}
-                            </div>
-                            <div className="flex items-center">
-                              <Calendar className="h-4 w-4 mr-1" />
-                              {new Date(assignment.assigned_at).toLocaleString()}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {assignment.status === 'pending' && (
-                            <Button
-                              size="sm"
-                              onClick={() => acceptAssignment(assignment.id)}
-                              className="bg-blue-600 hover:bg-blue-700"
-                            >
-                              Accept
-                            </Button>
-                          )}
-                          {assignment.status === 'accepted' && (
-                            <Button
-                              size="sm"
-                              onClick={() => {
-                                setSelectedReport({ ...report, assignmentId: assignment.id });
-                                setResolutionDialog(true);
-                              }}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              Mark Resolved
-                            </Button>
-                          )}
-                          {assignment.status === 'resolved' && (
-                            <Badge className="bg-green-500 text-white">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              Completed
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              
-              {assignments.length === 0 && (
-                <div className="text-center py-12">
-                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">No assignments yet</h3>
-                  <p className="text-gray-400">New assignments will appear here when reports are submitted in your state</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="map">
+        {/* Map Section */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-dhq-blue" />
+              {commander.state} State Threat Map
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
             <SimpleMap commanderState={commander.state} showAllReports={false} />
-          </TabsContent>
+          </CardContent>
+        </Card>
 
-          <TabsContent value="notifications">
-            <div className="space-y-4">
-              {notifications.map((notification) => (
-                <Card 
-                  key={notification.id} 
-                  className={`border-gray-700 cursor-pointer transition-colors ${
-                    notification.is_read ? 'bg-gray-800/30' : 'bg-blue-900/20 border-blue-700'
-                  }`}
-                  onClick={() => markNotificationRead(notification.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-white font-medium mb-1">{notification.title}</h3>
-                        <p className="text-gray-300 text-sm mb-2">{notification.message}</p>
-                        <div className="flex items-center space-x-2 text-xs text-gray-500">
-                          <Badge className="bg-gray-600 text-white">
-                            {notification.type?.toUpperCase() || 'INFO'}
-                          </Badge>
-                          <span>{new Date(notification.created_at).toLocaleString()}</span>
-                        </div>
-                      </div>
-                      {!notification.is_read && (
-                        <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+        {/* Recent Reports Table */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <FileText className="h-5 w-5 text-dhq-blue" />
+              Recent Reports - {commander.state} State
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-700">
+                    <th className="text-left py-3 px-4 text-gray-300">Type</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Location</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Priority</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Status</th>
+                    <th className="text-left py-3 px-4 text-gray-300">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stateReports.slice(0, 10).map((report) => (
+                    <tr key={report.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
+                      <td className="py-3 px-4 text-white">{report.threat_type}</td>
+                      <td className="py-3 px-4 text-gray-300">{report.location || report.manual_location}</td>
+                      <td className="py-3 px-4">
+                        <Badge 
+                          className={
+                            report.priority === 'high' ? 'bg-red-500/20 text-red-400' :
+                            report.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                            'bg-green-500/20 text-green-400'
+                          }
+                        >
+                          {report.priority}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Badge 
+                          className={
+                            report.status === 'resolved' ? 'bg-green-500/20 text-green-400' :
+                            report.assigned_to ? 'bg-blue-500/20 text-blue-400' :
+                            'bg-yellow-500/20 text-yellow-400'
+                          }
+                        >
+                          {report.status === 'resolved' ? 'Resolved' : 
+                           report.assigned_to ? 'Assigned' : 'Pending'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 px-4 text-gray-300">
+                        {new Date(report.created_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               
-              {notifications.length === 0 && (
-                <div className="text-center py-12">
-                  <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-white mb-2">No notifications</h3>
-                  <p className="text-gray-400">You'll receive notifications here when new reports are assigned</p>
+              {stateReports.length === 0 && (
+                <div className="text-center py-8">
+                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-400">No reports found for {commander.state} state</p>
                 </div>
               )}
             </div>
-          </TabsContent>
-
-          <TabsContent value="profile">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Commander Profile</CardTitle>
-                <CardDescription>Your command information and contact details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-gray-400">Full Name</Label>
-                      <p className="text-white font-medium">{commander.full_name}</p>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Command Area</Label>
-                      <p className="text-white font-medium">{commander.state} State</p>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Unit</Label>
-                      <p className="text-white font-medium">{commander.unit}</p>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Status</Label>
-                      <Badge className="bg-green-500 text-white">
-                        ACTIVE
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-gray-400">Email</Label>
-                      <div className="flex items-center">
-                        <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                        <p className="text-white">{commander.email}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Phone</Label>
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                        <p className="text-white">{commander.contact_info || 'Not provided'}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Rank</Label>
-                      <p className="text-white">{commander.rank}</p>
-                    </div>
-                    <div>
-                      <Label className="text-gray-400">Joined</Label>
-                      <p className="text-white">{new Date(commander.created_at).toLocaleDateString()}</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        <Dialog open={resolutionDialog} onOpenChange={setResolutionDialog}>
-          <DialogContent className="bg-gray-800 text-white border-gray-700">
-            <DialogHeader>
-              <DialogTitle>Resolve Assignment</DialogTitle>
-              <DialogDescription>
-                Mark this assignment as resolved and provide resolution notes
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-gray-300">Report ID: {selectedReport?.id}</p>
-                <p className="text-gray-300">Type: {selectedReport?.threat_type}</p>
-              </div>
-              <div>
-                <Label htmlFor="resolutionNotes">Resolution Notes</Label>
-                <Textarea
-                  id="resolutionNotes"
-                  value={resolutionNotes}
-                  onChange={(e) => setResolutionNotes(e.target.value)}
-                  className="bg-gray-700 border-gray-600"
-                  placeholder="Describe how the issue was resolved..."
-                  rows={4}
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setResolutionDialog(false)} className="bg-transparent border-gray-600">
-                Cancel
-              </Button>
-              <Button onClick={() => resolveAssignment(selectedReport?.assignmentId, selectedReport?.id)} className="bg-green-600 hover:bg-green-700">
-                Mark as Resolved
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

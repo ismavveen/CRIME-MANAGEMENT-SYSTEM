@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +46,11 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
       }
 
       const commander = commanders[0];
+
+      // Check if commander has a password set
+      if (!commander.password_hash) {
+        throw new Error('Password not set. Please contact admin to complete registration.');
+      }
 
       // Verify password using the set-commander-password function
       const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-commander-password', {
