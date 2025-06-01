@@ -55,8 +55,13 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
 
     // Convert reports to markers
     const markers = activeReports.map(report => {
+      const position = new window.google.maps.LatLng(
+        Number(report.latitude), 
+        Number(report.longitude)
+      );
+      
       const marker = new window.google.maps.Marker({
-        position: { lat: Number(report.latitude), lng: Number(report.longitude) },
+        position: position,
         title: report.threat_type || 'Report',
         icon: {
           url: 'data:image/svg+xml;base64,' + btoa(`
@@ -97,14 +102,14 @@ const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: Goog
       markers.forEach(marker => marker.setMap(mapInstanceRef.current));
     }
 
-    // Create heatmap data with fixed coordinates
+    // Create heatmap data - use objects that match WeightedLocation interface
     const heatmapData = activeReports.map(report => {
       const lat = Number(report.latitude);
       const lng = Number(report.longitude);
-      return new window.google.maps.visualization.WeightedLocation(
-        new window.google.maps.LatLng(lat, lng),
-        getWeightByThreatType(report.threat_type, report.status)
-      );
+      return {
+        location: new window.google.maps.LatLng(lat, lng),
+        weight: getWeightByThreatType(report.threat_type, report.status)
+      };
     });
 
     // Remove existing heatmap
