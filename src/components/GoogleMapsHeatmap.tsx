@@ -1,184 +1,158 @@
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
-interface HeatmapPoint {
-  lat: number;
-  lng: number;
-  weight?: number;
+interface Report {
+  id: string;
+  latitude: number;
+  longitude: number;
+  threat_type: string;
+  urgency: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high';
 }
 
 interface GoogleMapsHeatmapProps {
-  reports?: Array<{
-    latitude?: number;
-    longitude?: number;
-    threat_type?: string;
-    status?: string;
-  }>;
+  reports: Report[];
   className?: string;
-  onMarkerClick?: (report: any) => void;
 }
 
-const GoogleMapsHeatmap = ({ reports = [], className = "", onMarkerClick }: GoogleMapsHeatmapProps) => {
+const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({ reports, className = '' }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const { isLoaded, error } = useGoogleMaps();
-  const mapInstanceRef = useRef<any>(null);
-  const heatmapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const markerClustererRef = useRef<any>(null);
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [heatmap, setHeatmap] = useState<google.maps.visualization.HeatmapLayer | null>(null);
+  const { isLoaded } = useGoogleMaps();
 
   useEffect(() => {
-    if (!isLoaded || !mapRef.current || !window.google) return;
+    if (!isLoaded || !mapRef.current) return;
 
     // Initialize map
-    if (!mapInstanceRef.current) {
-      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        zoom: 6,
-        center: { lat: 9.0820, lng: 8.6753 }, // Nigeria center
-        mapTypeId: window.google.maps.MapTypeId.ROADMAP,
-      });
-    }
-
-    // Clear existing markers and clusterer
-    if (markerClustererRef.current) {
-      markerClustererRef.current.clearMarkers();
-    }
-    markersRef.current.forEach(marker => marker.setMap(null));
-    markersRef.current = [];
-
-    // Filter out resolved reports for display
-    const activeReports = reports.filter(report => 
-      report.latitude && 
-      report.longitude && 
-      report.status !== 'resolved'
-    );
-
-    // Convert reports to markers
-    const markers = activeReports.map(report => {
-      const position = new window.google.maps.LatLng(
-        Number(report.latitude), 
-        Number(report.longitude)
-      );
-      
-      const marker = new window.google.maps.Marker({
-        position: position,
-        title: report.threat_type || 'Report',
-        icon: {
-          url: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="8" fill="${getMarkerColor(report.threat_type, report.status)}" stroke="white" stroke-width="2"/>
-            </svg>
-          `),
-          scaledSize: new window.google.maps.Size(24, 24)
-        }
-      });
-
-      // Add click listener
-      marker.addListener('click', () => {
-        if (onMarkerClick) {
-          onMarkerClick(report);
-        }
-      });
-
-      return marker;
+    const mapInstance = new window.google.maps.Map(mapRef.current, {
+      zoom: 6,
+      center: { lat: 9.0820, lng: 8.6753 }, // Center of Nigeria
+      mapTypeId: 'roadmap',
     });
 
-    markersRef.current = markers;
+    setMap(mapInstance);
 
-    // Initialize MarkerClusterer if we have markers and the API is available
-    if (markers.length > 0 && (window.google.maps as any).markerClusterer) {
-      try {
-        const { MarkerClusterer } = (window.google.maps as any).markerClusterer;
-        markerClustererRef.current = new MarkerClusterer({
-          map: mapInstanceRef.current,
-          markers: markers,
-        });
-      } catch (error) {
-        // Fallback: just add markers directly to map
-        markers.forEach(marker => marker.setMap(mapInstanceRef.current));
+    return () => {
+      if (heatmap) {
+        heatmap.setMap(null);
       }
-    } else {
-      // Fallback: add markers directly to map
-      markers.forEach(marker => marker.setMap(mapInstanceRef.current));
+    };
+  }, [isLoaded]);
+
+  useEffect(() => {
+    if (!map || !window.google?.maps?.visualization || reports.length === 0) return;
+
+    // Clear existing heatmap
+    if (heatmap) {
+      heatmap.setMap(null);
     }
 
-    // Create heatmap data - use objects that match WeightedLocation interface
-    const heatmapData = activeReports.map(report => {
-      const lat = Number(report.latitude);
-      const lng = Number(report.longitude);
-      return {
-        location: new window.google.maps.LatLng(lat, lng),
-        weight: getWeightByThreatType(report.threat_type, report.status)
-      };
+    // Create heatmap data with proper WeightedLocation objects
+    const heatmapData = reports
+      .filter(report => report.latitude && report.longitude)
+      .map(report => {
+        const weight = getWeightForReport(report);
+        return {
+          location: new window.google.maps.LatLng(report.latitude, report.longitude),
+          weight: weight
+        };
+      });
+
+    if (heatmapData.length === 0) return;
+
+    // Create new heatmap
+    const newHeatmap = new window.google.maps.visualization.HeatmapLayer({
+      data: heatmapData,
+      map: map,
     });
 
-    // Remove existing heatmap
-    if (heatmapRef.current) {
-      heatmapRef.current.setMap(null);
+    // Configure heatmap options
+    newHeatmap.setOptions({
+      radius: 20,
+      opacity: 0.8,
+      gradient: [
+        'rgba(0, 255, 255, 0)',
+        'rgba(0, 255, 255, 1)',
+        'rgba(0, 191, 255, 1)',
+        'rgba(0, 127, 255, 1)',
+        'rgba(0, 63, 255, 1)',
+        'rgba(0, 0, 255, 1)',
+        'rgba(0, 0, 223, 1)',
+        'rgba(0, 0, 191, 1)',
+        'rgba(0, 0, 159, 1)',
+        'rgba(0, 0, 127, 1)',
+        'rgba(63, 0, 91, 1)',
+        'rgba(127, 0, 63, 1)',
+        'rgba(191, 0, 31, 1)',
+        'rgba(255, 0, 0, 1)'
+      ]
+    });
+
+    setHeatmap(newHeatmap);
+  }, [map, reports]);
+
+  const getWeightForReport = (report: Report): number => {
+    let weight = 1;
+
+    // Weight based on urgency
+    switch (report.urgency) {
+      case 'high':
+        weight += 3;
+        break;
+      case 'medium':
+        weight += 2;
+        break;
+      case 'low':
+        weight += 1;
+        break;
     }
 
-    // Create new heatmap only for active reports
-    if (heatmapData.length > 0) {
-      heatmapRef.current = new window.google.maps.visualization.HeatmapLayer({
-        data: heatmapData,
-        map: mapInstanceRef.current
-      });
+    // Weight based on priority
+    switch (report.priority) {
+      case 'high':
+        weight += 2;
+        break;
+      case 'medium':
+        weight += 1;
+        break;
+      case 'low':
+        weight += 0.5;
+        break;
     }
-  }, [isLoaded, reports, onMarkerClick]);
 
-  const getMarkerColor = (threatType?: string, status?: string) => {
-    if (status === 'assigned') return '#3B82F6'; // Blue for assigned
-    if (status === 'pending') return '#EAB308'; // Yellow for pending
-    
-    // Fallback colors based on threat type
-    switch (threatType?.toLowerCase()) {
-      case 'terrorism':
-      case 'kidnapping':
-        return '#EF4444';
-      case 'armed robbery':
-        return '#F97316';
-      case 'theft':
-      case 'vandalism':
-        return '#EAB308';
+    // Weight based on threat type
+    switch (report.threat_type) {
+      case 'Terrorism':
+      case 'Armed Robbery':
+        weight += 3;
+        break;
+      case 'Kidnapping':
+      case 'Violence':
+        weight += 2;
+        break;
       default:
-        return '#EAB308'; // Default to yellow for pending
+        weight += 1;
+        break;
     }
-  };
 
-  const getWeightByThreatType = (threatType?: string, status?: string) => {
-    if (status === 'assigned') return 0.8;
-    
-    switch (threatType?.toLowerCase()) {
-      case 'terrorism':
-      case 'kidnapping':
-        return 1.0;
-      case 'armed robbery':
-        return 0.8;
-      case 'theft':
-      case 'vandalism':
-        return 0.5;
-      default:
-        return 0.6;
-    }
+    return Math.max(1, weight);
   };
-
-  if (error) {
-    return (
-      <div className={`flex items-center justify-center h-96 bg-gray-800 rounded-lg ${className}`}>
-        <p className="text-red-400">Error loading Google Maps</p>
-      </div>
-    );
-  }
 
   if (!isLoaded) {
     return (
-      <div className={`flex items-center justify-center h-96 bg-gray-800 rounded-lg ${className}`}>
-        <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+      <div className={`flex items-center justify-center h-96 bg-gray-100 rounded-lg ${className}`}>
+        <div className="text-gray-600">Loading Google Maps...</div>
       </div>
     );
   }
 
-  return <div ref={mapRef} className={`h-full w-full rounded-lg ${className}`} />;
+  return (
+    <div className={`w-full h-96 rounded-lg overflow-hidden ${className}`}>
+      <div ref={mapRef} className="w-full h-full" />
+    </div>
+  );
 };
 
 export default GoogleMapsHeatmap;

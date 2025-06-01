@@ -1,97 +1,57 @@
 
 declare global {
   interface Window {
-    google: typeof google;
-    initMap: () => void;
+    google: {
+      maps: {
+        Map: new (element: HTMLElement, options: google.maps.MapOptions) => google.maps.Map;
+        LatLng: new (lat: number, lng: number) => google.maps.LatLng;
+        visualization: {
+          HeatmapLayer: new (options: google.maps.visualization.HeatmapLayerOptions) => google.maps.visualization.HeatmapLayer;
+        };
+      };
+    };
   }
 }
 
-declare namespace google {
-  namespace maps {
-    class Map {
-      constructor(element: HTMLElement, options?: MapOptions);
-      setCenter(latlng: LatLng): void;
-      setZoom(zoom: number): void;
-      addListener(event: string, handler: Function): void;
-    }
-    
-    class Marker {
-      constructor(options?: MarkerOptions);
-      setMap(map: Map | null): void;
-      addListener(event: string, handler: Function): void;
-      setPosition(latlng: LatLng): void;
-      setIcon(icon: string | Icon): void;
-    }
-    
-    class InfoWindow {
-      constructor(options?: InfoWindowOptions);
-      open(map?: Map, anchor?: Marker): void;
-      close(): void;
-      setContent(content: string): void;
-    }
-    
-    class Size {
-      constructor(width: number, height: number);
-    }
-    
-    class Icon {
-      url: string;
-      size?: Size;
-      scaledSize?: Size;
-      origin?: Point;
-      anchor?: Point;
-    }
-    
-    class Point {
-      constructor(x: number, y: number);
-    }
-    
-    interface MapOptions {
-      center: LatLng;
-      zoom: number;
-      mapTypeId?: string;
-    }
-    
-    interface MarkerOptions {
-      position: LatLng;
-      map?: Map;
-      title?: string;
-      icon?: string | Icon;
-    }
-    
-    interface InfoWindowOptions {
-      content?: string;
-    }
-    
-    class LatLng {
-      constructor(lat: number, lng: number);
-      lat(): number;
-      lng(): number;
-    }
-    
-    enum MapTypeId {
-      ROADMAP = 'roadmap',
-      SATELLITE = 'satellite',
-      HYBRID = 'hybrid',
-      TERRAIN = 'terrain'
-    }
+declare namespace google.maps {
+  interface MapOptions {
+    zoom: number;
+    center: LatLngLiteral;
+    mapTypeId: string;
   }
-  
-  namespace maps.visualization {
-    class HeatmapLayer {
-      constructor(options?: HeatmapLayerOptions);
-      setMap(map: google.maps.Map | null): void;
-      setData(data: google.maps.LatLng[] | google.maps.visualization.WeightedLocation[]): void;
-    }
-    
-    interface HeatmapLayerOptions {
-      data: google.maps.LatLng[] | google.maps.visualization.WeightedLocation[];
-      map?: google.maps.Map;
-    }
-    
+
+  interface LatLngLiteral {
+    lat: number;
+    lng: number;
+  }
+
+  interface LatLng {
+    lat(): number;
+    lng(): number;
+  }
+
+  interface Map {
+    setCenter(latlng: LatLng | LatLngLiteral): void;
+    setZoom(zoom: number): void;
+  }
+
+  namespace visualization {
     interface WeightedLocation {
-      location: google.maps.LatLng;
+      location: LatLng;
       weight: number;
+    }
+
+    interface HeatmapLayerOptions {
+      data: WeightedLocation[];
+      map: Map | null;
+      radius?: number;
+      opacity?: number;
+      gradient?: string[];
+    }
+
+    interface HeatmapLayer {
+      setMap(map: Map | null): void;
+      setOptions(options: Partial<HeatmapLayerOptions>): void;
     }
   }
 }

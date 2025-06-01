@@ -190,7 +190,7 @@ const CommanderRegistration = () => {
       const serviceNumber = formData.service_number || generateServiceNumber(formData.category);
       const generatedPassword = generatePassword();
 
-      // Create commander profile
+      // Create commander profile with the new category and service_number columns
       const { data: commanderData, error: commanderError } = await supabase
         .from('unit_commanders')
         .insert({
@@ -200,7 +200,7 @@ const CommanderRegistration = () => {
           rank: formData.rank,
           unit: formData.unit,
           state: formData.state,
-          category: formData.category,
+          category: formData.category, // New column
           specialization: formData.specialization || null,
           location: formData.location || null,
           contact_info: formData.phone_number || null,

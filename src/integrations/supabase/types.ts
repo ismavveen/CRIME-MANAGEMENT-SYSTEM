@@ -297,6 +297,7 @@ export type Database = {
         Row: {
           active_assignments: number | null
           average_response_time: number | null
+          category: string | null
           contact_info: string | null
           created_at: string
           email: string
@@ -305,6 +306,7 @@ export type Database = {
           is_active: boolean | null
           location: string | null
           rank: string
+          service_number: string | null
           specialization: string | null
           state: string
           status: string | null
@@ -316,6 +318,7 @@ export type Database = {
         Insert: {
           active_assignments?: number | null
           average_response_time?: number | null
+          category?: string | null
           contact_info?: string | null
           created_at?: string
           email: string
@@ -324,6 +327,7 @@ export type Database = {
           is_active?: boolean | null
           location?: string | null
           rank: string
+          service_number?: string | null
           specialization?: string | null
           state: string
           status?: string | null
@@ -335,6 +339,7 @@ export type Database = {
         Update: {
           active_assignments?: number | null
           average_response_time?: number | null
+          category?: string | null
           contact_info?: string | null
           created_at?: string
           email?: string
@@ -343,6 +348,7 @@ export type Database = {
           is_active?: boolean | null
           location?: string | null
           rank?: string
+          service_number?: string | null
           specialization?: string | null
           state?: string
           status?: string | null
