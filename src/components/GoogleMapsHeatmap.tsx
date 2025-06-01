@@ -23,12 +23,12 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
   onMarkerClick 
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [heatmap, setHeatmap] = useState<google.maps.visualization.HeatmapLayer | null>(null);
+  const [map, setMap] = useState<any>(null);
+  const [heatmap, setHeatmap] = useState<any>(null);
   const { isLoaded } = useGoogleMaps();
 
   useEffect(() => {
-    if (!isLoaded || !mapRef.current) return;
+    if (!isLoaded || !mapRef.current || !window.google) return;
 
     // Initialize map
     const mapInstance = new window.google.maps.Map(mapRef.current, {
@@ -61,13 +61,10 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
         const weight = getWeightForReport(report);
         const location = new window.google.maps.LatLng(report.latitude!, report.longitude!);
         
-        // Create WeightedLocation object that conforms to the interface
-        const weightedLocation: google.maps.visualization.WeightedLocation = {
+        return {
           location: location,
           weight: weight
         };
-        
-        return weightedLocation;
       });
 
     if (heatmapData.length === 0) return;

@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { AlertCircle, CheckCircle, Users, Copy, Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +41,7 @@ const CommanderRegistration = () => {
   });
   const [otpCode, setOtpCode] = useState('');
   const [sentOtp, setSentOtp] = useState('');
+  const [showOtpToAdmin, setShowOtpToAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const { toast } = useToast();
@@ -49,6 +51,14 @@ const CommanderRegistration = () => {
     const stateCode = state.substring(0, 3).toUpperCase();
     const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
     return `${categoryCode}${stateCode}${randomNum}`;
+  };
+
+  const copyOtpToClipboard = () => {
+    navigator.clipboard.writeText(sentOtp);
+    toast({
+      title: "OTP Copied",
+      description: "OTP code copied to clipboard",
+    });
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -148,6 +158,7 @@ const CommanderRegistration = () => {
     setOtpCode('');
     setSentOtp('');
     setError('');
+    setShowOtpToAdmin(false);
   };
 
   if (step === 'password') {
@@ -203,7 +214,7 @@ const CommanderRegistration = () => {
               <CardDescription className="text-gray-400">
                 {step === 'form' 
                   ? 'Add a new field response unit commander to the system'
-                  : 'Enter the OTP code sent to your email address'
+                  : 'Enter the OTP code sent to the email address'
                 }
               </CardDescription>
             </div>
@@ -336,6 +347,39 @@ const CommanderRegistration = () => {
                   We've sent a 6-digit verification code to:
                 </p>
                 <p className="font-semibold text-white">{formData.email}</p>
+              </div>
+
+              {/* Admin OTP Display */}
+              <div className="bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-blue-300 font-medium">Admin Reference (OTP Code):</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowOtpToAdmin(!showOtpToAdmin)}
+                    className="text-blue-300 hover:text-blue-200"
+                  >
+                    {showOtpToAdmin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <code className="bg-gray-700 px-3 py-2 rounded text-white font-mono text-lg tracking-widest">
+                    {showOtpToAdmin ? sentOtp : '••••••'}
+                  </code>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyOtpToClipboard}
+                    className="text-blue-300 hover:text-blue-200"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">
+                  This OTP is visible to admins for verification assistance
+                </p>
               </div>
 
               <div className="space-y-2">

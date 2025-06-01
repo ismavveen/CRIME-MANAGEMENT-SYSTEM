@@ -13,7 +13,7 @@ interface CommanderLoginFormProps {
 }
 
 const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
+  const [emailOrServiceNumber, setEmailOrServiceNumber] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -24,25 +24,41 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
     setLoading(true);
 
     try {
-      // Find commander by email
-      const { data: commanders, error } = await supabase
+      // Determine if input is email or service number
+      const isEmail = emailOrServiceNumber.includes('@');
+      
+      let query = supabase
         .from('unit_commanders')
         .select('*')
-        .eq('email', email)
         .eq('status', 'active');
+
+      if (isEmail) {
+        query = query.eq('email', emailOrServiceNumber);
+      } else {
+        query = query.eq('service_number', emailOrServiceNumber);
+      }
+
+      const { data: commanders, error } = await query;
 
       if (error) throw error;
 
       if (!commanders || commanders.length === 0) {
-        throw new Error('Invalid credentials or account suspended');
+        throw new Error('Invalid credentials or account not found');
       }
 
       const commander = commanders[0];
 
-      // For demo purposes, accept any non-empty password
-      // In production, you would verify the password hash
-      if (!password) {
-        throw new Error('Password is required');
+      // Verify password using the set-commander-password function
+      const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-commander-password', {
+        body: { 
+          email: commander.email, 
+          password,
+          passwordHash: commander.password_hash 
+        }
+      });
+
+      if (verificationError || !verificationResult?.valid) {
+        throw new Error('Invalid password');
       }
 
       toast({
@@ -71,20 +87,20 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
           </div>
           <CardTitle className="text-white text-2xl">Unit Commander Portal</CardTitle>
           <CardDescription className="text-gray-400">
-            Login to access your command dashboard
+            Login using your email or service number
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <Label htmlFor="email" className="text-gray-300">Email Address</Label>
+              <Label htmlFor="emailOrServiceNumber" className="text-gray-300">Email or Service Number</Label>
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="emailOrServiceNumber"
+                type="text"
+                value={emailOrServiceNumber}
+                onChange={(e) => setEmailOrServiceNumber(e.target.value)}
                 className="bg-gray-700 border-gray-600 text-white"
-                placeholder="commander@dhq.gov.ng"
+                placeholder="Enter email or service number"
                 required
               />
             </div>
