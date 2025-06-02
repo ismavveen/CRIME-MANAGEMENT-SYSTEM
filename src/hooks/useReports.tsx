@@ -9,8 +9,8 @@ export interface Report {
   threat_type: string;
   location: string;
   manual_location?: string;
-  urgency: string;
-  priority: string;
+  urgency: 'low' | 'medium' | 'high';
+  priority: 'low' | 'medium' | 'high';
   status: string;
   state: string;
   local_government?: string;
@@ -46,7 +46,15 @@ export const useReports = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReports(data || []);
+      
+      // Ensure urgency and priority are properly typed
+      const typedReports = (data || []).map(report => ({
+        ...report,
+        urgency: (report.urgency as 'low' | 'medium' | 'high') || 'medium',
+        priority: (report.priority as 'low' | 'medium' | 'high') || 'low'
+      }));
+      
+      setReports(typedReports);
     } catch (error: any) {
       console.error('Error fetching reports:', error);
       toast({
@@ -56,6 +64,36 @@ export const useReports = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateReportStatus = async (reportId: string, status: string, assignedTo?: string) => {
+    try {
+      const updateData: any = { status };
+      if (assignedTo) {
+        updateData.assigned_to = assignedTo;
+      }
+
+      const { error } = await supabase
+        .from('reports')
+        .update(updateData)
+        .eq('id', reportId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Report Updated",
+        description: `Report status updated to ${status}`,
+      });
+
+      fetchReports();
+    } catch (error: any) {
+      console.error('Error updating report:', error);
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -82,6 +120,7 @@ export const useReports = () => {
   return {
     reports,
     loading,
+    updateReportStatus,
     refetch: fetchReports
   };
 };

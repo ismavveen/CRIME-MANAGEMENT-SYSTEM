@@ -19,6 +19,9 @@ export interface UnitCommander {
   average_response_time: number;
   state: string;
   email: string;
+  service_number: string | null;
+  password_hash: string | null;
+  profile_image: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -96,6 +99,9 @@ export const useUnitCommanders = () => {
     unit: string;
     state: string;
     email: string;
+    service_number?: string;
+    profile_image?: string;
+    password_hash?: string;
     specialization?: string;
     location?: string;
     contact_info?: string;
@@ -112,41 +118,10 @@ export const useUnitCommanders = () => {
 
       if (error) throw error;
 
-      // Generate random password
-      const password = Math.random().toString(36).slice(-12);
-
-      // Send credentials via Supabase edge function
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
-          body: {
-            email: commanderData.email,
-            fullName: commanderData.full_name,
-            password: password,
-            rank: commanderData.rank,
-            unit: commanderData.unit
-          }
-        });
-
-        if (emailError) {
-          console.error('Error sending credentials email:', emailError);
-          toast({
-            title: "Commander Registered",
-            description: `${commanderData.full_name} registered but email failed to send`,
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Commander Registered",
-            description: `${commanderData.full_name} has been successfully registered and credentials sent`,
-          });
-        }
-      } catch (emailError) {
-        console.error('Error with email service:', emailError);
-        toast({
-          title: "Commander Registered",
-          description: `${commanderData.full_name} registered but email service unavailable`,
-        });
-      }
+      toast({
+        title: "Commander Registered",
+        description: `${commanderData.full_name} has been successfully registered`,
+      });
 
       fetchCommanders();
       return data[0];

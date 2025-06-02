@@ -1,249 +1,308 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, MapPin, Clock, User, AlertTriangle, CheckCircle, ZoomIn, Play, Download } from 'lucide-react';
-import { Report } from '@/hooks/useReports';
+import { Card, CardContent } from '@/components/ui/card';
+import { MapPin, Clock, User, AlertTriangle, FileText, Download } from 'lucide-react';
+import { useAssignments } from '@/hooks/useAssignments';
+import { useUnitCommanders } from '@/hooks/useUnitCommanders';
+import { useToast } from '@/hooks/use-toast';
+import DispatchModal from './DispatchModal';
 
 interface ReportDetailsModalProps {
-  report: Report;
+  report: any;
   onClose: () => void;
 }
 
-const ReportDetailsModal = ({ report, onClose }: ReportDetailsModalProps) => {
-  const [imageIndex, setImageIndex] = useState(0);
-  const [videoIndex, setVideoIndex] = useState(0);
-  const [imageZoomed, setImageZoomed] = useState(false);
+const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({ report, onClose }) => {
+  const { assignments, updateAssignmentStatus } = useAssignments();
+  const { commanders } = useUnitCommanders();
+  const { toast } = useToast();
+  const [showDispatchModal, setShowDispatchModal] = React.useState(false);
+
+  if (!report) return null;
+
+  const assignment = assignments.find(a => a.report_id === report.id);
+  const assignedCommander = assignment ? commanders.find(c => c.id === assignment.commander_id) : null;
 
   const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'resolved':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'assigned':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+    switch (status) {
+      case 'resolved': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'assigned': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'resolved':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'pending':
-        return <AlertTriangle className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'text-red-400';
+      case 'medium': return 'text-yellow-400';
+      case 'low': return 'text-green-400';
+      default: return 'text-gray-400';
     }
   };
 
-  const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
+  const handleResolve = async () => {
+    if (!assignment) return;
+
+    try {
+      await updateAssignmentStatus(assignment.id, 'resolved', 'Resolved via admin dashboard');
+      toast({
+        title: "Report Resolved",
+        description: "Report has been marked as resolved",
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error resolving report:', error);
+    }
   };
 
-  const downloadMedia = (url: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownloadReport = () => {
+    // Create a simple PDF-like content for download
+    const content = `
+DEFENSE HEADQUARTERS INTELLIGENCE REPORT
+========================================
+
+Report ID: ${report.id}
+Type: ${report.threat_type}
+Status: ${report.status}
+Priority: ${report.priority}
+Location: ${report.location || report.manual_location}
+State: ${report.state}
+Reported: ${new Date(report.created_at).toLocaleString()}
+
+Description:
+${report.description}
+
+${assignment ? `
+Assignment Details:
+- Assigned to: ${assignedCommander?.full_name} (${assignedCommander?.rank})
+- Assigned at: ${new Date(assignment.assigned_at).toLocaleString()}
+- Status: ${assignment.status}
+${assignment.resolution_notes ? `- Resolution: ${assignment.resolution_notes}` : ''}
+` : 'Status: Unassigned'}
+
+Generated on: ${new Date().toLocaleString()}
+    `;
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `DHQ_Report_${report.id.slice(0, 8)}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Report Downloaded",
+      description: "Report details have been downloaded",
+    });
   };
 
   return (
-    <Dialog open={true} onOpenChange={() => onClose()}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl text-white flex items-center gap-2">
-            {getStatusIcon(report.status)}
-            Report Details - {report.id.slice(0, 8)}
-          </DialogTitle>
-          <Button variant="ghost" onClick={onClose} className="h-6 w-6 p-0">
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
+    <>
+      <Dialog open={true} onOpenChange={() => onClose()}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <FileText className="h-6 w-6 text-cyan-400" />
+              Report Details - {report.threat_type}
+            </DialogTitle>
+          </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Status and Basic Info */}
-          <div className="flex items-center justify-between">
-            <Badge className={`px-3 py-1 border ${getStatusColor(report.status)}`}>
-              {report.status?.toUpperCase()}
-            </Badge>
-            <div className="text-sm text-gray-400">
-              {formatDateTime(report.created_at)}
-            </div>
-          </div>
-
-          {/* Report Description */}
-          <div className="bg-gray-900/50 p-4 rounded-lg">
-            <h3 className="font-semibold mb-2 text-cyan-400">Description</h3>
-            <p className="text-gray-300">{report.description}</p>
-          </div>
-
-          {/* Location and Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-gray-900/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-3 text-cyan-400 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Location Details
-              </h3>
-              <div className="space-y-2 text-sm">
-                <p><span className="text-gray-400">State:</span> {report.state}</p>
-                <p><span className="text-gray-400">LGA:</span> {report.local_government}</p>
-                <p><span className="text-gray-400">Address:</span> {report.full_address}</p>
-                {report.landmark && <p><span className="text-gray-400">Landmark:</span> {report.landmark}</p>}
-                {report.latitude && report.longitude && (
-                  <p><span className="text-gray-400">Coordinates:</span> {report.latitude}, {report.longitude}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-gray-900/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-3 text-cyan-400">Report Information</h3>
-              <div className="space-y-2 text-sm">
-                <p><span className="text-gray-400">Threat Type:</span> {report.threat_type}</p>
-                <p><span className="text-gray-400">Urgency:</span> {report.urgency}</p>
-                <p><span className="text-gray-400">Priority:</span> {report.priority}</p>
-                <p><span className="text-gray-400">Reporter Type:</span> {report.reporter_type}</p>
-                {report.assigned_to && <p><span className="text-gray-400">Assigned To:</span> {report.assigned_to}</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Media Section */}
-          {(report.images?.length > 0 || report.videos?.length > 0) && (
-            <div className="bg-gray-900/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-4 text-cyan-400">Evidence & Media</h3>
-              
-              {/* Images */}
-              {report.images && report.images.length > 0 && (
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-gray-300 mb-3">Images ({report.images.length})</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {report.images.map((imageUrl, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={imageUrl}
-                          alt={`Evidence ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => {
-                            setImageIndex(index);
-                            setImageZoomed(true);
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                          <ZoomIn className="h-6 w-6 text-white" />
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            downloadMedia(imageUrl, `evidence-image-${index + 1}.jpg`);
-                          }}
-                        >
-                          <Download className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+          <div className="space-y-6">
+            {/* Status and Priority Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Badge className={`${getStatusColor(report.status)} border`}>
+                  {report.status.toUpperCase()}
+                </Badge>
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className={`font-medium ${getPriorityColor(report.priority)}`}>
+                    {report.priority.toUpperCase()} PRIORITY
+                  </span>
                 </div>
-              )}
-
-              {/* Videos */}
-              {report.videos && report.videos.length > 0 && (
-                <div>
-                  <h4 className="text-sm font-medium text-gray-300 mb-3">Videos ({report.videos.length})</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {report.videos.map((videoUrl, index) => (
-                      <div key={index} className="relative group">
-                        <video
-                          controls
-                          className="w-full h-48 object-cover rounded-lg bg-gray-900"
-                          preload="metadata"
-                        >
-                          <source src={videoUrl} type="video/mp4" />
-                          Your browser does not support the video tag.
-                        </video>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => downloadMedia(videoUrl, `evidence-video-${index + 1}.mp4`)}
-                        >
-                          <Download className="h-4 w-4 mr-1" />
-                          Download
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
-            <Button variant="outline" onClick={onClose}>
-              Close
-            </Button>
-            {report.status !== 'resolved' && (
-              <>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Assign Unit
-                </Button>
-                <Button className="bg-green-600 hover:bg-green-700">
-                  Mark Resolved
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Image Zoom Modal */}
-        {imageZoomed && report.images && (
-          <div
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-            onClick={() => setImageZoomed(false)}
-          >
-            <div className="relative max-w-4xl max-h-full">
-              <img
-                src={report.images[imageIndex]}
-                alt={`Evidence ${imageIndex + 1}`}
-                className="max-w-full max-h-full object-contain"
-              />
+              </div>
               <Button
+                onClick={handleDownloadReport}
                 variant="outline"
-                className="absolute top-4 right-4"
-                onClick={() => setImageZoomed(false)}
+                size="sm"
+                className="text-gray-300 border-gray-600"
               >
-                <X className="h-4 w-4" />
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
               </Button>
-              {report.images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                  {report.images.map((_, index) => (
-                    <button
-                      key={index}
-                      className={`w-3 h-3 rounded-full ${
-                        index === imageIndex ? 'bg-white' : 'bg-white/50'
-                      }`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setImageIndex(index);
-                      }}
-                    />
-                  ))}
-                </div>
+            </div>
+
+            {/* Report Information Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-gray-900/50 border-gray-700">
+                <CardContent className="p-4 space-y-4">
+                  <h3 className="font-semibold text-white mb-3">Report Information</h3>
+                  
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-4 w-4 text-cyan-400 mt-1" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Location</p>
+                        <p className="text-white">{report.location || report.manual_location}</p>
+                        {report.state && <p className="text-gray-300 text-sm">{report.state} State</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <Clock className="h-4 w-4 text-cyan-400 mt-1" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Reported</p>
+                        <p className="text-white">{new Date(report.created_at).toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-4 w-4 text-cyan-400 mt-1" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Threat Type</p>
+                        <p className="text-white">{report.threat_type}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <User className="h-4 w-4 text-cyan-400 mt-1" />
+                      <div>
+                        <p className="text-gray-400 text-sm">Reporter Type</p>
+                        <p className="text-white">{report.reporter_type || 'Anonymous'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-900/50 border-gray-700">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-white mb-3">Assignment Status</h3>
+                  
+                  {assignment && assignedCommander ? (
+                    <div className="space-y-3">
+                      <div className="bg-blue-900/20 border border-blue-700/50 p-3 rounded">
+                        <p className="text-blue-300 font-medium">{assignedCommander.rank} {assignedCommander.full_name}</p>
+                        <p className="text-gray-300 text-sm">{assignedCommander.unit}</p>
+                        <p className="text-gray-400 text-xs">Assigned: {new Date(assignment.assigned_at).toLocaleString()}</p>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-gray-400 text-sm">Current Status:</p>
+                        <Badge className={`${getStatusColor(assignment.status)} border`}>
+                          {assignment.status.toUpperCase()}
+                        </Badge>
+                      </div>
+
+                      {assignment.resolution_notes && (
+                        <div>
+                          <p className="text-gray-400 text-sm">Resolution Notes:</p>
+                          <p className="text-white text-sm bg-gray-800/50 p-2 rounded">{assignment.resolution_notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-yellow-400 mb-3">Report not yet assigned</p>
+                      <Button
+                        onClick={() => setShowDispatchModal(true)}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Assign to Unit
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Description */}
+            <Card className="bg-gray-900/50 border-gray-700">
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-white mb-3">Report Description</h3>
+                <p className="text-gray-300 leading-relaxed">{report.description}</p>
+              </CardContent>
+            </Card>
+
+            {/* Additional Details */}
+            {(report.landmark || report.full_address || report.local_government) && (
+              <Card className="bg-gray-900/50 border-gray-700">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-white mb-3">Additional Location Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {report.landmark && (
+                      <div>
+                        <p className="text-gray-400 text-sm">Landmark</p>
+                        <p className="text-white">{report.landmark}</p>
+                      </div>
+                    )}
+                    {report.local_government && (
+                      <div>
+                        <p className="text-gray-400 text-sm">LGA</p>
+                        <p className="text-white">{report.local_government}</p>
+                      </div>
+                    )}
+                    {report.full_address && (
+                      <div>
+                        <p className="text-gray-400 text-sm">Full Address</p>
+                        <p className="text-white">{report.full_address}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-700">
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="text-gray-300 border-gray-600"
+              >
+                Close
+              </Button>
+              
+              {!assignment && (
+                <Button
+                  onClick={() => setShowDispatchModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Assign to Unit
+                </Button>
+              )}
+              
+              {assignment && assignment.status !== 'resolved' && (
+                <Button
+                  onClick={handleResolve}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Mark as Resolved
+                </Button>
               )}
             </div>
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dispatch Modal */}
+      <DispatchModal
+        open={showDispatchModal}
+        onOpenChange={setShowDispatchModal}
+        report={report}
+        onAssignmentComplete={() => {
+          setShowDispatchModal(false);
+          onClose();
+        }}
+      />
+    </>
   );
 };
 
