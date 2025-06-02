@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -55,7 +54,10 @@ export const useUnitCommanders = () => {
       
       const typedCommanders = (data || []).map(commander => ({
         ...commander,
-        status: commander.status as 'active' | 'suspended' | 'inactive' | 'available'
+        status: commander.status as 'active' | 'suspended' | 'inactive' | 'available',
+        password_hash: commander.password_hash || null,
+        profile_image: commander.profile_image || null,
+        service_number: commander.service_number || null
       }));
       
       setCommanders(typedCommanders);
@@ -69,6 +71,7 @@ export const useUnitCommanders = () => {
     }
   };
 
+  
   const fetchSystemMetrics = async () => {
     try {
       const { data, error } = await supabase
@@ -112,7 +115,10 @@ export const useUnitCommanders = () => {
         .from('unit_commanders')
         .insert([{
           ...commanderData,
-          status: commanderData.status || 'active' as const
+          status: commanderData.status || 'active' as const,
+          password_hash: commanderData.password_hash || null,
+          profile_image: commanderData.profile_image || null,
+          service_number: commanderData.service_number || null
         }])
         .select();
 

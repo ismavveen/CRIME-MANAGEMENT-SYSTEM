@@ -53,7 +53,7 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
         throw new Error('Password not set. Please contact admin to complete registration.');
       }
 
-      // Verify password using the set-commander-password function
+      // Verify password using the verify-commander-password function
       const { data: verificationResult, error: verificationError } = await supabase.functions.invoke('verify-commander-password', {
         body: { 
           email: commander.email, 
@@ -62,7 +62,12 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
         }
       });
 
-      if (verificationError || !verificationResult?.valid) {
+      if (verificationError) {
+        console.error('Verification error:', verificationError);
+        throw new Error('Login failed. Please check your credentials.');
+      }
+
+      if (!verificationResult?.valid) {
         throw new Error('Invalid password');
       }
 
@@ -73,6 +78,7 @@ const CommanderLoginForm: React.FC<CommanderLoginFormProps> = ({ onLoginSuccess 
 
       onLoginSuccess(commander);
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: "Login Failed",
         description: error.message,

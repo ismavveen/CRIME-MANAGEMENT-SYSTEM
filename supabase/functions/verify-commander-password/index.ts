@@ -37,7 +37,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Hash the provided password using the same method as set-commander-password
     const encoder = new TextEncoder();
-    const data = encoder.encode(password);
+    const data = encoder.encode(password + email); // Salt with email for uniqueness
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -57,7 +57,8 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error('Error in verify-commander-password function:', error);
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error' 
+      error: 'Password verification failed',
+      details: error.message 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

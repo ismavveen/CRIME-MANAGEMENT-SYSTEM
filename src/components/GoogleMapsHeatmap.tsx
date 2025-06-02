@@ -16,14 +16,14 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
   className = "h-96"
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const { isLoaded, loadError } = useGoogleMaps();
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const { isLoaded, error } = useGoogleMaps();
+  const [map, setMap] = useState<any>(null);
+  const [markers, setMarkers] = useState<any[]>([]);
   const [selectedReport, setSelectedReport] = useState<any>(null);
 
   useEffect(() => {
-    if (isLoaded && mapRef.current && !map) {
-      const newMap = new google.maps.Map(mapRef.current, {
+    if (isLoaded && mapRef.current && !map && window.google) {
+      const newMap = new window.google.maps.Map(mapRef.current, {
         center: { lat: 9.0765, lng: 7.3986 }, // Nigeria center
         zoom: 6,
         styles: [
@@ -49,12 +49,12 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
   }, [isLoaded, map]);
 
   useEffect(() => {
-    if (!map || !reports) return;
+    if (!map || !reports || !window.google) return;
 
     // Clear existing markers
     markers.forEach(marker => marker.setMap(null));
     
-    const newMarkers: google.maps.Marker[] = [];
+    const newMarkers: any[] = [];
 
     reports.forEach((report) => {
       if (report.latitude && report.longitude) {
@@ -67,12 +67,12 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
 
         const markerColor = getMarkerColor(report.status, report.priority);
         
-        const marker = new google.maps.Marker({
+        const marker = new window.google.maps.Marker({
           position: { lat: Number(report.latitude), lng: Number(report.longitude) },
           map: map,
           title: `${report.threat_type} - ${report.status}`,
           icon: {
-            path: google.maps.SymbolPath.CIRCLE,
+            path: window.google.maps.SymbolPath.CIRCLE,
             scale: 8,
             fillColor: markerColor,
             fillOpacity: 0.8,
@@ -96,7 +96,7 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
     setMarkers(newMarkers);
   }, [map, reports, onMarkerClick]);
 
-  if (loadError) {
+  if (error) {
     return (
       <Card className="bg-gray-800/50 border-gray-700 p-6">
         <div className="text-center text-gray-400">
