@@ -46,7 +46,7 @@ export const useSystemMetrics = () => {
       
       // Calculate critical and high priority reports
       const criticalReports = reports.filter(r => 
-        r.urgency === 'critical' || r.priority === 'high'
+        r.urgency === 'critical' || r.urgency === 'high' || r.priority === 'high'
       ).length;
       
       // Calculate average response time

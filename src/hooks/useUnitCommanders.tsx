@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +22,7 @@ export interface UnitCommander {
   service_number: string | null;
   password_hash: string | null;
   profile_image: string | null;
+  arm_of_service: 'Army' | 'Navy' | 'Air Force' | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,7 +59,8 @@ export const useUnitCommanders = () => {
         status: commander.status as 'active' | 'suspended' | 'inactive' | 'available',
         password_hash: commander.password_hash || null,
         profile_image: commander.profile_image || null,
-        service_number: commander.service_number || null
+        service_number: commander.service_number || null,
+        arm_of_service: commander.arm_of_service as 'Army' | 'Navy' | 'Air Force' | null
       }));
       
       setCommanders(typedCommanders);
@@ -108,6 +111,7 @@ export const useUnitCommanders = () => {
     specialization?: string;
     location?: string;
     contact_info?: string;
+    arm_of_service?: 'Army' | 'Navy' | 'Air Force';
     status?: 'active' | 'suspended' | 'inactive' | 'available';
   }) => {
     try {
@@ -118,7 +122,8 @@ export const useUnitCommanders = () => {
           status: commanderData.status || 'active' as const,
           password_hash: commanderData.password_hash || null,
           profile_image: commanderData.profile_image || null,
-          service_number: commanderData.service_number || null
+          service_number: commanderData.service_number || null,
+          arm_of_service: commanderData.arm_of_service || null
         }])
         .select();
 

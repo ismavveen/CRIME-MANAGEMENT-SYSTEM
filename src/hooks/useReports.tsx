@@ -9,7 +9,7 @@ export interface Report {
   threat_type: string;
   location: string;
   manual_location?: string;
-  urgency: 'low' | 'medium' | 'high';
+  urgency: 'low' | 'medium' | 'high' | 'critical';
   priority: 'low' | 'medium' | 'high';
   status: string;
   state: string;
@@ -50,7 +50,7 @@ export const useReports = () => {
       // Ensure urgency and priority are properly typed
       const typedReports = (data || []).map(report => ({
         ...report,
-        urgency: (report.urgency as 'low' | 'medium' | 'high') || 'medium',
+        urgency: (report.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
         priority: (report.priority as 'low' | 'medium' | 'high') || 'low'
       }));
       

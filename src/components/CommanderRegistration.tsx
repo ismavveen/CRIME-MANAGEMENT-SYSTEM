@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +24,8 @@ const CommanderRegistration = () => {
     specialization: '',
     location: '',
     contact_info: '',
-    profile_image: ''
+    profile_image: '',
+    arm_of_service: ''
   });
   
   const [password, setPassword] = useState('');
@@ -53,6 +53,8 @@ const CommanderRegistration = () => {
     'Second Lieutenant', 'Warrant Officer', 'Staff Sergeant', 'Sergeant',
     'Corporal', 'Lance Corporal', 'Private'
   ];
+
+  const armsOfService = ['Army', 'Navy', 'Air Force'];
 
   const generateServiceNumber = () => {
     const prefix = formData.state.substring(0, 3).toUpperCase();
@@ -193,6 +195,7 @@ const CommanderRegistration = () => {
         service_number: formData.service_number,
         profile_image: profileImageUrl || '',
         password_hash: hashResult.hash,
+        arm_of_service: formData.arm_of_service as 'Army' | 'Navy' | 'Air Force',
         status: 'active'
       });
 
@@ -212,7 +215,8 @@ const CommanderRegistration = () => {
         specialization: '',
         location: '',
         contact_info: '',
-        profile_image: ''
+        profile_image: '',
+        arm_of_service: ''
       });
       setPassword('');
       setConfirmPassword('');
@@ -467,6 +471,20 @@ const CommanderRegistration = () => {
             </div>
 
             <div>
+              <Label htmlFor="arm_of_service" className="text-gray-300">Arm of Service *</Label>
+              <Select value={formData.arm_of_service} onValueChange={(value) => setFormData(prev => ({ ...prev, arm_of_service: value }))}>
+                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                  <SelectValue placeholder="Select arm of service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {armsOfService.map((arm) => (
+                    <SelectItem key={arm} value={arm}>{arm}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
               <Label htmlFor="unit" className="text-gray-300">Unit *</Label>
               <Input
                 id="unit"
@@ -554,7 +572,7 @@ const CommanderRegistration = () => {
 
           <Button
             type="submit"
-            disabled={loading || !formData.full_name || !formData.email || !formData.rank || !formData.unit || !formData.state}
+            disabled={loading || !formData.full_name || !formData.email || !formData.rank || !formData.unit || !formData.state || !formData.arm_of_service}
             className="w-full bg-dhq-blue hover:bg-blue-700"
           >
             {loading ? 'Processing...' : 'Register Commander'}
