@@ -5,6 +5,7 @@ import WelcomeStep from './interactive-steps/WelcomeStep';
 import EmergencyCheck from './interactive-steps/EmergencyCheck';
 import EmergencyLocationPrompt from './interactive-steps/EmergencyLocationPrompt';
 import CrimeTypeSelection from './interactive-steps/CrimeTypeSelection';
+import VoiceReportStep from './interactive-steps/VoiceReportStep';
 import LocationFlow from './interactive-steps/LocationFlow';
 import IncidentTimeFlow from './interactive-steps/IncidentTimeFlow';
 import IncidentDescriptionFlow from './interactive-steps/IncidentDescriptionFlow';
@@ -16,6 +17,7 @@ export interface FormData {
   // Basic info
   crimeType: string;
   isEmergency: boolean;
+  reportingMethod: 'text' | 'voice';
   emergencyLocation?: {
     latitude: number;
     longitude: number;
@@ -56,6 +58,7 @@ const InteractiveReportForm = () => {
   const [formData, setFormData] = useState<FormData>({
     crimeType: '',
     isEmergency: false,
+    reportingMethod: 'text',
     emergencyLocation: null,
     state: '',
     lga: '',
@@ -113,34 +116,43 @@ const InteractiveReportForm = () => {
       onUpdate={updateFormData}
       data={formData}
     />,
-    <LocationFlow 
-      key="location" 
+    <VoiceReportStep 
+      key="voice-report" 
       onNext={nextStep} 
       onBack={prevStep} 
       onUpdate={updateFormData}
       data={formData}
     />,
-    <IncidentTimeFlow 
-      key="time" 
-      onNext={nextStep} 
-      onBack={prevStep} 
-      onUpdate={updateFormData}
-      data={formData}
-    />,
-    <IncidentDescriptionFlow 
-      key="description" 
-      onNext={nextStep} 
-      onBack={prevStep} 
-      onUpdate={updateFormData}
-      data={formData}
-    />,
-    <EvidenceFlow 
-      key="evidence" 
-      onNext={nextStep} 
-      onBack={prevStep} 
-      onUpdate={updateFormData}
-      data={formData}
-    />,
+    ...(formData.reportingMethod === 'text' ? [
+      <LocationFlow 
+        key="location" 
+        onNext={nextStep} 
+        onBack={prevStep} 
+        onUpdate={updateFormData}
+        data={formData}
+      />,
+      <IncidentTimeFlow 
+        key="time" 
+        onNext={nextStep} 
+        onBack={prevStep} 
+        onUpdate={updateFormData}
+        data={formData}
+      />,
+      <IncidentDescriptionFlow 
+        key="description" 
+        onNext={nextStep} 
+        onBack={prevStep} 
+        onUpdate={updateFormData}
+        data={formData}
+      />,
+      <EvidenceFlow 
+        key="evidence" 
+        onNext={nextStep} 
+        onBack={prevStep} 
+        onUpdate={updateFormData}
+        data={formData}
+      />,
+    ] : []),
     <ContactPreferences 
       key="contact" 
       onNext={nextStep} 
