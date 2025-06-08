@@ -1,41 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users, AlertTriangle, CheckCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
+import Navigation from "./Navigation";
 
 const HomePage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-green-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <img 
-                src="/lovable-uploads/0300e6fb-5eb3-4bee-9542-d2935a35734c.png" 
-                alt="Defence Headquarters Logo" 
-                className="h-16 w-16 object-contain"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-green-800">Defence Headquarters</h1>
-                <p className="text-sm text-green-600">Crime Reporting Portal</p>
-              </div>
-            </div>
-            <div className="hidden md:flex items-center space-x-6">
-              <div className="flex items-center space-x-2 text-green-700">
-                <Lock className="h-4 w-4" />
-                <span className="text-sm font-medium">Secure & Confidential</span>
-              </div>
-              <Button variant="outline" size="sm" className="border-green-700 text-green-700 hover:bg-green-50">
-                <Phone className="mr-2 h-4 w-4" />
-                Emergency: 199
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
+      <Navigation />
+      
       {/* Security Assurance Bar */}
       <div className="bg-green-800 text-white py-2 overflow-hidden">
         <div className="animate-scroll whitespace-nowrap">
