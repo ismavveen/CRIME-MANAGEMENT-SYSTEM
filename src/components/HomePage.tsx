@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users } from "lucide-react";
+import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users, AlertTriangle, CheckCircle, Eye } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {
@@ -22,20 +22,26 @@ const HomePage = () => {
                 <p className="text-sm text-green-600">Crime Reporting Portal</p>
               </div>
             </div>
-            <div className="hidden md:flex items-center space-x-2 text-green-700">
-              <Lock className="h-4 w-4" />
-              <span className="text-sm font-medium">Secure & Confidential</span>
+            <div className="hidden md:flex items-center space-x-6">
+              <div className="flex items-center space-x-2 text-green-700">
+                <Lock className="h-4 w-4" />
+                <span className="text-sm font-medium">Secure & Confidential</span>
+              </div>
+              <Button variant="outline" size="sm" className="border-green-700 text-green-700 hover:bg-green-50">
+                <Phone className="mr-2 h-4 w-4" />
+                Emergency: 199
+              </Button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Scrolling Security Assurance */}
+      {/* Security Assurance Bar */}
       <div className="bg-green-800 text-white py-2 overflow-hidden">
         <div className="animate-scroll whitespace-nowrap">
           <span className="inline-block px-8">
-            🔒 Your details are secure and protected • Anonymous reporting available • All reports are confidential • 
-            Your safety is our priority • 24/7 secure reporting system • Identity protection guaranteed •
+            🔒 Your identity is protected • All information is encrypted • Anonymous reporting enabled • 
+            Professional response guaranteed • Safe and secure reporting • 24/7 confidential service •
           </span>
         </div>
       </div>
@@ -55,22 +61,22 @@ const HomePage = () => {
             <Link to="/report">
               <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3">
                 <FileText className="mr-2 h-5 w-5" />
-                Start Report
+                Start Anonymous Report
               </Button>
             </Link>
             <Button variant="outline" size="lg" className="border-green-700 text-green-700 hover:bg-green-50 px-8 py-3">
               <Phone className="mr-2 h-5 w-5" />
-              Emergency Hotline
+              Emergency Hotline: 199
             </Button>
           </div>
 
-          {/* Key Features */}
+          {/* Key Features Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
             <Card className="border-green-200 hover:shadow-lg transition-shadow">
               <CardContent className="p-6 text-center">
                 <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-green-800 mb-2">100% Anonymous</h3>
-                <p className="text-green-600 text-sm">Your identity is completely protected. Report without fear.</p>
+                <p className="text-green-600 text-sm">Your identity is completely protected. Report without fear of retribution.</p>
               </CardContent>
             </Card>
             
@@ -78,7 +84,7 @@ const HomePage = () => {
               <CardContent className="p-6 text-center">
                 <Clock className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-green-800 mb-2">24/7 Available</h3>
-                <p className="text-green-600 text-sm">Report crimes anytime, anywhere through multiple channels.</p>
+                <p className="text-green-600 text-sm">Report crimes anytime, anywhere through multiple secure channels.</p>
               </CardContent>
             </Card>
             
@@ -93,50 +99,150 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Reporting Channels */}
+      {/* What You Can Report Section */}
       <section className="bg-white py-12">
         <div className="container mx-auto px-4">
-          <h3 className="text-3xl font-bold text-center text-green-800 mb-8">Multiple Ways to Report</h3>
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold text-green-800 mb-4">What You Can Report</h3>
+            <p className="text-green-600 max-w-2xl mx-auto">
+              We handle all types of criminal activities and security concerns. Your report helps keep our communities safe.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6 text-center">
+                <AlertTriangle className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h4 className="font-semibold text-green-800 mb-2">Violent Crimes</h4>
+                <p className="text-sm text-green-600">Assault, robbery, kidnapping, and other violent incidents</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6 text-center">
+                <Eye className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h4 className="font-semibold text-green-800 mb-2">Suspicious Activity</h4>
+                <p className="text-sm text-green-600">Unusual behavior, potential threats, or security concerns</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6 text-center">
+                <FileText className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h4 className="font-semibold text-green-800 mb-2">Fraud & Scams</h4>
+                <p className="text-sm text-green-600">Financial crimes, identity theft, and fraudulent activities</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6 text-center">
+                <Shield className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h4 className="font-semibold text-green-800 mb-2">Other Crimes</h4>
+                <p className="text-sm text-green-600">Drug-related offenses, vandalism, and other criminal activities</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Reporting Channels */}
+      <section className="bg-green-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold text-green-800 mb-4">Multiple Ways to Report</h3>
+            <p className="text-green-600 max-w-2xl mx-auto">
+              Choose the reporting method that works best for you. All channels are secure and confidential.
+            </p>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer hover:shadow-lg">
               <CardContent className="p-6 text-center">
                 <Globe className="h-8 w-8 text-green-600 mx-auto mb-3" />
                 <h4 className="font-semibold text-green-800 mb-2">Web Portal</h4>
-                <p className="text-sm text-green-600">Online form with file uploads</p>
+                <p className="text-sm text-green-600">Secure online form with file uploads</p>
+                <div className="mt-3">
+                  <Link to="/report">
+                    <Button size="sm" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                      Start Report
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
             
-            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer">
-              <CardContent className="p-6 text-center">
-                <Smartphone className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                <h4 className="font-semibold text-green-800 mb-2">Mobile App</h4>
-                <p className="text-sm text-green-600">iOS & Android compatible</p>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer hover:shadow-lg">
               <CardContent className="p-6 text-center">
                 <Phone className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                <h4 className="font-semibold text-green-800 mb-2">SMS</h4>
-                <p className="text-sm text-green-600">Text: 32123</p>
+                <h4 className="font-semibold text-green-800 mb-2">Hotline</h4>
+                <p className="text-sm text-green-600 mb-2">24/7 Emergency Line</p>
+                <p className="text-lg font-bold text-green-800">199</p>
               </CardContent>
             </Card>
             
-            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer hover:shadow-lg">
+              <CardContent className="p-6 text-center">
+                <Smartphone className="h-8 w-8 text-green-600 mx-auto mb-3" />
+                <h4 className="font-semibold text-green-800 mb-2">SMS</h4>
+                <p className="text-sm text-green-600 mb-2">Text your report</p>
+                <p className="text-lg font-bold text-green-800">32123</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer hover:shadow-lg">
               <CardContent className="p-6 text-center">
                 <Mail className="h-8 w-8 text-green-600 mx-auto mb-3" />
                 <h4 className="font-semibold text-green-800 mb-2">Email</h4>
-                <p className="text-sm text-green-600">reports@defencehq.gov.ng</p>
+                <p className="text-sm text-green-600 mb-2">Secure email reporting</p>
+                <p className="text-xs font-medium text-green-800">reports@defencehq.gov.ng</p>
               </CardContent>
             </Card>
             
-            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer">
+            <Card className="border-green-200 hover:border-green-400 transition-colors cursor-pointer hover:shadow-lg">
               <CardContent className="p-6 text-center">
                 <MapPin className="h-8 w-8 text-green-600 mx-auto mb-3" />
-                <h4 className="font-semibold text-green-800 mb-2">Physical Office</h4>
-                <p className="text-sm text-green-600">Visit nearest office</p>
+                <h4 className="font-semibold text-green-800 mb-2">Walk-in</h4>
+                <p className="text-sm text-green-600">Visit nearest office for in-person reporting</p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Privacy & Security Assurance */}
+      <section className="bg-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold text-green-800 mb-4">Your Privacy & Security</h3>
+            <p className="text-green-600 max-w-3xl mx-auto">
+              We take your privacy seriously. Here's how we protect you and your information.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Lock className="h-8 w-8 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-green-800 mb-2">End-to-End Encryption</h4>
+              <p className="text-green-600 text-sm">All reports are encrypted from your device to our secure servers</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Eye className="h-8 w-8 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-green-800 mb-2">Anonymous Reporting</h4>
+              <p className="text-green-600 text-sm">No personal information required. Your identity remains completely anonymous</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                <Shield className="h-8 w-8 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-green-800 mb-2">Whistleblower Protection</h4>
+              <p className="text-green-600 text-sm">Full legal protection for those reporting crimes and misconduct</p>
+            </div>
           </div>
         </div>
       </section>
@@ -144,7 +250,11 @@ const HomePage = () => {
       {/* Statistics */}
       <section className="bg-green-800 text-white py-12">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold mb-2">Trusted by Citizens Nationwide</h3>
+            <p className="text-green-200">Making our communities safer, one report at a time</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-3xl font-bold mb-2">15,000+</div>
               <div className="text-green-200">Reports Processed</div>
@@ -167,10 +277,51 @@ const HomePage = () => {
 
       {/* Footer */}
       <footer className="bg-white border-t border-green-200 py-8">
-        <div className="container mx-auto px-4 text-center text-green-600">
-          <p className="mb-4">Nigerian Armed Forces - Defence Headquarters</p>
-          <p className="text-sm">Emergency Hotline: 199 | Non-Emergency: +234-9-670-1000</p>
-          <p className="text-xs mt-4">© 2024 Defence Headquarters. All rights reserved.</p>
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+              <div className="flex items-center space-x-4 mb-4">
+                <img 
+                  src="/lovable-uploads/0300e6fb-5eb3-4bee-9542-d2935a35734c.png" 
+                  alt="Defence Headquarters Logo" 
+                  className="h-12 w-12 object-contain"
+                />
+                <div>
+                  <h4 className="font-bold text-green-800">Defence Headquarters</h4>
+                  <p className="text-sm text-green-600">Crime Reporting Portal</p>
+                </div>
+              </div>
+              <p className="text-green-600 text-sm">
+                Protecting our nation through community partnership and secure reporting.
+              </p>
+            </div>
+            
+            <div>
+              <h4 className="font-bold text-green-800 mb-4">Emergency Contacts</h4>
+              <div className="space-y-2 text-sm text-green-600">
+                <p><strong>Emergency Hotline:</strong> 199</p>
+                <p><strong>Non-Emergency:</strong> +234-9-670-1000</p>
+                <p><strong>Email:</strong> reports@defencehq.gov.ng</p>
+                <p><strong>SMS:</strong> 32123</p>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="font-bold text-green-800 mb-4">Quick Links</h4>
+              <div className="space-y-2 text-sm">
+                <Link to="/report" className="block text-green-600 hover:text-green-800">File a Report</Link>
+                <a href="#" className="block text-green-600 hover:text-green-800">Privacy Policy</a>
+                <a href="#" className="block text-green-600 hover:text-green-800">Terms of Service</a>
+                <a href="#" className="block text-green-600 hover:text-green-800">Contact Us</a>
+              </div>
+            </div>
+          </div>
+          
+          <div className="border-t border-green-200 mt-8 pt-6 text-center">
+            <p className="text-xs text-green-600">
+              © 2024 Defence Headquarters, Federal Republic of Nigeria. All rights reserved.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
