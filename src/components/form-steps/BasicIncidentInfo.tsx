@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,31 @@ const BasicIncidentInfo = ({ data, onUpdate, onNext }: BasicIncidentInfoProps) =
     "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
   ];
 
+  // Sample LGAs for major states - in a real app, this would be comprehensive
+  const lgaByState: { [key: string]: string[] } = {
+    "Lagos": [
+      "Agege", "Ajeromi-Ifelodun", "Alimosho", "Amuwo-Odofin", "Apapa", "Badagry", "Epe", "Eti-Osa", 
+      "Ibeju-Lekki", "Ifako-Ijaiye", "Ikeja", "Ikorodu", "Kosofe", "Lagos Island", "Lagos Mainland", 
+      "Mushin", "Ojo", "Oshodi-Isolo", "Shomolu", "Surulere"
+    ],
+    "FCT": [
+      "Abaji", "Bwari", "Gwagwalada", "Kuje", "Municipal Area Council", "Kwali"
+    ],
+    "Kano": [
+      "Ajingi", "Albasu", "Bagwai", "Bebeji", "Bichi", "Bunkure", "Dala", "Dambatta", "Dawakin Kudu", 
+      "Dawakin Tofa", "Doguwa", "Fagge", "Gabasawa", "Garko", "Garun Mallam", "Gaya", "Gezawa", 
+      "Gwale", "Gwarzo", "Kabo", "Kano Municipal", "Karaye", "Kibiya", "Kiru", "Kumbotso", "Kunchi", 
+      "Kura", "Madobi", "Makoda", "Minjibir", "Nasarawa", "Rano", "Rimin Gado", "Rogo", "Shanono", 
+      "Sumaila", "Takai", "Tarauni", "Tofa", "Tsanyawa", "Tudun Wada", "Ungogo", "Warawa", "Wudil"
+    ],
+    "Rivers": [
+      "Abua/Odual", "Ahoada East", "Ahoada West", "Akuku-Toru", "Andoni", "Asari-Toru", "Bonny", 
+      "Degema", "Eleme", "Emuoha", "Etche", "Gokana", "Ikwerre", "Khana", "Obio/Akpor", "Ogba/Egbema/Ndoni", 
+      "Ogu/Bolo", "Okrika", "Omuma", "Opobo/Nkoro", "Oyigbo", "Port Harcourt", "Tai"
+    ],
+    // Add more states and their LGAs as needed
+  };
+
   const crimeCategories = [
     "Violent Crime", "Property Crime", "Drug-related", "Fraud/Scam", 
     "Cybercrime", "Suspicious Activity", "Terrorism/Security Threat", "Other"
@@ -34,7 +60,11 @@ const BasicIncidentInfo = ({ data, onUpdate, onNext }: BasicIncidentInfoProps) =
     const newErrors: any = {};
     
     if (!data.location) {
-      newErrors.location = "Please select your location";
+      newErrors.location = "Please select your state";
+    }
+    
+    if (!data.lga) {
+      newErrors.lga = "Please select your local government area";
     }
     
     if (!data.crimeCategory) {
@@ -98,6 +128,14 @@ const BasicIncidentInfo = ({ data, onUpdate, onNext }: BasicIncidentInfoProps) =
     }
   };
 
+  const handleStateChange = (value: string) => {
+    onUpdate({ 
+      location: value,
+      lga: "", // Reset LGA when state changes
+      specificArea: "" // Reset specific area when state changes
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
@@ -140,26 +178,71 @@ const BasicIncidentInfo = ({ data, onUpdate, onNext }: BasicIncidentInfoProps) =
         )}
       </div>
 
-      {/* Location Selection */}
-      <div className="space-y-2">
-        <Label htmlFor="location" className="text-green-800 font-medium">
-          Location (State/Region) <span className="text-red-500">*</span>
-        </Label>
-        <Select value={data.location} onValueChange={(value) => onUpdate({ location: value })}>
-          <SelectTrigger className={`${errors.location ? 'border-red-500' : 'border-green-300'}`}>
-            <SelectValue placeholder="Select your state/location" />
-          </SelectTrigger>
-          <SelectContent>
-            {nigerianStates.map((state) => (
-              <SelectItem key={state} value={state}>{state}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.location && <p className="text-red-500 text-sm">{errors.location}</p>}
+      {/* Location Section */}
+      <div className="space-y-4">
+        <div className="flex items-center space-x-2 mb-2">
+          <MapPin className="h-5 w-5 text-green-600" />
+          <Label className="text-green-800 font-medium text-base">Incident Location</Label>
+        </div>
         
-        <div className="flex items-center space-x-2 text-sm text-green-600 mt-2">
-          <MapPin className="h-4 w-4" />
-          <span>More specific location details can be provided in the next step</span>
+        {/* State Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-green-800 font-medium">
+            State <span className="text-red-500">*</span>
+          </Label>
+          <Select value={data.location} onValueChange={handleStateChange}>
+            <SelectTrigger className={`${errors.location ? 'border-red-500' : 'border-green-300'}`}>
+              <SelectValue placeholder="Select your state" />
+            </SelectTrigger>
+            <SelectContent>
+              {nigerianStates.map((state) => (
+                <SelectItem key={state} value={state}>{state}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.location && <p className="text-red-500 text-sm">{errors.location}</p>}
+        </div>
+
+        {/* Local Government Area Selection */}
+        {data.location && (
+          <div className="space-y-2">
+            <Label htmlFor="lga" className="text-green-800 font-medium">
+              Local Government Area <span className="text-red-500">*</span>
+            </Label>
+            <Select value={data.lga} onValueChange={(value) => onUpdate({ lga: value })}>
+              <SelectTrigger className={`${errors.lga ? 'border-red-500' : 'border-green-300'}`}>
+                <SelectValue placeholder="Select your local government area" />
+              </SelectTrigger>
+              <SelectContent>
+                {lgaByState[data.location] ? (
+                  lgaByState[data.location].map((lga) => (
+                    <SelectItem key={lga} value={lga}>{lga}</SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="other">Other (Please specify in area details below)</SelectItem>
+                )}
+              </SelectContent>
+            </Select>
+            {errors.lga && <p className="text-red-500 text-sm">{errors.lga}</p>}
+          </div>
+        )}
+
+        {/* Specific Area/Address */}
+        <div className="space-y-2">
+          <Label htmlFor="specificArea" className="text-green-800 font-medium">
+            Specific Area/Address
+          </Label>
+          <Textarea
+            id="specificArea"
+            placeholder="Provide specific location details (e.g., street name, landmark, neighborhood, etc.)"
+            value={data.specificArea || ""}
+            onChange={(e) => onUpdate({ specificArea: e.target.value })}
+            className="border-green-300 min-h-[60px]"
+            maxLength={200}
+          />
+          <p className="text-xs text-green-600">
+            {(data.specificArea || "").length}/200 characters • This helps authorities locate the incident precisely
+          </p>
         </div>
       </div>
 
