@@ -6,6 +6,7 @@ import { Shield, ArrowRight, Phone, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import WelcomeStep from "./interactive-steps/WelcomeStep";
 import EmergencyCheck from "./interactive-steps/EmergencyCheck";
+import EmergencyLocationPrompt from "./interactive-steps/EmergencyLocationPrompt";
 import CrimeTypeSelection from "./interactive-steps/CrimeTypeSelection";
 import LocationFlow from "./interactive-steps/LocationFlow";
 import IncidentTimeFlow from "./interactive-steps/IncidentTimeFlow";
