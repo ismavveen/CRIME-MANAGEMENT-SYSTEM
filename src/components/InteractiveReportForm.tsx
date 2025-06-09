@@ -71,12 +71,6 @@ const InteractiveReportForm = () => {
     }
   };
 
-  const handleStepComplete = (stepData: Partial<FormData>) => {
-    console.log("Step completed with data:", stepData);
-    setFormData(prev => ({ ...prev, ...stepData }));
-    handleNext();
-  };
-
   const updateFormData = (data: Partial<FormData>) => {
     console.log("Updating form data:", data);
     setFormData(prev => ({ ...prev, ...data }));
@@ -479,7 +473,7 @@ const InteractiveReportForm = () => {
                 <CardContent className="p-6">
                   {CurrentStepComponent && (
                     <CurrentStepComponent
-                      onNext={handleStepComplete}
+                      onNext={handleNext}
                       onBack={handleBack}
                       onUpdate={updateFormData}
                       data={formData}

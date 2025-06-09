@@ -16,7 +16,7 @@ import {
   ArrowRight,
   HelpCircle
 } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { FormData } from "../../types/FormData";
 
 interface CrimeTypeSelectionProps {
   onNext: () => void;

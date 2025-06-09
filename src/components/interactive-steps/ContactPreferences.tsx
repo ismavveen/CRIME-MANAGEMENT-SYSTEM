@@ -1,11 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Eye, EyeOff, Shield, Phone, Mail, ArrowLeft, ArrowRight } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { FormData } from "../../types/FormData";
 
 interface ContactPreferencesProps {
   onNext: () => void;
