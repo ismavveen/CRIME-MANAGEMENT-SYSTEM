@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Report {
   id: string;
+  serial_number?: string;
   description: string;
   threat_type: string;
   location: string;
@@ -31,6 +32,8 @@ export interface Report {
   assigned_to?: string;
   images?: string[];
   videos?: string[];
+  reporter_name?: string;
+  reporter_contact?: string;
 }
 
 export const useReports = () => {
@@ -97,18 +100,53 @@ export const useReports = () => {
     }
   };
 
+  const getReportBySerialNumber = async (serialNumber: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('serial_number', serialNumber)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching report by serial number:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     fetchReports();
 
-    // Set up real-time subscription
+    // Enhanced real-time subscription for immediate updates
     const channel = supabase
-      .channel('reports-changes')
+      .channel('reports-realtime')
       .on('postgres_changes', {
-        event: '*',
+        event: 'INSERT',
         schema: 'public',
         table: 'reports'
-      }, () => {
-        fetchReports();
+      }, (payload) => {
+        console.log('New report received:', payload);
+        setReports(prev => [payload.new as Report, ...prev]);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'reports'
+      }, (payload) => {
+        console.log('Report updated:', payload);
+        setReports(prev => prev.map(report => 
+          report.id === payload.new.id ? payload.new as Report : report
+        ));
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'reports'
+      }, (payload) => {
+        console.log('Report deleted:', payload);
+        setReports(prev => prev.filter(report => report.id !== payload.old.id));
       })
       .subscribe();
 
@@ -121,6 +159,7 @@ export const useReports = () => {
     reports,
     loading,
     updateReportStatus,
+    getReportBySerialNumber,
     refetch: fetchReports
   };
 };

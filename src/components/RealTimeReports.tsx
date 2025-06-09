@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useReports } from '@/hooks/useReports';
 import { Badge } from '@/components/ui/badge';
@@ -116,7 +115,7 @@ const RealTimeReports = () => {
       {/* Reports Table */}
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
-          <div className="col-span-1">ID</div>
+          <div className="col-span-1">Serial Number</div>
           <div className="col-span-2">Time</div>
           <div className="col-span-2">Location</div>
           <div className="col-span-2">Threat</div>
@@ -145,7 +144,7 @@ const RealTimeReports = () => {
                 onClick={() => setSelectedReport(report.id)}
               >
                 <div className="col-span-1 text-white font-mono text-sm">
-                  {report.id.slice(0, 4)}
+                  {report.serial_number || `DHQ-${report.id.slice(0, 3)}`}
                 </div>
                 
                 <div className="col-span-2 text-gray-300 text-sm">
@@ -202,15 +201,23 @@ const RealTimeReports = () => {
       {/* Report Details */}
       {selectedReport && (
         <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-          <h4 className="text-white font-semibold mb-2">Report Details - ID: {selectedReport.slice(0, 8)}</h4>
+          <h4 className="text-white font-semibold mb-2">Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number}</h4>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
             return report ? (
               <div className="text-gray-300 text-sm space-y-2">
                 <p><strong>Description:</strong> {report.description}</p>
-                <p><strong>Location:</strong> {report.location || report.manual_location}</p>
+                <p><strong>Location:</strong> {report.full_address || report.location || report.manual_location}</p>
+                <p><strong>State:</strong> {report.state}</p>
+                <p><strong>LGA:</strong> {report.local_government}</p>
                 <p><strong>Urgency:</strong> {report.urgency || report.priority}</p>
                 <p><strong>Reported:</strong> {new Date(report.created_at).toLocaleString()}</p>
+                {report.reporter_name && (
+                  <p><strong>Reporter:</strong> {report.reporter_name}</p>
+                )}
+                {report.images && report.images.length > 0 && (
+                  <p><strong>Evidence:</strong> {report.images.length} image(s), {report.videos?.length || 0} video(s)</p>
+                )}
               </div>
             ) : null;
           })()}

@@ -186,6 +186,7 @@ export type Database = {
           assigned_to: string | null
           created_at: string
           description: string
+          device_info: Json | null
           file_url: string | null
           full_address: string | null
           id: string
@@ -215,6 +216,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           description: string
+          device_info?: Json | null
           file_url?: string | null
           full_address?: string | null
           id?: string
@@ -244,6 +246,7 @@ export type Database = {
           assigned_to?: string | null
           created_at?: string
           description?: string
+          device_info?: Json | null
           file_url?: string | null
           full_address?: string | null
           id?: string
@@ -296,6 +299,7 @@ export type Database = {
       unit_commanders: {
         Row: {
           active_assignments: number | null
+          arm_of_service: string | null
           average_response_time: number | null
           category: string | null
           contact_info: string | null
@@ -305,6 +309,8 @@ export type Database = {
           id: string
           is_active: boolean | null
           location: string | null
+          password_hash: string | null
+          profile_image: string | null
           rank: string
           service_number: string | null
           specialization: string | null
@@ -317,6 +323,7 @@ export type Database = {
         }
         Insert: {
           active_assignments?: number | null
+          arm_of_service?: string | null
           average_response_time?: number | null
           category?: string | null
           contact_info?: string | null
@@ -326,6 +333,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           location?: string | null
+          password_hash?: string | null
+          profile_image?: string | null
           rank: string
           service_number?: string | null
           specialization?: string | null
@@ -338,6 +347,7 @@ export type Database = {
         }
         Update: {
           active_assignments?: number | null
+          arm_of_service?: string | null
           average_response_time?: number | null
           category?: string | null
           contact_info?: string | null
@@ -347,6 +357,8 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           location?: string | null
+          password_hash?: string | null
+          profile_image?: string | null
           rank?: string
           service_number?: string | null
           specialization?: string | null

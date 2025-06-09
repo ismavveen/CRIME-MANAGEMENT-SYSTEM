@@ -7,7 +7,6 @@ import IncidentTable from '../components/IncidentTable';
 import NotificationPanel from '../components/NotificationPanel';
 import RealTimeReports from '../components/RealTimeReports';
 import ReportDetailsModal from '../components/ReportDetailsModal';
-import AIChatInterface from '../components/AIChatInterface';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
@@ -76,55 +75,40 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Stats Grid with AI Chat */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard
-                title="TOTAL REPORTS"
-                value={loading ? "..." : metrics.total_reports.toString()}
-                subtitle="ALL INCIDENTS"
-                icon={<FileText size={28} />}
-                status="neutral"
-                onClick={() => handleStatCardClick('total_reports')}
-              />
-              <StatCard
-                title="RESOLVED"
-                value={loading ? "..." : metrics.resolved_reports.toString()}
-                subtitle="COMPLETED MISSIONS"
-                status="success"
-                icon={<CircleCheck size={28} />}
-                onClick={() => handleStatCardClick('resolved_reports')}
-              />
-              <StatCard
-                title="PENDING"
-                value={loading ? "..." : metrics.pending_reports.toString()}
-                subtitle="AWAITING ACTION"
-                status="warning"
-                icon={<CircleAlert size={28} />}
-                onClick={() => handleStatCardClick('pending_reports')}
-              />
-              <StatCard
-                title="RESPONSE TIME"
-                value="15 min"
-                subtitle="AVERAGE RESPONSE"
-                status="success"
-                icon={<Target size={28} />}
-                onClick={() => handleStatCardClick('response_time')}
-              />
-            </div>
-          </div>
-          
-          {/* AI Chat Assistant */}
-          <div className="lg:col-span-1">
-            <AIChatInterface 
-              userType="admin" 
-              context={`Total reports: ${metrics.total_reports}, Pending: ${metrics.pending_reports}, Resolved: ${metrics.resolved_reports}`}
-              title="Intelligence Assistant"
-              className="h-96"
-              compact={true}
-            />
-          </div>
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard
+            title="TOTAL REPORTS"
+            value={loading ? "..." : metrics.total_reports.toString()}
+            subtitle="ALL INCIDENTS"
+            icon={<FileText size={28} />}
+            status="neutral"
+            onClick={() => handleStatCardClick('total_reports')}
+          />
+          <StatCard
+            title="RESOLVED"
+            value={loading ? "..." : metrics.resolved_reports.toString()}
+            subtitle="COMPLETED MISSIONS"
+            status="success"
+            icon={<CircleCheck size={28} />}
+            onClick={() => handleStatCardClick('resolved_reports')}
+          />
+          <StatCard
+            title="PENDING"
+            value={loading ? "..." : metrics.pending_reports.toString()}
+            subtitle="AWAITING ACTION"
+            status="warning"
+            icon={<CircleAlert size={28} />}
+            onClick={() => handleStatCardClick('pending_reports')}
+          />
+          <StatCard
+            title="RESPONSE TIME"
+            value="15 min"
+            subtitle="AVERAGE RESPONSE"
+            status="success"
+            icon={<Target size={28} />}
+            onClick={() => handleStatCardClick('response_time')}
+          />
         </div>
 
         {/* Enhanced Map Section - Full Width */}
@@ -169,23 +153,6 @@ const Index = () => {
         {/* Real-Time Reports Section */}
         <div className="mb-8 animate-fade-in-up">
           <RealTimeReports />
-        </div>
-
-        {/* Enhanced Intelligence Reports Table */}
-        <div className="dhq-card p-6 animate-slide-in-right">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <FileText className="h-6 w-6 text-cyan-400" />
-              <h3 className="text-2xl font-bold text-white dhq-heading">INTELLIGENCE REPORTS</h3>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-400 dhq-caption">Classification:</div>
-              <div className="px-4 py-2 bg-red-900/30 border border-red-700/50 rounded-lg text-red-300 text-sm font-semibold dhq-caption uppercase backdrop-blur-sm">
-                CONFIDENTIAL
-              </div>
-            </div>
-          </div>
-          <IncidentTable />
         </div>
       </div>
 

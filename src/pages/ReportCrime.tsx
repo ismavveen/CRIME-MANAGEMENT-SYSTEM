@@ -6,10 +6,10 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import MediaUploadSection from '@/components/MediaUploadSection';
-import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock, Copy, Search } from 'lucide-react';
 
 const ReportCrime = () => {
-  // ... keep existing code (state and helper functions)
   const [formData, setFormData] = useState({
     description: '',
     location: '',
@@ -38,6 +38,11 @@ const ReportCrime = () => {
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [reportId, setReportId] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [trackingResult, setTrackingResult] = useState<any>(null);
+  const [showTrackingModal, setShowTrackingModal] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -187,6 +192,8 @@ const ReportCrime = () => {
         local_government: formData.localGovernment,
         full_address: formData.fullAddress,
         landmark: formData.landmark,
+        reporter_name: formData.isAnonymous ? null : formData.reporterName,
+        reporter_contact: formData.isAnonymous ? null : formData.reporterContact,
       };
 
       const { data, error } = await supabase
@@ -204,10 +211,12 @@ const ReportCrime = () => {
 
       console.log('Report submitted successfully:', data);
       setReportId(data[0].id);
+      setSerialNumber(data[0].serial_number);
+      setShowSuccessModal(true);
 
       toast({
         title: "Report submitted successfully",
-        description: `Your report has been received. Reference ID: ${data[0].id.slice(0, 8)}`,
+        description: `Your report has been received. Reference: ${data[0].serial_number}`,
       });
 
       // Reset form
@@ -244,7 +253,51 @@ const ReportCrime = () => {
     }
   };
 
-  // ... keep existing code (reportingChannels, nigerianStates, etc.)
+  const handleTrackReport = async () => {
+    if (!trackingNumber.trim()) {
+      toast({
+        title: "Reference Number Required",
+        description: "Please enter your reference number to track your report.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('serial_number', trackingNumber.trim())
+        .single();
+
+      if (error || !data) {
+        toast({
+          title: "Report Not Found",
+          description: "No report found with this reference number. Please check and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setTrackingResult(data);
+      setShowTrackingModal(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to track report. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copied!",
+      description: "Reference number copied to clipboard",
+    });
+  };
+
   const reportingChannels = [
     {
       id: 'web_app',
@@ -348,6 +401,28 @@ const ReportCrime = () => {
           </div>
         </div>
 
+        {/* Track Report Section */}
+        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
+          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+            <Search className="w-5 h-5 mr-2 text-blue-400" />
+            Track Your Report
+          </h2>
+          <div className="flex space-x-4">
+            <Input
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              className="bg-gray-900/50 border-gray-600 text-white flex-1"
+              placeholder="Enter your reference number (e.g., DHQ-2024-001)"
+            />
+            <Button 
+              onClick={handleTrackReport}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Track Report
+            </Button>
+          </div>
+        </Card>
+
         {/* Enhanced Reporting Channels */}
         <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
@@ -387,23 +462,6 @@ const ReportCrime = () => {
             ))}
           </div>
         </Card>
-
-        {/* Success Message */}
-        {reportId && (
-          <Card className="bg-green-900/20 border-green-700/50 p-6 mb-6">
-            <div className="text-center">
-              <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
-              <h3 className="text-lg font-bold text-green-300 mb-2">Report Submitted Successfully!</h3>
-              <p className="text-green-200 mb-4">Your Report ID: <span className="font-mono">{reportId.slice(0, 8)}</span></p>
-              <Button 
-                onClick={() => window.open('/track', '_blank')}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                Track Your Report
-              </Button>
-            </div>
-          </Card>
-        )}
 
         {/* Location Status Card */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
@@ -673,6 +731,92 @@ const ReportCrime = () => {
           </div>
         </Card>
       </div>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="bg-gray-800 text-white border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-center text-green-400 text-xl">
+              <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+              Report Submitted Successfully!
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 text-center">
+            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-4">
+              <p className="text-green-300 mb-2">Your Reference Number:</p>
+              <div className="flex items-center justify-center space-x-2">
+                <span className="font-mono text-lg text-white bg-gray-900 px-3 py-1 rounded">
+                  {serialNumber}
+                </span>
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => copyToClipboard(serialNumber)}
+                  className="bg-transparent border-green-600 text-green-400"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            <div className="text-gray-300">
+              <p>• Save this reference number to track your report</p>
+              <p>• You will be notified of any status updates</p>
+              <p>• Use this number for any follow-up communication</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tracking Modal */}
+      <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
+        <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Report Status</DialogTitle>
+          </DialogHeader>
+          {trackingResult && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Reference:</span>
+                  <span className="ml-2 font-mono">{trackingResult.serial_number}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Status:</span>
+                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
+                    trackingResult.status === 'resolved' ? 'bg-green-900/30 text-green-300' :
+                    trackingResult.status === 'assigned' ? 'bg-blue-900/30 text-blue-300' :
+                    'bg-yellow-900/30 text-yellow-300'
+                  }`}>
+                    {trackingResult.status.toUpperCase()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Submitted:</span>
+                  <span className="ml-2">{new Date(trackingResult.created_at).toLocaleDateString()}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Type:</span>
+                  <span className="ml-2">{trackingResult.threat_type}</span>
+                </div>
+              </div>
+              <div className="bg-gray-900/50 p-3 rounded">
+                <h4 className="font-medium mb-2">Description:</h4>
+                <p className="text-gray-300 text-sm">{trackingResult.description}</p>
+              </div>
+              <div className="bg-gray-900/50 p-3 rounded">
+                <h4 className="font-medium mb-2">Location:</h4>
+                <p className="text-gray-300 text-sm">{trackingResult.full_address || trackingResult.location}</p>
+              </div>
+              {trackingResult.assigned_to && (
+                <div className="bg-blue-900/20 border border-blue-700/50 p-3 rounded">
+                  <h4 className="font-medium text-blue-300 mb-1">Assignment Update:</h4>
+                  <p className="text-gray-300 text-sm">Assigned to: {trackingResult.assigned_to}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
