@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,7 +32,7 @@ const IncidentTimeFlow = ({ onNext, onBack, onUpdate, data }: IncidentTimeFlowPr
     onUpdate({
       incidentTime: {
         ...data.incidentTime,
-        when: value,
+        when: value as "specific" | "today" | "yesterday" | "lastWeek" | "lastMonth" | "notSure",
         date: undefined,
         time: undefined,
       },
