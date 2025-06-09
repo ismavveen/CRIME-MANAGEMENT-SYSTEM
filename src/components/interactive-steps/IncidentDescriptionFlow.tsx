@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { FileText, Users, Shield, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { FormData } from "../../types/FormData";
 
 interface IncidentDescriptionFlowProps {
   onNext: () => void;

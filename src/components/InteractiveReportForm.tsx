@@ -32,6 +32,9 @@ const InteractiveReportForm = () => {
     incidentTime: {
       when: "notSure"
     },
+    safety: {
+      criminalPresent: ""
+    },
     description: "",
     evidence: {
       hasEvidence: false,

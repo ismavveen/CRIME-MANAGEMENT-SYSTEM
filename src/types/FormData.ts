@@ -4,6 +4,7 @@ export interface FormData {
   wantsToReport?: boolean;
   crimeType: string;
   crimeDetails?: string;
+  isEmergency?: boolean;
   
   // Location
   location: {
@@ -17,6 +18,12 @@ export interface FormData {
     when: 'specific' | 'today' | 'yesterday' | 'lastWeek' | 'lastMonth' | 'notSure';
     date?: string;
     time?: string;
+  };
+  
+  // Safety information
+  safety: {
+    criminalPresent: string;
+    currentlySafe?: boolean;
   };
   
   // Description
@@ -37,4 +44,12 @@ export interface FormData {
   
   // Reporting method
   reportingMethod: 'text' | 'voice';
+  
+  // Emergency location (optional)
+  emergencyLocation?: {
+    latitude: number;
+    longitude: number;
+    timestamp: string;
+    accuracy?: number;
+  };
 }

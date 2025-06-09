@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, AlertTriangle, Shield, Clock, ArrowLeft, ArrowRight } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { MapPin, Shield, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
+import { FormData } from "../../types/FormData";
 import { toast } from "@/hooks/use-toast";
 
 interface EmergencyLocationPromptProps {
