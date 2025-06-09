@@ -20,67 +20,91 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Hero Section with Military Image */}
-      <section className="relative container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="text-left">
-            <h2 className="text-4xl md:text-5xl font-bold text-green-800 mb-6">
-              Report Crime Safely & Securely
-            </h2>
-            <p className="text-xl text-green-700 mb-8 leading-relaxed">
-              The Nigerian Armed Forces is committed to maintaining security and protecting our citizens. 
-              Your reports help us serve you better. Report incidents through multiple channels with complete confidentiality.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 mb-8">
-              <Link to="/report">
-                <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3">
-                  <FileText className="mr-2 h-5 w-5" />
-                  Start Anonymous Report
+      {/* Hero Section with Military Background */}
+      <section className="relative">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url('/lovable-uploads/34adc360-453d-4e8e-84ab-90dad7513fb3.png')`
+          }}
+        />
+        
+        {/* Content */}
+        <div className="relative container mx-auto px-4 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
+            <div className="text-left">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">
+                Report Crime Safely & Securely
+              </h2>
+              <p className="text-xl text-green-100 mb-8 leading-relaxed drop-shadow-md">
+                The Nigerian Armed Forces is committed to maintaining security and protecting our citizens. 
+                Your reports help us serve you better. Report incidents through multiple channels with complete confidentiality.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row gap-4 mb-8">
+                <Link to="/report">
+                  <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3 shadow-lg">
+                    <FileText className="mr-2 h-5 w-5" />
+                    Start Anonymous Report
+                  </Button>
+                </Link>
+                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/20 px-8 py-3 backdrop-blur-sm">
+                  <Phone className="mr-2 h-5 w-5" />
+                  Emergency Hotline: 199
                 </Button>
-              </Link>
-              <Button variant="outline" size="lg" className="border-green-700 text-green-700 hover:bg-green-50 px-8 py-3">
-                <Phone className="mr-2 h-5 w-5" />
-                Emergency Hotline: 199
-              </Button>
+              </div>
+            </div>
+            
+            <div className="lg:flex justify-end hidden">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 max-w-md">
+                <h3 className="text-xl font-bold text-white mb-4">Quick Access</h3>
+                <div className="space-y-3">
+                  <Link to="/report" className="block">
+                    <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
+                      <FileText className="mr-3 h-4 w-4" />
+                      File New Report
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
+                    <Phone className="mr-3 h-4 w-4" />
+                    Call Emergency: 199
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
+                    <Mic className="mr-3 h-4 w-4" />
+                    Voice Report
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="relative">
-            <img 
-              src="/lovable-uploads/be54f840-a854-4fbd-b698-156d42ce983a.png" 
-              alt="Nigerian Armed Forces Personnel" 
-              className="w-full h-auto rounded-lg shadow-xl object-cover"
-            />
-            <div className="absolute inset-0 bg-green-900/10 rounded-lg"></div>
-          </div>
-        </div>
 
-        {/* Key Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-          <Card className="border-green-200 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-green-800 mb-2">100% Anonymous</h3>
-              <p className="text-green-600 text-sm">Your identity is completely protected. Report without fear of retribution.</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-green-200 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <Clock className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-green-800 mb-2">24/7 Available</h3>
-              <p className="text-green-600 text-sm">Report crimes anytime, anywhere through multiple secure channels.</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="border-green-200 hover:shadow-lg transition-shadow">
-            <CardContent className="p-6 text-center">
-              <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
-              <h3 className="font-semibold text-green-800 mb-2">Expert Response</h3>
-              <p className="text-green-600 text-sm">Trained professionals handle your reports with care and urgency.</p>
-            </CardContent>
-          </Card>
+          {/* Key Features Grid - moved below hero */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+            <Card className="border-green-200 hover:shadow-lg transition-shadow bg-white/95 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="font-semibold text-green-800 mb-2">100% Anonymous</h3>
+                <p className="text-green-600 text-sm">Your identity is completely protected. Report without fear of retribution.</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:shadow-lg transition-shadow bg-white/95 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Clock className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="font-semibold text-green-800 mb-2">24/7 Available</h3>
+                <p className="text-green-600 text-sm">Report crimes anytime, anywhere through multiple secure channels.</p>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:shadow-lg transition-shadow bg-white/95 backdrop-blur-sm">
+              <CardContent className="p-6 text-center">
+                <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <h3 className="font-semibold text-green-800 mb-2">Expert Response</h3>
+                <p className="text-green-600 text-sm">Trained professionals handle your reports with care and urgency.</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
