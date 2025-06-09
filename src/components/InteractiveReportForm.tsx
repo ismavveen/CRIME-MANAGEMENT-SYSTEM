@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,10 +47,10 @@ const InteractiveReportForm = () => {
     { component: WelcomeStep, title: "Welcome", required: false },
     { component: EmergencyCheck, title: "Emergency Check", required: true },
     { component: EmergencyLocationPrompt, title: "Emergency Location", required: false },
+    { component: VoiceReportStep, title: "Report Method", required: true },
     { component: CrimeTypeSelection, title: "Crime Type", required: true },
     { component: LocationFlow, title: "Location", required: true },
     { component: IncidentTimeFlow, title: "Time", required: true },
-    { component: VoiceReportStep, title: "Report Method", required: true },
     { component: IncidentDescriptionFlow, title: "Description", required: true },
     { component: EvidenceFlow, title: "Evidence", required: false },
     { component: ContactPreferences, title: "Contact", required: true },
@@ -88,14 +87,14 @@ const InteractiveReportForm = () => {
     if (!step?.required) return true;
     
     switch (currentStep) {
-      case 3: // Crime Type
+      case 3: // Report Method
+        return formData.reportingMethod === "text" || formData.reportingMethod === "voice";
+      case 4: // Crime Type
         return formData.crimeType.length > 0;
-      case 4: // Location
+      case 5: // Location
         return formData.location.state.length > 0;
-      case 5: // Time
-        return formData.incidentTime.when !== "";
-      case 6: // Report Method
-        return formData.reportingMethod !== "";
+      case 6: // Time
+        return formData.incidentTime.when !== "notSure" && formData.incidentTime.when.length > 0;
       case 7: // Description
         return formData.description.length > 10;
       case 9: // Contact
@@ -484,7 +483,6 @@ const InteractiveReportForm = () => {
                       onBack={handleBack}
                       onUpdate={updateFormData}
                       data={formData}
-                      formData={formData}
                     />
                   )}
                 </CardContent>

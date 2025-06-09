@@ -1,8 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, FileText, Phone, ArrowRight } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { FormData } from "../../types/FormData";
 
 interface WelcomeStepProps {
   onNext: () => void;

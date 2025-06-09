@@ -1,6 +1,7 @@
 
 export interface FormData {
   // Basic info
+  wantsToReport?: boolean;
   crimeType: string;
   crimeDetails?: string;
   
