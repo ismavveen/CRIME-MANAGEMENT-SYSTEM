@@ -89,7 +89,7 @@ const ReportForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
-      {/* Header */}
+      {/* Header with Logo */}
       <header className="bg-white shadow-sm border-b border-green-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -100,12 +100,18 @@ const ReportForm = () => {
                 className="h-12 w-12 object-contain"
               />
               <div>
-                <h1 className="text-lg font-bold text-green-800">Crime Reporting Portal</h1>
+                <h1 className="text-lg font-bold text-green-800">Defence Headquarters</h1>
+                <p className="text-sm text-green-600">Crime Reporting Portal</p>
               </div>
             </Link>
-            <div className="flex items-center space-x-2 text-green-700">
-              <Shield className="h-4 w-4" />
-              <span className="text-sm font-medium">Secure & Anonymous</span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-green-700">
+                <Shield className="h-4 w-4" />
+                <span className="text-sm font-medium">Secure & Anonymous</span>
+              </div>
+              <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                Emergency: 199
+              </div>
             </div>
           </div>
         </div>

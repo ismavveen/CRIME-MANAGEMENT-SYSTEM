@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 import WelcomeStep from './interactive-steps/WelcomeStep';
 import EmergencyCheck from './interactive-steps/EmergencyCheck';
 import EmergencyLocationPrompt from './interactive-steps/EmergencyLocationPrompt';
@@ -186,13 +188,43 @@ const InteractiveReportForm = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 py-8">
-      <div className="container mx-auto px-4">
-        <Card className="max-w-4xl mx-auto">
-          <CardContent className="p-8">
-            {steps[currentStep]}
-          </CardContent>
-        </Card>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
+      {/* Header with Logo */}
+      <header className="bg-white shadow-sm border-b border-green-200 py-4">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <Link to="/" className="flex items-center space-x-4">
+              <img 
+                src="/lovable-uploads/0300e6fb-5eb3-4bee-9542-d2935a35734c.png" 
+                alt="Defence Headquarters Logo" 
+                className="h-12 w-12 object-contain"
+              />
+              <div>
+                <h1 className="text-lg font-bold text-green-800">Defence Headquarters</h1>
+                <p className="text-sm text-green-600">Interactive Crime Reporting</p>
+              </div>
+            </Link>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-green-700">
+                <Shield className="h-4 w-4" />
+                <span className="text-sm font-medium">Secure & Anonymous</span>
+              </div>
+              <div className="bg-red-600 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                Emergency: 199
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="py-8">
+        <div className="container mx-auto px-4">
+          <Card className="max-w-4xl mx-auto">
+            <CardContent className="p-8">
+              {steps[currentStep]}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

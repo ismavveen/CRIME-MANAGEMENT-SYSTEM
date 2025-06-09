@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users, AlertTriangle, CheckCircle, Eye, Mic } from "lucide-react";
@@ -21,7 +20,7 @@ const HomePage = () => {
       </div>
 
       {/* Hero Section with Military Background */}
-      <section className="relative">
+      <section className="relative min-h-[70vh] flex items-center justify-center">
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -30,57 +29,43 @@ const HomePage = () => {
           }}
         />
         
-        {/* Content */}
-        <div className="relative container mx-auto px-4 py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
-            <div className="text-left">
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-6 drop-shadow-lg">
-                Report Crime Safely & Securely
-              </h2>
-              <p className="text-xl text-green-100 mb-8 leading-relaxed drop-shadow-md">
-                The Nigerian Armed Forces is committed to maintaining security and protecting our citizens. 
-                Your reports help us serve you better. Report incidents through multiple channels with complete confidentiality.
-              </p>
-              
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <Link to="/report">
-                  <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3 shadow-lg">
-                    <FileText className="mr-2 h-5 w-5" />
-                    Start Anonymous Report
-                  </Button>
-                </Link>
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/20 px-8 py-3 backdrop-blur-sm">
-                  <Phone className="mr-2 h-5 w-5" />
-                  Emergency Hotline: 199
-                </Button>
-              </div>
-            </div>
+        {/* Content - Centered */}
+        <div className="relative container mx-auto px-4 py-12">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+              Report Crime Safely & Securely
+            </h2>
+            <p className="text-lg md:text-xl text-green-100 mb-8 leading-relaxed drop-shadow-md max-w-3xl mx-auto">
+              The Nigerian Armed Forces is committed to maintaining security and protecting our citizens. 
+              Your reports help us serve you better. Report incidents through multiple channels with complete confidentiality.
+            </p>
             
-            <div className="lg:flex justify-end hidden">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-8 max-w-md">
-                <h3 className="text-xl font-bold text-white mb-4">Quick Access</h3>
-                <div className="space-y-3">
-                  <Link to="/report" className="block">
-                    <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
-                      <FileText className="mr-3 h-4 w-4" />
-                      File New Report
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
-                    <Phone className="mr-3 h-4 w-4" />
-                    Call Emergency: 199
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-white/20">
-                    <Mic className="mr-3 h-4 w-4" />
-                    Voice Report
-                  </Button>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+              <Link to="/report">
+                <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3 shadow-lg">
+                  <FileText className="mr-2 h-5 w-5" />
+                  Start Anonymous Report
+                </Button>
+              </Link>
+              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/20 px-8 py-3 backdrop-blur-sm">
+                <Phone className="mr-2 h-5 w-5" />
+                Emergency Hotline: 199
+              </Button>
+            </div>
+
+            {/* Emergency Hotline - More Visible */}
+            <div className="bg-red-600/90 backdrop-blur-sm rounded-lg p-4 max-w-md mx-auto mb-8">
+              <div className="text-white">
+                <Phone className="h-6 w-6 mx-auto mb-2" />
+                <h3 className="text-xl font-bold mb-1">Emergency Hotline</h3>
+                <p className="text-3xl font-bold">199</p>
+                <p className="text-sm opacity-90">Available 24/7</p>
               </div>
             </div>
           </div>
 
           {/* Key Features Grid - moved below hero */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 max-w-5xl mx-auto">
             <Card className="border-green-200 hover:shadow-lg transition-shadow bg-white/95 backdrop-blur-sm">
               <CardContent className="p-6 text-center">
                 <Shield className="h-12 w-12 text-green-600 mx-auto mb-4" />
@@ -302,7 +287,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-green-200 py-8">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-4 mb-4">
                 <img 
@@ -323,7 +308,7 @@ const HomePage = () => {
             <div>
               <h4 className="font-bold text-green-800 mb-4">Emergency Contacts</h4>
               <div className="space-y-2 text-sm text-green-600">
-                <p><strong>Emergency Hotline:</strong> 199</p>
+                <p className="text-red-600 font-bold text-lg">Emergency: 199</p>
                 <p><strong>Non-Emergency:</strong> +234-9-670-1000</p>
                 <p><strong>Email:</strong> reports@defencehq.gov.ng</p>
                 <p><strong>SMS:</strong> 32123</p>
@@ -333,10 +318,20 @@ const HomePage = () => {
             <div>
               <h4 className="font-bold text-green-800 mb-4">Quick Links</h4>
               <div className="space-y-2 text-sm">
-                <Link to="/report" className="block text-green-600 hover:text-green-800">File a Report</Link>
-                <Link to="/faqs" className="block text-green-600 hover:text-green-800">FAQs</Link>
-                <a href="#" className="block text-green-600 hover:text-green-800">Privacy Policy</a>
-                <a href="#" className="block text-green-600 hover:text-green-800">Contact Us</a>
+                <Link to="/report" className="block text-green-600 hover:text-green-800 font-medium">📝 File a Report</Link>
+                <Link to="/faqs" className="block text-green-600 hover:text-green-800">❓ FAQs</Link>
+                <a href="#" className="block text-green-600 hover:text-green-800">🔒 Privacy Policy</a>
+                <a href="#" className="block text-green-600 hover:text-green-800">📞 Contact Us</a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-green-800 mb-4">Report Methods</h4>
+              <div className="space-y-2 text-sm">
+                <Link to="/report" className="block text-green-600 hover:text-green-800">🌐 Web Portal</Link>
+                <p className="text-green-600">📱 SMS: 32123</p>
+                <p className="text-green-600">📧 Email Reports</p>
+                <p className="text-green-600">🎤 Voice Recording</p>
               </div>
             </div>
           </div>
