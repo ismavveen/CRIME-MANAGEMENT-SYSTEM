@@ -100,16 +100,20 @@ export const useReports = () => {
     }
   };
 
-  const getReportBySerialNumber = async (serialNumber: string): Promise<Report | null> => {
+  const getReportBySerialNumber = async (serialNumber: string) => {
     try {
       const { data, error } = await supabase
         .from('reports')
         .select('*')
         .eq('serial_number', serialNumber)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
-      return data as Report;
+      if (error) {
+        console.error('Error fetching report by serial number:', error);
+        return null;
+      }
+
+      return data as Report | null;
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
       return null;

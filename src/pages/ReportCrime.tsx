@@ -26,6 +26,7 @@ const ReportCrime = () => {
     fullAddress: '',
     landmark: '',
   });
+  
   const [locationData, setLocationData] = useState({
     latitude: null as number | null,
     longitude: null as number | null,
@@ -215,9 +216,8 @@ const ReportCrime = () => {
       const reportResponse = data[0];
       setReportId(reportResponse.id);
       
-      // Handle serial_number safely - check if it exists in the response type
-      const reportWithSerial = reportResponse as any; // Type assertion for serial_number
-      const generatedSerialNumber = reportWithSerial.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 3)}`;
+      // Generate serial number if not provided by database
+      const generatedSerialNumber = reportResponse.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 8).toUpperCase()}`;
       setSerialNumber(generatedSerialNumber);
       setShowSuccessModal(true);
 
