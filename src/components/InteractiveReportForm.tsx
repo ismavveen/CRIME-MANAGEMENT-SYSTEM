@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Phone, Shield, Clock, FileText, AlertTriangle, Eye, Users, Mail, MapPin, Lock, CheckCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Phone, Shield, Clock, FileText, AlertTriangle, Eye, Users, Mail, MapPin, Lock, CheckCircle, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navigation from "./Navigation";
 import WelcomeStep from "./interactive-steps/WelcomeStep";
@@ -16,44 +18,94 @@ import EvidenceFlow from "./interactive-steps/EvidenceFlow";
 import ContactPreferences from "./interactive-steps/ContactPreferences";
 import VoiceReportStep from "./interactive-steps/VoiceReportStep";
 import FinalReview from "./interactive-steps/FinalReview";
+import { FormData } from "../types/FormData";
 
 const InteractiveReportForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showInformation, setShowInformation] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     crimeType: "",
-    location: "",
-    incidentTime: "",
+    location: {
+      state: "",
+      lga: "",
+      specificArea: ""
+    },
+    incidentTime: {
+      when: "notSure"
+    },
     description: "",
-    evidence: [],
-    contactPreference: "",
-    voiceReport: null,
-    isAnonymous: true,
+    evidence: {
+      hasEvidence: false,
+      files: []
+    },
+    contact: {
+      isAnonymous: true
+    },
+    reportingMethod: "text"
   });
 
   const steps = [
-    { component: WelcomeStep, title: "Welcome" },
-    { component: EmergencyCheck, title: "Emergency Check" },
-    { component: EmergencyLocationPrompt, title: "Emergency Location" },
-    { component: CrimeTypeSelection, title: "Crime Type" },
-    { component: LocationFlow, title: "Location" },
-    { component: IncidentTimeFlow, title: "Time" },
-    { component: IncidentDescriptionFlow, title: "Description" },
-    { component: EvidenceFlow, title: "Evidence" },
-    { component: ContactPreferences, title: "Contact" },
-    { component: VoiceReportStep, title: "Voice Report" },
-    { component: FinalReview, title: "Review" },
+    { component: WelcomeStep, title: "Welcome", required: false },
+    { component: EmergencyCheck, title: "Emergency Check", required: true },
+    { component: EmergencyLocationPrompt, title: "Emergency Location", required: false },
+    { component: CrimeTypeSelection, title: "Crime Type", required: true },
+    { component: LocationFlow, title: "Location", required: true },
+    { component: IncidentTimeFlow, title: "Time", required: true },
+    { component: VoiceReportStep, title: "Report Method", required: true },
+    { component: IncidentDescriptionFlow, title: "Description", required: true },
+    { component: EvidenceFlow, title: "Evidence", required: false },
+    { component: ContactPreferences, title: "Contact", required: true },
+    { component: FinalReview, title: "Review", required: true },
   ];
 
-  const handleNext = (data: any) => {
-    setFormData({ ...formData, ...data });
-    setCurrentStep(currentStep + 1);
+  const handleNext = () => {
+    console.log("handleNext called, current step:", currentStep);
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
   const handleBack = () => {
-    setCurrentStep(Math.max(0, currentStep - 1));
+    console.log("handleBack called, current step:", currentStep);
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
+  const handleStepComplete = (stepData: Partial<FormData>) => {
+    console.log("Step completed with data:", stepData);
+    setFormData(prev => ({ ...prev, ...stepData }));
+    handleNext();
+  };
+
+  const updateFormData = (data: Partial<FormData>) => {
+    console.log("Updating form data:", data);
+    setFormData(prev => ({ ...prev, ...data }));
+  };
+
+  const canProceed = () => {
+    const step = steps[currentStep];
+    if (!step?.required) return true;
+    
+    switch (currentStep) {
+      case 3: // Crime Type
+        return formData.crimeType.length > 0;
+      case 4: // Location
+        return formData.location.state.length > 0;
+      case 5: // Time
+        return formData.incidentTime.when !== "";
+      case 6: // Report Method
+        return formData.reportingMethod !== "";
+      case 7: // Description
+        return formData.description.length > 10;
+      case 9: // Contact
+        return formData.contact.isAnonymous !== undefined;
+      default:
+        return true;
+    }
+  };
+
+  const progress = ((currentStep + 1) / steps.length) * 100;
   const CurrentStepComponent = steps[currentStep]?.component;
 
   if (showInformation) {
@@ -329,23 +381,31 @@ const InteractiveReportForm = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {currentStep === 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Start Report Section */}
-              <Card className="border-green-200">
+              <Card className="border-green-200 hover:border-green-400 transition-all duration-200 hover:shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-green-800 text-center">
                     Start Anonymous Report
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-green-600 mb-6">
-                    Begin the secure reporting process. Your identity will remain completely protected.
-                  </p>
+                  <div className="mb-6">
+                    <Shield className="h-16 w-16 text-green-600 mx-auto mb-4" />
+                    <p className="text-green-600 mb-4">
+                      Begin the secure reporting process. Your identity will remain completely protected.
+                    </p>
+                    <div className="bg-green-50 p-4 rounded-lg mb-4">
+                      <p className="text-sm text-green-700">
+                        ✓ 100% Anonymous • ✓ Encrypted • ✓ Secure
+                      </p>
+                    </div>
+                  </div>
                   <Button 
-                    onClick={() => handleNext({})}
-                    className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 text-lg"
+                    onClick={handleNext}
+                    className="bg-green-700 hover:bg-green-800 text-white font-bold px-8 py-3 text-lg transition-all duration-200 hover:scale-105"
                   >
                     <Shield className="mr-2 h-5 w-5" />
                     Report a Crime
@@ -354,20 +414,28 @@ const InteractiveReportForm = () => {
               </Card>
 
               {/* I Need Information Section */}
-              <Card className="border-blue-200">
+              <Card className="border-blue-200 hover:border-blue-400 transition-all duration-200 hover:shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-blue-800 text-center">
                     I Need Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <p className="text-blue-600 mb-6">
-                    Learn about the reporting process, your rights, and how we protect your identity.
-                  </p>
+                  <div className="mb-6">
+                    <FileText className="h-16 w-16 text-blue-600 mx-auto mb-4" />
+                    <p className="text-blue-600 mb-4">
+                      Learn about the reporting process, your rights, and how we protect your identity.
+                    </p>
+                    <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                      <p className="text-sm text-blue-700">
+                        Process Guide • FAQs • Contact Methods
+                      </p>
+                    </div>
+                  </div>
                   <Button 
                     onClick={() => setShowInformation(true)}
                     variant="outline"
-                    className="border-blue-600 text-blue-600 hover:bg-blue-50 font-bold px-8 py-3 text-lg"
+                    className="border-blue-600 text-blue-600 hover:bg-blue-50 font-bold px-8 py-3 text-lg transition-all duration-200 hover:scale-105"
                   >
                     <FileText className="mr-2 h-5 w-5" />
                     View Information
@@ -376,15 +444,59 @@ const InteractiveReportForm = () => {
               </Card>
             </div>
           ) : (
-            
             <div>
-              {CurrentStepComponent && (
-                <CurrentStepComponent
-                  onNext={handleNext}
-                  onBack={handleBack}
-                  formData={formData}
-                />
-              )}
+              {/* Progress Bar */}
+              <Card className="mb-6 border-green-200">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-green-800">
+                      {steps[currentStep]?.title}
+                    </h2>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600">
+                        Step {currentStep + 1} of {steps.length}
+                      </span>
+                      {currentStep > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleBack}
+                          className="border-green-300 text-green-700 hover:bg-green-50"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Progress value={progress} className="h-3 mb-2" />
+                  <p className="text-sm text-green-600">
+                    Progress: {Math.round(progress)}% complete
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Step Content */}
+              <Card className="border-green-200">
+                <CardContent className="p-6">
+                  {CurrentStepComponent && (
+                    <CurrentStepComponent
+                      onNext={handleStepComplete}
+                      onBack={handleBack}
+                      onUpdate={updateFormData}
+                      data={formData}
+                      formData={formData}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Auto-save indicator */}
+              <div className="mt-4 text-center">
+                <p className="text-sm text-green-600 flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Your progress is automatically saved
+                </p>
+              </div>
             </div>
           )}
         </div>

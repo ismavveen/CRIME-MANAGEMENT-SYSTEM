@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft, FileText, MapPin, Clock, Camera, Shield, Phone } from "lucide-react";
-import { FormData } from "../InteractiveReportForm";
+import { FormData } from "../../types/FormData";
 import { toast } from "@/hooks/use-toast";
 
 interface FinalReviewProps {
@@ -24,6 +24,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
   };
 
   const handleSubmit = async () => {
+    console.log("Submitting report with data:", data);
     setIsSubmitting(true);
     
     // Simulate API call
@@ -42,9 +43,9 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
 
   if (isSubmitted) {
     return (
-      <div className="text-center space-y-6">
+      <div className="text-center space-y-6 animate-fade-in">
         <div className="flex justify-center">
-          <CheckCircle className="h-20 w-20 text-green-600" />
+          <CheckCircle className="h-20 w-20 text-green-600 animate-scale-in" />
         </div>
         
         <div>
@@ -91,10 +92,10 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button onClick={() => window.location.href = "/"} className="bg-green-700 hover:bg-green-800">
+          <Button onClick={() => window.location.href = "/"} className="bg-green-700 hover:bg-green-800 hover:scale-105 transition-all duration-200">
             Submit Another Report
           </Button>
-          <Button variant="outline" onClick={() => window.location.href = "/"} className="border-green-300 text-green-700">
+          <Button variant="outline" onClick={() => window.location.href = "/"} className="border-green-300 text-green-700 hover:bg-green-50 transition-all duration-200">
             Return to Homepage
           </Button>
         </div>
@@ -128,7 +129,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
       {/* Report Summary */}
       <div className="space-y-4">
         {/* Crime Type */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               <Shield className="h-6 w-6 text-green-600 mt-1" />
@@ -144,7 +145,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
         </Card>
 
         {/* Location */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               <MapPin className="h-6 w-6 text-green-600 mt-1" />
@@ -163,7 +164,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
         </Card>
 
         {/* Time */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               <Clock className="h-6 w-6 text-green-600 mt-1" />
@@ -176,7 +177,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
         </Card>
 
         {/* Description */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               <FileText className="h-6 w-6 text-green-600 mt-1" />
@@ -196,7 +197,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
 
         {/* Evidence */}
         {data.evidence.files.length > 0 && (
-          <Card className="border-green-200">
+          <Card className="border-green-200 hover:shadow-md transition-all duration-200">
             <CardContent className="p-4">
               <div className="flex items-start space-x-3">
                 <Camera className="h-6 w-6 text-green-600 mt-1" />
@@ -215,7 +216,7 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
         )}
 
         {/* Contact Preference */}
-        <Card className="border-green-200">
+        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
           <CardContent className="p-4">
             <div className="flex items-start space-x-3">
               {data.contact.isAnonymous ? (
@@ -255,14 +256,18 @@ const FinalReview = ({ onBack, data }: FinalReviewProps) => {
 
       {/* Navigation */}
       <div className="flex justify-between pt-6">
-        <Button variant="outline" onClick={onBack} className="border-green-300 text-green-700">
+        <Button 
+          variant="outline" 
+          onClick={onBack} 
+          className="border-green-300 text-green-700 hover:bg-green-50 transition-all duration-200"
+        >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Edit
         </Button>
         
         <Button 
           onClick={handleSubmit} 
           disabled={isSubmitting}
-          className="bg-green-700 hover:bg-green-800 px-8"
+          className="bg-green-700 hover:bg-green-800 px-8 hover:scale-105 transition-all duration-200"
         >
           {isSubmitting ? "Submitting Report..." : "Submit Report"}
           {!isSubmitting && <CheckCircle className="ml-2 h-4 w-4" />}
