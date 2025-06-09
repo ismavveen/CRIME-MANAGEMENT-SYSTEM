@@ -16,7 +16,6 @@ interface VoiceReportStepProps {
 const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpdate, data }) => {
   const [hasVoiceRecording, setHasVoiceRecording] = useState(false);
   const [voiceRecordingBlob, setVoiceRecordingBlob] = useState<Blob | null>(null);
-  const [reportingMethod, setReportingMethod] = useState<'text' | 'voice'>('text');
 
   const handleVoiceRecordingComplete = (audioBlob: Blob, duration: number) => {
     setVoiceRecordingBlob(audioBlob);
@@ -24,17 +23,23 @@ const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpd
     
     // Update form data with voice recording info
     onUpdate({
-      hasEvidence: true,
-      evidenceDescription: `Voice recording - Duration: ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`
+      evidence: {
+        ...data.evidence,
+        hasEvidence: true
+      }
     });
   };
 
   const handleNext = () => {
-    if (reportingMethod === 'voice' && !hasVoiceRecording) {
+    if (data.reportingMethod === 'voice' && !hasVoiceRecording) {
       alert('Please complete your voice recording before proceeding.');
       return;
     }
     onNext();
+  };
+
+  const setReportingMethod = (method: 'text' | 'voice') => {
+    onUpdate({ reportingMethod: method });
   };
 
   return (
@@ -49,7 +54,7 @@ const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpd
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <Card 
           className={`cursor-pointer transition-all duration-200 ${
-            reportingMethod === 'text' 
+            data.reportingMethod === 'text' 
               ? 'border-green-500 bg-green-50' 
               : 'border-green-200 hover:border-green-300'
           }`}
@@ -66,7 +71,7 @@ const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpd
 
         <Card 
           className={`cursor-pointer transition-all duration-200 ${
-            reportingMethod === 'voice' 
+            data.reportingMethod === 'voice' 
               ? 'border-green-500 bg-green-50' 
               : 'border-green-200 hover:border-green-300'
           }`}
@@ -82,7 +87,7 @@ const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpd
         </Card>
       </div>
 
-      {reportingMethod === 'voice' && (
+      {data.reportingMethod === 'voice' && (
         <div className="mb-8">
           <VoiceRecorder 
             onRecordingComplete={handleVoiceRecordingComplete}
@@ -99,7 +104,7 @@ const VoiceReportStep: React.FC<VoiceReportStepProps> = ({ onNext, onBack, onUpd
         </div>
       )}
 
-      {reportingMethod === 'text' && (
+      {data.reportingMethod === 'text' && (
         <div className="text-center p-6 bg-blue-50 rounded-lg border border-blue-200">
           <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
           <p className="text-blue-800">

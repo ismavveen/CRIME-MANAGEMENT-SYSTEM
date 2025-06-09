@@ -15,7 +15,9 @@ import FinalReview from './interactive-steps/FinalReview';
 
 export interface FormData {
   // Basic info
+  wantsToReport: boolean;
   crimeType: string;
+  crimeDetails: string;
   isEmergency: boolean;
   reportingMethod: 'text' | 'voice';
   emergencyLocation?: {
@@ -26,57 +28,73 @@ export interface FormData {
   } | null;
   
   // Location details
-  state: string;
-  lga: string;
-  specificLocation: string;
-  locationDescription: string;
+  location: {
+    state: string;
+    lga: string;
+    specificArea: string;
+  };
   
   // Time details
-  incidentDate: string;
-  incidentTime: string;
-  timeFrame: string;
+  incidentTime: {
+    when: string;
+    date: string;
+    time: string;
+  };
   
-  // Incident details
-  incidentDescription: string;
-  suspectDescription: string;
-  witnessAvailable: boolean;
+  // Safety and incident details
+  safety: {
+    criminalPresent: string;
+    currentlySafe: boolean;
+  };
+  description: string;
+  witnessInfo: string;
   
   // Evidence
-  hasEvidence: boolean;
-  evidenceFiles: File[];
-  evidenceDescription: string;
+  evidence: {
+    hasEvidence: boolean;
+    files: File[];
+  };
   
   // Contact preferences
-  wantsContact: boolean;
-  contactMethod: string;
-  contactInfo: string;
-  anonymousReport: boolean;
+  contact: {
+    isAnonymous: boolean;
+    contactInfo: string;
+  };
 }
 
 const InteractiveReportForm = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<FormData>({
+    wantsToReport: false,
     crimeType: '',
+    crimeDetails: '',
     isEmergency: false,
     reportingMethod: 'text',
     emergencyLocation: null,
-    state: '',
-    lga: '',
-    specificLocation: '',
-    locationDescription: '',
-    incidentDate: '',
-    incidentTime: '',
-    timeFrame: '',
-    incidentDescription: '',
-    suspectDescription: '',
-    witnessAvailable: false,
-    hasEvidence: false,
-    evidenceFiles: [],
-    evidenceDescription: '',
-    wantsContact: false,
-    contactMethod: '',
-    contactInfo: '',
-    anonymousReport: true,
+    location: {
+      state: '',
+      lga: '',
+      specificArea: '',
+    },
+    incidentTime: {
+      when: '',
+      date: '',
+      time: '',
+    },
+    safety: {
+      criminalPresent: '',
+      currentlySafe: true,
+    },
+    description: '',
+    witnessInfo: '',
+    evidence: {
+      hasEvidence: false,
+      files: [],
+    },
+    contact: {
+      isAnonymous: true,
+      contactInfo: '',
+    },
   });
 
   const updateFormData = (data: Partial<FormData>) => {
@@ -92,7 +110,7 @@ const InteractiveReportForm = () => {
   };
 
   const steps = [
-    <WelcomeStep key="welcome" onNext={nextStep} />,
+    <WelcomeStep key="welcome" onNext={nextStep} onUpdate={updateFormData} data={formData} />,
     <EmergencyCheck 
       key="emergency-check" 
       onNext={nextStep} 
