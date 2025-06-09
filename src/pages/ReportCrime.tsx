@@ -210,13 +210,17 @@ const ReportCrime = () => {
       }
 
       console.log('Report submitted successfully:', data);
-      setReportId(data[0].id);
-      setSerialNumber(data[0].serial_number);
+      const reportResponse = data[0];
+      setReportId(reportResponse.id);
+      
+      // Handle serial_number safely
+      const generatedSerialNumber = reportResponse.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 3)}`;
+      setSerialNumber(generatedSerialNumber);
       setShowSuccessModal(true);
 
       toast({
         title: "Report submitted successfully",
-        description: `Your report has been received. Reference: ${data[0].serial_number}`,
+        description: `Your report has been received. Reference: ${generatedSerialNumber}`,
       });
 
       // Reset form
@@ -778,7 +782,7 @@ const ReportCrime = () => {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-gray-400">Reference:</span>
-                  <span className="ml-2 font-mono">{trackingResult.serial_number}</span>
+                  <span className="ml-2 font-mono">{trackingResult.serial_number || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-gray-400">Status:</span>

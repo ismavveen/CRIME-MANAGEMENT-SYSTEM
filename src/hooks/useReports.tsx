@@ -128,7 +128,8 @@ export const useReports = () => {
         table: 'reports'
       }, (payload) => {
         console.log('New report received:', payload);
-        setReports(prev => [payload.new as Report, ...prev]);
+        const newReport = payload.new as Report;
+        setReports(prev => [newReport, ...prev]);
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -136,8 +137,9 @@ export const useReports = () => {
         table: 'reports'
       }, (payload) => {
         console.log('Report updated:', payload);
+        const updatedReport = payload.new as Report;
         setReports(prev => prev.map(report => 
-          report.id === payload.new.id ? payload.new as Report : report
+          report.id === updatedReport.id ? updatedReport : report
         ));
       })
       .on('postgres_changes', {
