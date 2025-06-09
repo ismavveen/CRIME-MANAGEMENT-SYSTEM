@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users, AlertTriangle, CheckCircle, Eye, Mic } from "lucide-react";
@@ -49,13 +50,13 @@ const HomePage = () => {
               </Link>
             </div>
 
-            {/* Emergency Hotline - More Visible */}
-            <div className="bg-red-600/90 backdrop-blur-sm rounded-lg p-4 max-w-md mx-auto mb-8">
+            {/* Emergency Hotline - Reduced Size */}
+            <div className="bg-red-600/90 backdrop-blur-sm rounded-lg p-3 max-w-xs mx-auto mb-8">
               <div className="text-white">
-                <Phone className="h-6 w-6 mx-auto mb-2" />
-                <h3 className="text-xl font-bold mb-1">Emergency Hotline</h3>
-                <p className="text-3xl font-bold">199</p>
-                <p className="text-sm opacity-90">Available 24/7</p>
+                <Phone className="h-5 w-5 mx-auto mb-2" />
+                <h3 className="text-lg font-bold mb-1">Emergency Hotline</h3>
+                <p className="text-2xl font-bold">199</p>
+                <p className="text-xs opacity-90">Available 24/7</p>
               </div>
             </div>
           </div>
@@ -83,6 +84,71 @@ const HomePage = () => {
                 <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
                 <h3 className="font-semibold text-green-800 mb-2">Expert Response</h3>
                 <p className="text-green-600 text-sm">Trained professionals handle your reports with care and urgency.</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Information Section */}
+      <section className="bg-green-50 py-12">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-bold text-green-800 mb-4">Important Information</h3>
+            <p className="text-green-600 max-w-2xl mx-auto">
+              Essential information to help you understand our crime reporting process and your rights.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+                  <Shield className="h-5 w-5 mr-2" />
+                  Whistleblower Protection
+                </h4>
+                <p className="text-sm text-green-600 mb-3">
+                  Full legal protection under Nigerian law for those reporting crimes, corruption, or misconduct.
+                </p>
+                <ul className="text-xs text-green-600 space-y-1">
+                  <li>• Identity protection guaranteed</li>
+                  <li>• Legal immunity from retaliation</li>
+                  <li>• Confidential investigation process</li>
+                </ul>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+                  <Clock className="h-5 w-5 mr-2" />
+                  Response Timeline
+                </h4>
+                <p className="text-sm text-green-600 mb-3">
+                  Our commitment to timely response based on incident severity.
+                </p>
+                <ul className="text-xs text-green-600 space-y-1">
+                  <li>• Emergency cases: Immediate response</li>
+                  <li>• High priority: Within 24 hours</li>
+                  <li>• Standard cases: Within 72 hours</li>
+                </ul>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-green-200 hover:border-green-400 transition-colors">
+              <CardContent className="p-6">
+                <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+                  <FileText className="h-5 w-5 mr-2" />
+                  Report Guidelines
+                </h4>
+                <p className="text-sm text-green-600 mb-3">
+                  Best practices for submitting effective crime reports.
+                </p>
+                <ul className="text-xs text-green-600 space-y-1">
+                  <li>• Provide accurate location details</li>
+                  <li>• Include date and time if known</li>
+                  <li>• Attach evidence if available</li>
+                </ul>
               </CardContent>
             </Card>
           </div>
