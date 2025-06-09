@@ -197,6 +197,7 @@ const ReportCrime = () => {
         landmark: formData.landmark,
         reporter_name: formData.isAnonymous ? null : formData.reporterName,
         reporter_contact: formData.isAnonymous ? null : formData.reporterContact,
+        serial_number: `DHQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`
       };
 
       const { data, error } = await supabase
@@ -216,8 +217,8 @@ const ReportCrime = () => {
       const reportResponse = data[0];
       setReportId(reportResponse.id);
       
-      // Generate serial number if not provided by database
-      const generatedSerialNumber = reportResponse.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 8).toUpperCase()}`;
+      // Use the serial number from the submitted data
+      const generatedSerialNumber = reportData.serial_number;
       setSerialNumber(generatedSerialNumber);
       setShowSuccessModal(true);
 

@@ -113,7 +113,7 @@ export const useReports = () => {
         return null;
       }
 
-      return data as Report | null;
+      return data;
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
       return null;
