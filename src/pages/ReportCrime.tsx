@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import MediaUploadSection from '@/components/MediaUploadSection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock, Copy, Search } from 'lucide-react';
+import { useReports } from '@/hooks/useReports';
 
 const ReportCrime = () => {
   const [formData, setFormData] = useState({
@@ -44,6 +45,7 @@ const ReportCrime = () => {
   const [trackingResult, setTrackingResult] = useState<any>(null);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const { toast } = useToast();
+  const { getReportBySerialNumber } = useReports();
 
   useEffect(() => {
     requestLocationPermission();
@@ -213,8 +215,9 @@ const ReportCrime = () => {
       const reportResponse = data[0];
       setReportId(reportResponse.id);
       
-      // Handle serial_number safely
-      const generatedSerialNumber = reportResponse.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 3)}`;
+      // Handle serial_number safely - check if it exists in the response type
+      const reportWithSerial = reportResponse as any; // Type assertion for serial_number
+      const generatedSerialNumber = reportWithSerial.serial_number || `DHQ-${new Date().getFullYear()}-${reportResponse.id.slice(0, 3)}`;
       setSerialNumber(generatedSerialNumber);
       setShowSuccessModal(true);
 
@@ -268,13 +271,9 @@ const ReportCrime = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('reports')
-        .select('*')
-        .eq('serial_number', trackingNumber.trim())
-        .single();
+      const data = await getReportBySerialNumber(trackingNumber.trim());
 
-      if (error || !data) {
+      if (!data) {
         toast({
           title: "Report Not Found",
           description: "No report found with this reference number. Please check and try again.",
