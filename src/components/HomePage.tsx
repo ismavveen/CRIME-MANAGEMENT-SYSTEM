@@ -25,7 +25,7 @@ const HomePage = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url('/lovable-uploads/34adc360-453d-4e8e-84ab-90dad7513fb3.png')`
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.4)), url('/lovable-uploads/be54f840-a854-4fbd-b698-156d42ce983a.png')`
           }}
         />
         
@@ -40,17 +40,13 @@ const HomePage = () => {
               Your reports help us serve you better. Report incidents through multiple channels with complete confidentiality.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex justify-center mb-8">
               <Link to="/report">
-                <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-8 py-3 shadow-lg">
-                  <FileText className="mr-2 h-5 w-5" />
-                  Start Anonymous Report
+                <Button size="lg" className="bg-green-700 hover:bg-green-800 text-white px-12 py-4 text-xl font-bold shadow-xl border-2 border-white/20 hover:border-white/40 transition-all duration-300 hover:scale-105">
+                  <FileText className="mr-3 h-6 w-6" />
+                  Report a Crime
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/20 px-8 py-3 backdrop-blur-sm">
-                <Phone className="mr-2 h-5 w-5" />
-                Emergency Hotline: 199
-              </Button>
             </div>
 
             {/* Emergency Hotline - More Visible */}
