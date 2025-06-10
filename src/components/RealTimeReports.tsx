@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useReports } from '@/hooks/useReports';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video } from 'lucide-react';
 import DispatchModal from './DispatchModal';
 
 const RealTimeReports = () => {
@@ -16,10 +17,11 @@ const RealTimeReports = () => {
   // Get the most recent reports
   const recentReports = reports
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 10);
+    .slice(0, 15); // Increased to show more reports
 
   const filteredReports = recentReports.filter(report => {
     if (filter === 'all') return true;
+    if (filter === 'external') return report.submission_source === 'external_portal';
     return report.status?.toLowerCase() === filter.toLowerCase();
   });
 
@@ -65,6 +67,49 @@ const RealTimeReports = () => {
     }
   };
 
+  const getSubmissionSourceBadge = (source: string) => {
+    if (source === 'external_portal') {
+      return (
+        <Badge className="text-xs px-2 py-1 bg-purple-900/30 text-purple-300 border-purple-700/50 flex items-center space-x-1">
+          <ExternalLink className="w-3 h-3" />
+          <span>External</span>
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  const getMediaCount = (report: any) => {
+    const images = report.images?.length || 0;
+    const videos = report.videos?.length || 0;
+    const documents = report.documents?.length || 0;
+    
+    if (images + videos + documents === 0) return null;
+    
+    return (
+      <div className="flex items-center space-x-1 text-xs text-gray-400">
+        {images > 0 && (
+          <div className="flex items-center space-x-1">
+            <Image className="w-3 h-3" />
+            <span>{images}</span>
+          </div>
+        )}
+        {videos > 0 && (
+          <div className="flex items-center space-x-1">
+            <Video className="w-3 h-3" />
+            <span>{videos}</span>
+          </div>
+        )}
+        {documents > 0 && (
+          <div className="flex items-center space-x-1">
+            <FileText className="w-3 h-3" />
+            <span>{documents}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString('en-US', { 
@@ -103,7 +148,8 @@ const RealTimeReports = () => {
               <SelectValue placeholder="Filter" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">All Reports</SelectItem>
+              <SelectItem value="external">External Portal</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="assigned">Assigned</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
@@ -115,13 +161,15 @@ const RealTimeReports = () => {
       {/* Reports Table */}
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
-          <div className="col-span-1">Serial Number</div>
-          <div className="col-span-2">Time</div>
+          <div className="col-span-1">Serial</div>
+          <div className="col-span-1">Time</div>
           <div className="col-span-2">Location</div>
           <div className="col-span-2">Threat</div>
-          <div className="col-span-2">Status</div>
-          <div className="col-span-2">Priority</div>
-          <div className="col-span-1">Action</div>
+          <div className="col-span-1">Source</div>
+          <div className="col-span-1">Status</div>
+          <div className="col-span-1">Priority</div>
+          <div className="col-span-1">Media</div>
+          <div className="col-span-2">Action</div>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -140,34 +188,38 @@ const RealTimeReports = () => {
                 key={report.id} 
                 className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors cursor-pointer ${
                   selectedReport === report.id ? 'bg-blue-900/20' : ''
-                }`}
+                } ${report.submission_source === 'external_portal' ? 'border-l-4 border-l-purple-500' : ''}`}
                 onClick={() => setSelectedReport(report.id)}
               >
-                <div className="col-span-1 text-white font-mono text-sm">
+                <div className="col-span-1 text-white font-mono text-xs">
                   {report.serial_number || `DHQ-${report.id.slice(0, 3)}`}
                 </div>
                 
-                <div className="col-span-2 text-gray-300 text-sm">
+                <div className="col-span-1 text-gray-300 text-xs">
                   {formatTime(report.created_at)}
                 </div>
                 
-                <div className="col-span-2 text-gray-300 text-sm flex items-center">
+                <div className="col-span-2 text-gray-300 text-xs flex items-center">
                   <MapPin className="h-3 w-3 mr-1 text-cyan-400" />
-                  {report.location || report.manual_location || 'Unknown'}
+                  <span className="truncate">{report.state || report.location || 'Unknown'}</span>
                 </div>
                 
-                <div className={`col-span-2 text-sm font-medium ${getThreatColor(report.threat_type)}`}>
+                <div className={`col-span-2 text-xs font-medium ${getThreatColor(report.threat_type)} truncate`}>
                   {report.threat_type || 'Security Incident'}
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-1">
+                  {getSubmissionSourceBadge(report.submission_source || 'internal')}
+                </div>
+                
+                <div className="col-span-1">
                   <Badge className={`text-xs px-2 py-1 ${getStatusColor(report.status)} flex items-center space-x-1`}>
                     {getStatusIcon(report.status)}
-                    <span>{report.status || 'Pending'}</span>
+                    <span className="truncate">{report.status || 'Pending'}</span>
                   </Badge>
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-1">
                   <Badge className={`text-xs px-2 py-1 ${
                     report.priority === 'high' || report.urgency === 'critical'
                       ? 'bg-red-900/30 text-red-300 border-red-700/50'
@@ -178,6 +230,10 @@ const RealTimeReports = () => {
                 </div>
                 
                 <div className="col-span-1">
+                  {getMediaCount(report)}
+                </div>
+                
+                <div className="col-span-2 flex space-x-2">
                   {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
@@ -198,25 +254,45 @@ const RealTimeReports = () => {
         </div>
       </div>
 
-      {/* Report Details */}
+      {/* Enhanced Report Details */}
       {selectedReport && (
         <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-          <h4 className="text-white font-semibold mb-2">Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number}</h4>
+          <h4 className="text-white font-semibold mb-2">
+            Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number}
+          </h4>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
             return report ? (
               <div className="text-gray-300 text-sm space-y-2">
                 <p><strong>Description:</strong> {report.description}</p>
                 <p><strong>Location:</strong> {report.full_address || report.location || report.manual_location}</p>
-                <p><strong>State:</strong> {report.state}</p>
-                <p><strong>LGA:</strong> {report.local_government}</p>
-                <p><strong>Urgency:</strong> {report.urgency || report.priority}</p>
+                <div className="grid grid-cols-2 gap-4">
+                  <p><strong>State:</strong> {report.state}</p>
+                  <p><strong>LGA:</strong> {report.local_government}</p>
+                  <p><strong>Urgency:</strong> {report.urgency || report.priority}</p>
+                  <p><strong>Source:</strong> {report.submission_source || 'Internal'}</p>
+                </div>
                 <p><strong>Reported:</strong> {new Date(report.created_at).toLocaleString()}</p>
-                {report.reporter_name && (
+                {!report.is_anonymous && report.reporter_name && (
                   <p><strong>Reporter:</strong> {report.reporter_name}</p>
                 )}
-                {report.images && report.images.length > 0 && (
-                  <p><strong>Evidence:</strong> {report.images.length} image(s), {report.videos?.length || 0} video(s)</p>
+                {(report.images?.length || report.videos?.length || report.documents?.length) && (
+                  <p><strong>Evidence:</strong> 
+                    {report.images?.length || 0} image(s), 
+                    {report.videos?.length || 0} video(s), 
+                    {report.documents?.length || 0} document(s)
+                  </p>
+                )}
+                {report.validation_status && (
+                  <p><strong>Validation Status:</strong> 
+                    <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                      report.validation_status === 'validated' ? 'bg-green-900/30 text-green-300' :
+                      report.validation_status === 'rejected' ? 'bg-red-900/30 text-red-300' :
+                      'bg-yellow-900/30 text-yellow-300'
+                    }`}>
+                      {report.validation_status}
+                    </span>
+                  </p>
                 )}
               </div>
             ) : null;

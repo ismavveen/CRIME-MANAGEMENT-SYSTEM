@@ -32,8 +32,14 @@ export interface Report {
   assigned_to?: string;
   images?: string[];
   videos?: string[];
+  documents?: string[];
   reporter_name?: string;
   reporter_contact?: string;
+  reporter_phone?: string;
+  reporter_email?: string;
+  submission_source?: string;
+  validation_status?: string;
+  metadata?: any;
 }
 
 export const useReports = () => {
@@ -54,7 +60,8 @@ export const useReports = () => {
       const typedReports = (data || []).map(report => ({
         ...report,
         urgency: (report.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
-        priority: (report.priority as 'low' | 'medium' | 'high') || 'low'
+        priority: (report.priority as 'low' | 'medium' | 'high') || 'low',
+        documents: report.documents || []
       }));
       
       setReports(typedReports);
@@ -147,8 +154,14 @@ export const useReports = () => {
         assigned_to: data.assigned_to || undefined,
         images: data.images || undefined,
         videos: data.videos || undefined,
+        documents: data.documents || undefined,
         reporter_name: data.reporter_name || undefined,
-        reporter_contact: data.reporter_contact || undefined
+        reporter_contact: data.reporter_contact || undefined,
+        reporter_phone: data.reporter_phone || undefined,
+        reporter_email: data.reporter_email || undefined,
+        submission_source: data.submission_source || undefined,
+        validation_status: data.validation_status || undefined,
+        metadata: data.metadata || undefined
       };
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
@@ -170,6 +183,12 @@ export const useReports = () => {
         console.log('New report received:', payload);
         const newReport = payload.new as Report;
         setReports(prev => [newReport, ...prev]);
+        
+        // Show toast notification for new reports
+        toast({
+          title: "New Report Received",
+          description: `${newReport.threat_type || 'Security report'} from ${newReport.state || 'Unknown location'}`,
+        });
       })
       .on('postgres_changes', {
         event: 'UPDATE',
@@ -195,7 +214,7 @@ export const useReports = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [toast]);
 
   return {
     reports,
