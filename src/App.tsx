@@ -6,9 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ReportRedirect from "./components/ReportRedirect";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import ReportCrime from "./pages/ReportCrime";
 import TrackReport from "./pages/TrackReport";
 import Users from "./pages/Users";
 import Reports from "./pages/Reports";
@@ -31,7 +31,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            <Route path="/report" element={<ReportCrime />} />
+            <Route path="/report" element={<ReportRedirect />} />
             <Route path="/track" element={<TrackReport />} />
             <Route path="/commander-portal" element={<CommanderPortal />} />
             <Route path="/" element={

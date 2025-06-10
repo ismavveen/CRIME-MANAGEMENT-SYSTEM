@@ -117,39 +117,39 @@ export const useReports = () => {
         return null;
       }
 
-      // Convert database row to Report type
-      const reportData: Report = {
+      // Convert database row to Report type with proper type handling
+      return {
         id: data.id,
-        serial_number: data.serial_number,
-        description: data.description,
-        threat_type: data.threat_type,
+        serial_number: data.serial_number || undefined,
+        description: data.description || '',
+        threat_type: data.threat_type || data.crime_type || '',
         location: data.location || '',
-        manual_location: data.manual_location,
+        manual_location: data.manual_location || undefined,
         urgency: (data.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
         priority: (data.priority as 'low' | 'medium' | 'high') || 'low',
-        status: data.status,
+        status: data.status || 'pending',
         state: data.state || '',
-        local_government: data.local_government,
-        full_address: data.full_address,
-        landmark: data.landmark,
-        acknowledged_at: data.acknowledged_at,
-        assigned_commander_id: data.assigned_commander_id,
-        response_time_hours: data.response_time_hours,
+        local_government: data.local_government || undefined,
+        full_address: data.full_address || undefined,
+        landmark: data.landmark || undefined,
+        acknowledged_at: data.acknowledged_at || undefined,
+        assigned_commander_id: data.assigned_commander_id || undefined,
+        response_time_hours: data.response_time_hours || undefined,
         created_at: data.created_at,
         updated_at: data.updated_at,
-        latitude: data.latitude,
-        longitude: data.longitude,
-        file_url: data.file_url,
-        reporter_type: data.reporter_type,
-        is_anonymous: data.is_anonymous,
-        timestamp: data.timestamp,
-        location_accuracy: data.location_accuracy,
-        assigned_to: data.assigned_to,
-        images: data.images,
-        videos: data.videos
+        latitude: data.latitude || undefined,
+        longitude: data.longitude || undefined,
+        file_url: data.file_url || undefined,
+        reporter_type: data.reporter_type || undefined,
+        is_anonymous: data.is_anonymous || false,
+        timestamp: data.timestamp || undefined,
+        location_accuracy: data.location_accuracy || undefined,
+        assigned_to: data.assigned_to || undefined,
+        images: data.images || undefined,
+        videos: data.videos || undefined,
+        reporter_name: data.reporter_name || undefined,
+        reporter_contact: data.reporter_contact || undefined
       };
-
-      return reportData;
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
       return null;
