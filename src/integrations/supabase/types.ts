@@ -184,13 +184,17 @@ export type Database = {
           acknowledged_at: string | null
           assigned_commander_id: string | null
           assigned_to: string | null
+          contact_info: string | null
           created_at: string
+          crime_type: string | null
           description: string
           device_info: Json | null
+          evidence: Json | null
           file_url: string | null
           full_address: string | null
           id: string
           images: string[] | null
+          incident_time: string | null
           is_anonymous: boolean | null
           landmark: string | null
           latitude: number | null
@@ -201,7 +205,9 @@ export type Database = {
           manual_location: string | null
           priority: string
           reporter_type: string | null
+          reporting_method: string | null
           response_time_hours: number | null
+          specific_area: string | null
           state: string | null
           status: string
           threat_type: string
@@ -209,18 +215,23 @@ export type Database = {
           updated_at: string
           urgency: string
           videos: string[] | null
+          witness_info: string | null
         }
         Insert: {
           acknowledged_at?: string | null
           assigned_commander_id?: string | null
           assigned_to?: string | null
+          contact_info?: string | null
           created_at?: string
+          crime_type?: string | null
           description: string
           device_info?: Json | null
+          evidence?: Json | null
           file_url?: string | null
           full_address?: string | null
           id?: string
           images?: string[] | null
+          incident_time?: string | null
           is_anonymous?: boolean | null
           landmark?: string | null
           latitude?: number | null
@@ -231,7 +242,9 @@ export type Database = {
           manual_location?: string | null
           priority?: string
           reporter_type?: string | null
+          reporting_method?: string | null
           response_time_hours?: number | null
+          specific_area?: string | null
           state?: string | null
           status?: string
           threat_type: string
@@ -239,18 +252,23 @@ export type Database = {
           updated_at?: string
           urgency?: string
           videos?: string[] | null
+          witness_info?: string | null
         }
         Update: {
           acknowledged_at?: string | null
           assigned_commander_id?: string | null
           assigned_to?: string | null
+          contact_info?: string | null
           created_at?: string
+          crime_type?: string | null
           description?: string
           device_info?: Json | null
+          evidence?: Json | null
           file_url?: string | null
           full_address?: string | null
           id?: string
           images?: string[] | null
+          incident_time?: string | null
           is_anonymous?: boolean | null
           landmark?: string | null
           latitude?: number | null
@@ -261,7 +279,9 @@ export type Database = {
           manual_location?: string | null
           priority?: string
           reporter_type?: string | null
+          reporting_method?: string | null
           response_time_hours?: number | null
+          specific_area?: string | null
           state?: string | null
           status?: string
           threat_type?: string
@@ -269,6 +289,7 @@ export type Database = {
           updated_at?: string
           urgency?: string
           videos?: string[] | null
+          witness_info?: string | null
         }
         Relationships: []
       }

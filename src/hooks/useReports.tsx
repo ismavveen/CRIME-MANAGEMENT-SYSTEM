@@ -100,7 +100,7 @@ export const useReports = () => {
     }
   };
 
-  const getReportBySerialNumber = async (serialNumber: string) => {
+  const getReportBySerialNumber = async (serialNumber: string): Promise<Report | null> => {
     try {
       const { data, error } = await supabase
         .from('reports')
@@ -113,7 +113,16 @@ export const useReports = () => {
         return null;
       }
 
-      return data;
+      if (!data) {
+        return null;
+      }
+
+      // Explicitly type the returned data as Report
+      return {
+        ...data,
+        urgency: (data.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
+        priority: (data.priority as 'low' | 'medium' | 'high') || 'low'
+      } as Report;
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
       return null;
