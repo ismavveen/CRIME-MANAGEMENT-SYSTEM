@@ -175,6 +175,8 @@ const ReportCrime = () => {
         videoUrls = await uploadFiles(videos, 'video');
       }
 
+      const generatedSerialNumber = `DHQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+
       const reportData = {
         description: formData.description,
         location: formData.location || formData.manualLocation,
@@ -197,16 +199,14 @@ const ReportCrime = () => {
         landmark: formData.landmark,
         reporter_name: formData.isAnonymous ? null : formData.reporterName,
         reporter_contact: formData.isAnonymous ? null : formData.reporterContact,
-        serial_number: `DHQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`
+        serial_number: generatedSerialNumber
       };
 
       const { data, error } = await supabase
         .from('reports')
-        .upsert([reportData], { 
-          onConflict: 'id',
-          ignoreDuplicates: false 
-        })
-        .select();
+        .insert([reportData])
+        .select()
+        .single();
 
       if (error) {
         console.error('Supabase error:', error);
@@ -214,11 +214,7 @@ const ReportCrime = () => {
       }
 
       console.log('Report submitted successfully:', data);
-      const reportResponse = data[0];
-      setReportId(reportResponse.id);
-      
-      // Use the serial number from the submitted data
-      const generatedSerialNumber = reportData.serial_number;
+      setReportId(data.id);
       setSerialNumber(generatedSerialNumber);
       setShowSuccessModal(true);
 
@@ -227,7 +223,6 @@ const ReportCrime = () => {
         description: `Your report has been received. Reference: ${generatedSerialNumber}`,
       });
 
-      // Reset form
       setFormData({
         description: '',
         location: '',
@@ -363,7 +358,6 @@ const ReportCrime = () => {
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       <div className="max-w-6xl mx-auto p-6">
-        {/* Enhanced Military Header */}
         <div className="text-center mb-8 border-b border-gray-700/50 pb-8">
           <div className="flex items-center justify-center mb-6">
             <div className="w-24 h-24 rounded-lg overflow-hidden bg-white p-2 mr-6">
@@ -405,7 +399,6 @@ const ReportCrime = () => {
           </div>
         </div>
 
-        {/* Track Report Section */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
           <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
             <Search className="w-5 h-5 mr-2 text-blue-400" />
@@ -427,7 +420,6 @@ const ReportCrime = () => {
           </div>
         </Card>
 
-        {/* Enhanced Reporting Channels */}
         <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
             <MessageSquare className="w-6 h-6 mr-3 text-blue-400" />
@@ -467,7 +459,6 @@ const ReportCrime = () => {
           </div>
         </Card>
 
-        {/* Location Status Card */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -506,7 +497,6 @@ const ReportCrime = () => {
           <h2 className="text-xl font-semibold text-white mb-4">Submit Intelligence Report</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Report Type */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Report Type *
@@ -529,7 +519,6 @@ const ReportCrime = () => {
               </select>
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Detailed Description *
@@ -543,7 +532,6 @@ const ReportCrime = () => {
               />
             </div>
 
-            {/* Location Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -601,7 +589,6 @@ const ReportCrime = () => {
               </div>
             </div>
 
-            {/* Additional Location Info */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 <MapPin className="w-4 h-4 inline mr-1" />
@@ -620,7 +607,6 @@ const ReportCrime = () => {
               )}
             </div>
 
-            {/* Media Upload Section */}
             <MediaUploadSection
               images={images}
               videos={videos}
@@ -629,7 +615,6 @@ const ReportCrime = () => {
               uploading={uploading}
             />
 
-            {/* Urgency Level */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Urgency Level *
@@ -647,7 +632,6 @@ const ReportCrime = () => {
               </select>
             </div>
 
-            {/* Reporter Information */}
             <div className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-medium text-white mb-4">Reporter Information</h3>
               
@@ -721,7 +705,6 @@ const ReportCrime = () => {
           </form>
         </Card>
 
-        {/* Emergency Notice */}
         <Card className="bg-red-900/20 border-red-700/50 p-4">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
@@ -736,7 +719,6 @@ const ReportCrime = () => {
         </Card>
       </div>
 
-      {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="bg-gray-800 text-white border-gray-700">
           <DialogHeader>
@@ -771,7 +753,6 @@ const ReportCrime = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Tracking Modal */}
       <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
         <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-2xl">
           <DialogHeader>
