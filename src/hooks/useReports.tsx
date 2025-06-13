@@ -56,12 +56,20 @@ export const useReports = () => {
 
       if (error) throw error;
       
-      // Ensure urgency and priority are properly typed
+      // Ensure urgency and priority are properly typed and handle new fields
       const typedReports = (data || []).map(report => ({
         ...report,
         urgency: (report.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
         priority: (report.priority as 'low' | 'medium' | 'high') || 'low',
-        documents: report.documents || []
+        documents: report.documents || [],
+        serial_number: report.serial_number || undefined,
+        reporter_name: report.reporter_name || undefined,
+        reporter_contact: report.reporter_contact || undefined,
+        reporter_phone: report.reporter_phone || undefined,
+        reporter_email: report.reporter_email || undefined,
+        submission_source: report.submission_source || undefined,
+        validation_status: report.validation_status || undefined,
+        metadata: report.metadata || undefined
       }));
       
       setReports(typedReports);

@@ -17,7 +17,7 @@ const RealTimeReports = () => {
   // Get the most recent reports
   const recentReports = reports
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 15); // Increased to show more reports
+    .slice(0, 15);
 
   const filteredReports = recentReports.filter(report => {
     if (filter === 'all') return true;
@@ -125,7 +125,7 @@ const RealTimeReports = () => {
   };
 
   const handleAssignmentComplete = () => {
-    refetch(); // Refresh the reports list
+    refetch();
   };
 
   return (
@@ -192,7 +192,7 @@ const RealTimeReports = () => {
                 onClick={() => setSelectedReport(report.id)}
               >
                 <div className="col-span-1 text-white font-mono text-xs">
-                  {report.serial_number || `DHQ-${report.id.slice(0, 3)}`}
+                  {report.serial_number || `CRP-${report.id.slice(0, 3)}`}
                 </div>
                 
                 <div className="col-span-1 text-gray-300 text-xs">

@@ -47,10 +47,10 @@ const Index = () => {
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold text-white mb-2 dhq-heading tracking-tight">
-                  Defense Headquarters Intelligence Portal
+                  Crime Reporting & Monitoring Portal
                 </h1>
                 <p className="text-gray-300 text-lg dhq-body font-medium">
-                  Crime Reporting & Intelligence Portal
+                  Real-Time Crime Intelligence & Response System
                 </p>
                 <div className="flex items-center space-x-3 mt-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
