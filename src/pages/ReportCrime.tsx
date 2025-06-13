@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import MediaUploadSection from '@/components/MediaUploadSection';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, Smartphone, MessageSquare, Mail, UserCheck, CheckCircle, Lock, Zap, Globe, Clock, Copy, Search } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin, User, Phone, Navigation, CheckCircle, Lock, Zap, Clock, Copy, Search, Users, FileText, Send } from 'lucide-react';
 import { useReports } from '@/hooks/useReports';
 
 const ReportCrime = () => {
@@ -22,6 +22,8 @@ const ReportCrime = () => {
     isAnonymous: true,
     reporterName: '',
     reporterContact: '',
+    reporterPhone: '',
+    reporterEmail: '',
     state: '',
     localGovernment: '',
     fullAddress: '',
@@ -75,7 +77,10 @@ const ReportCrime = () => {
           error: null,
         });
         
-        getAddressFromCoordinates(position.coords.latitude, position.coords.longitude);
+        setFormData(prev => ({
+          ...prev,
+          location: `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`
+        }));
       },
       (error) => {
         let errorMessage = 'Failed to get your location. ';
@@ -106,17 +111,6 @@ const ReportCrime = () => {
         maximumAge: 300000
       }
     );
-  };
-
-  const getAddressFromCoordinates = async (lat: number, lng: number) => {
-    try {
-      setFormData(prev => ({
-        ...prev,
-        location: `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-      }));
-    } catch (error) {
-      console.log('Failed to get address from coordinates:', error);
-    }
   };
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -151,13 +145,12 @@ const ReportCrime = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!locationData.hasPermission || !locationData.latitude || !locationData.longitude) {
+    if (!formData.description || !formData.threatType || !formData.state || !formData.localGovernment) {
       toast({
-        title: "Location Required",
-        description: "Please allow location access to submit your report. This helps authorities respond more effectively.",
+        title: "Missing Information",
+        description: "Please fill in all required fields before submitting.",
         variant: "destructive",
       });
-      requestLocationPermission();
       return;
     }
 
@@ -200,13 +193,20 @@ const ReportCrime = () => {
         landmark: formData.landmark,
         reporter_name: formData.isAnonymous ? null : formData.reporterName,
         reporter_contact: formData.isAnonymous ? null : formData.reporterContact,
+        reporter_phone: formData.isAnonymous ? null : formData.reporterPhone,
+        reporter_email: formData.isAnonymous ? null : formData.reporterEmail,
         serial_number: generatedSerialNumber,
         submission_source: 'internal_portal',
         validation_status: 'pending',
         metadata: {
           submissionTimestamp: new Date().toISOString(),
           userAgent: navigator.userAgent,
-          source: 'internal_web_portal'
+          source: 'internal_web_portal',
+          hasLocation: !!locationData.hasPermission,
+          mediaFiles: {
+            images: imageUrls.length,
+            videos: videoUrls.length
+          }
         }
       };
 
@@ -242,6 +242,8 @@ const ReportCrime = () => {
         isAnonymous: true,
         reporterName: '',
         reporterContact: '',
+        reporterPhone: '',
+        reporterEmail: '',
         state: '',
         localGovernment: '',
         fullAddress: '',
@@ -314,83 +316,100 @@ const ReportCrime = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
-      <div className="max-w-6xl mx-auto p-6">
-        <div className="text-center mb-8 border-b border-gray-700/50 pb-8">
-          <div className="flex items-center justify-center mb-6">
-            <div className="w-24 h-24 rounded-lg overflow-hidden bg-white p-2 mr-6">
-              <img 
-                src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
-                alt="Defense Headquarters Logo" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div className="text-left">
-              <h1 className="text-4xl font-bold text-white mb-2">DEFENSE HEADQUARTERS</h1>
-              <p className="text-xl text-gray-300 mb-2">Crime Reporting & Monitoring Portal</p>
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center text-green-400 text-sm font-semibold">
-                  <Lock className="w-4 h-4 mr-2" />
-                  <span>SECURITY LEVEL: CONFIDENTIAL</span>
-                </div>
-                <div className="flex items-center text-blue-400 text-sm">
-                  <Zap className="w-4 h-4 mr-2" />
-                  <span>REAL-TIME PROCESSING</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20"></div>
+        <div className="relative max-w-7xl mx-auto px-6 py-16">
+          <div className="text-center mb-16">
+            <div className="flex items-center justify-center mb-8">
+              <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white/10 backdrop-blur-sm p-3 mr-6 border border-white/20">
+                <img 
+                  src="/lovable-uploads/b160c848-06aa-40b9-8717-59194cc9a1a8.png" 
+                  alt="Defense Headquarters Logo" 
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="text-left">
+                <h1 className="text-5xl font-bold text-white mb-3 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
+                  DEFENSE HEADQUARTERS
+                </h1>
+                <p className="text-2xl text-blue-200 mb-3 font-semibold">Crime Reporting & Intelligence Portal</p>
+                <div className="flex items-center space-x-6">
+                  <div className="flex items-center text-green-400 text-sm font-bold">
+                    <Lock className="w-5 h-5 mr-2" />
+                    <span>SECURED & ENCRYPTED</span>
+                  </div>
+                  <div className="flex items-center text-blue-400 text-sm font-bold">
+                    <Zap className="w-5 h-5 mr-2" />
+                    <span>REAL-TIME PROCESSING</span>
+                  </div>
+                  <div className="flex items-center text-purple-400 text-sm font-bold">
+                    <Users className="w-5 h-5 mr-2" />
+                    <span>24/7 MONITORING</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            <div className="flex items-center justify-center space-x-2 text-orange-400">
-              <AlertTriangle className="w-5 h-5" />
-              <span className="font-semibold">SECURE REPORTING</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-green-400">
-              <Shield className="w-5 h-5" />
-              <span className="font-semibold">ANONYMOUS OPTION</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2 text-blue-400">
-              <Clock className="w-5 h-5" />
-              <span className="font-semibold">24/7 MONITORING</span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <Shield className="w-8 h-8 text-green-400 mx-auto mb-3" />
+                <h3 className="font-bold text-white mb-2">Anonymous Reporting</h3>
+                <p className="text-gray-300 text-sm">Submit reports safely without revealing your identity</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <AlertTriangle className="w-8 h-8 text-orange-400 mx-auto mb-3" />
+                <h3 className="font-bold text-white mb-2">Instant Response</h3>
+                <p className="text-gray-300 text-sm">Immediate dispatch to relevant security units</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <Clock className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                <h3 className="font-bold text-white mb-2">Real-Time Tracking</h3>
+                <p className="text-gray-300 text-sm">Track your report status with reference number</p>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-            <Search className="w-5 h-5 mr-2 text-blue-400" />
-            Track Your Report
+      <div className="max-w-6xl mx-auto px-6 pb-16">
+        {/* Track Report Section */}
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-8 mb-8">
+          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
+            <Search className="w-6 h-6 mr-3 text-blue-400" />
+            Track Your Report Status
           </h2>
-          <div className="flex space-x-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <Input
               value={trackingNumber}
               onChange={(e) => setTrackingNumber(e.target.value)}
-              className="bg-gray-900/50 border-gray-600 text-white flex-1"
-              placeholder="Enter your reference number (e.g., DHQ-2024-001)"
+              className="bg-white/10 border-white/30 text-white placeholder-gray-300 flex-1 text-lg"
+              placeholder="Enter your reference number (e.g., DHQ-2024-001234)"
             />
             <Button 
               onClick={handleTrackReport}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
             >
+              <Search className="w-5 h-5 mr-2" />
               Track Report
             </Button>
           </div>
         </Card>
 
-        {/* Location Status Card */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
+        {/* Location Status */}
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-6 mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Navigation className={`w-5 h-5 ${locationData.hasPermission ? 'text-green-400' : 'text-red-400'}`} />
+            <div className="flex items-center space-x-4">
+              <Navigation className={`w-6 h-6 ${locationData.hasPermission ? 'text-green-400' : 'text-red-400'}`} />
               <div>
-                <h3 className="text-white font-medium">Location Status</h3>
-                <p className="text-sm text-gray-400">
+                <h3 className="text-white font-semibold text-lg">Location Status</h3>
+                <p className="text-gray-300">
                   {locationData.isLoading 
-                    ? 'Getting your location...'
+                    ? 'Acquiring your location...'
                     : locationData.hasPermission 
                       ? `Location acquired (±${locationData.accuracy?.toFixed(0)}m accuracy)`
-                      : locationData.error || 'Location access required'
+                      : locationData.error || 'Location access required for report submission'
                   }
                 </p>
               </div>
@@ -399,185 +418,226 @@ const ReportCrime = () => {
               <Button 
                 onClick={requestLocationPermission}
                 variant="outline"
-                size="sm"
-                className="bg-transparent border-orange-600 text-orange-400"
+                className="bg-orange-600/20 border-orange-500 text-orange-300 hover:bg-orange-600/30"
               >
                 Enable Location
               </Button>
             )}
           </div>
           {locationData.error && (
-            <div className="mt-3 p-3 bg-red-900/20 border border-red-700/50 rounded-lg">
-              <p className="text-red-300 text-sm">{locationData.error}</p>
+            <div className="mt-4 p-4 bg-red-900/30 border border-red-600/50 rounded-lg">
+              <p className="text-red-300">{locationData.error}</p>
             </div>
           )}
         </Card>
 
         {/* Main Report Form */}
-        <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Submit Crime Report</h2>
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 p-8">
+          <div className="flex items-center mb-8">
+            <FileText className="w-8 h-8 text-blue-400 mr-4" />
+            <h2 className="text-3xl font-bold text-white">Submit Security Report</h2>
+          </div>
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* Report Type */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Report Type *
+              <label className="block text-lg font-semibold text-white mb-3">
+                Report Type <span className="text-red-400">*</span>
               </label>
               <select
                 value={formData.threatType}
                 onChange={(e) => handleInputChange('threatType', e.target.value)}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
+                className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white text-lg"
                 required
               >
-                <option value="">Select crime type</option>
-                <option value="Armed Robbery">Armed Robbery</option>
-                <option value="Kidnapping">Kidnapping</option>
-                <option value="Terrorism">Terrorism</option>
-                <option value="Drug Trafficking">Drug Trafficking</option>
-                <option value="Human Trafficking">Human Trafficking</option>
-                <option value="Theft">Theft</option>
-                <option value="Vandalism">Vandalism</option>
-                <option value="Cybercrime">Cybercrime</option>
-                <option value="Fraud">Fraud</option>
-                <option value="Other">Other</option>
+                <option value="" className="bg-gray-800">Select crime type</option>
+                <option value="Armed Robbery" className="bg-gray-800">Armed Robbery</option>
+                <option value="Kidnapping" className="bg-gray-800">Kidnapping</option>
+                <option value="Terrorism" className="bg-gray-800">Terrorism</option>
+                <option value="Drug Trafficking" className="bg-gray-800">Drug Trafficking</option>
+                <option value="Human Trafficking" className="bg-gray-800">Human Trafficking</option>
+                <option value="Theft" className="bg-gray-800">Theft</option>
+                <option value="Vandalism" className="bg-gray-800">Vandalism</option>
+                <option value="Cybercrime" className="bg-gray-800">Cybercrime</option>
+                <option value="Fraud" className="bg-gray-800">Fraud</option>
+                <option value="Other" className="bg-gray-800">Other</option>
               </select>
             </div>
 
+            {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Detailed Description *
+              <label className="block text-lg font-semibold text-white mb-3">
+                Detailed Description <span className="text-red-400">*</span>
               </label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
-                className="bg-gray-900/50 border-gray-600 text-white min-h-[120px]"
-                placeholder="Provide detailed information about the incident..."
+                className="bg-white/10 border-white/30 text-white placeholder-gray-300 min-h-[150px] text-lg"
+                placeholder="Provide detailed information about the incident including what happened, when it occurred, people involved, etc."
                 required
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Location Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  State *
+                <label className="block text-lg font-semibold text-white mb-3">
+                  State <span className="text-red-400">*</span>
                 </label>
                 <select
                   value={formData.state}
                   onChange={(e) => handleInputChange('state', e.target.value)}
-                  className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
+                  className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white text-lg"
                   required
                 >
-                  <option value="">Select State</option>
+                  <option value="" className="bg-gray-800">Select State</option>
                   {nigerianStates.map(state => (
-                    <option key={state} value={state}>{state}</option>
+                    <option key={state} value={state} className="bg-gray-800">{state}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Local Government Area *
+                <label className="block text-lg font-semibold text-white mb-3">
+                  Local Government Area <span className="text-red-400">*</span>
                 </label>
                 <Input
                   value={formData.localGovernment}
                   onChange={(e) => handleInputChange('localGovernment', e.target.value)}
-                  className="bg-gray-900/50 border-gray-600 text-white"
+                  className="bg-white/10 border-white/30 text-white placeholder-gray-300 text-lg"
                   placeholder="Enter LGA"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Full Address *
+                <label className="block text-lg font-semibold text-white mb-3">
+                  Full Address
                 </label>
                 <Input
                   value={formData.fullAddress}
                   onChange={(e) => handleInputChange('fullAddress', e.target.value)}
-                  className="bg-gray-900/50 border-gray-600 text-white"
-                  placeholder="Complete address"
-                  required
+                  className="bg-white/10 border-white/30 text-white placeholder-gray-300 text-lg"
+                  placeholder="Complete address of incident"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-lg font-semibold text-white mb-3">
                   Landmark (Optional)
                 </label>
                 <Input
                   value={formData.landmark}
                   onChange={(e) => handleInputChange('landmark', e.target.value)}
-                  className="bg-gray-900/50 border-gray-600 text-white"
-                  placeholder="Nearby landmark"
+                  className="bg-white/10 border-white/30 text-white placeholder-gray-300 text-lg"
+                  placeholder="Nearby landmark or notable location"
                 />
               </div>
             </div>
 
-            <MediaUploadSection
-              images={images}
-              videos={videos}
-              onImagesChange={setImages}
-              onVideosChange={setVideos}
-              uploading={uploading}
-            />
-
+            {/* Media Upload */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Urgency Level *
+              <label className="block text-lg font-semibold text-white mb-3">
+                Evidence Files (Optional)
+              </label>
+              <MediaUploadSection
+                images={images}
+                videos={videos}
+                onImagesChange={setImages}
+                onVideosChange={setVideos}
+                uploading={uploading}
+              />
+            </div>
+
+            {/* Urgency Level */}
+            <div>
+              <label className="block text-lg font-semibold text-white mb-3">
+                Urgency Level <span className="text-red-400">*</span>
               </label>
               <select
                 value={formData.urgency}
                 onChange={(e) => handleInputChange('urgency', e.target.value)}
-                className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
+                className="w-full bg-white/10 border border-white/30 rounded-lg px-4 py-3 text-white text-lg"
                 required
               >
-                <option value="low">Low - General Information</option>
-                <option value="medium">Medium - Requires Attention</option>
-                <option value="high">High - Urgent Response</option>
-                <option value="critical">Critical - Immediate Action</option>
+                <option value="low" className="bg-gray-800">Low - General Information</option>
+                <option value="medium" className="bg-gray-800">Medium - Requires Attention</option>
+                <option value="high" className="bg-gray-800">High - Urgent Response</option>
+                <option value="critical" className="bg-gray-800">Critical - Immediate Action</option>
               </select>
             </div>
 
-            <div className="border-t border-gray-700 pt-6">
-              <h3 className="text-lg font-medium text-white mb-4">Reporter Information</h3>
+            {/* Reporter Information */}
+            <div className="border-t border-white/20 pt-8">
+              <h3 className="text-2xl font-bold text-white mb-6 flex items-center">
+                <User className="w-6 h-6 mr-3" />
+                Reporter Information
+              </h3>
               
-              <div className="space-y-4">
-                <div>
-                  <label className="flex items-center space-x-2">
+              <div className="space-y-6">
+                <div className="bg-green-900/20 border border-green-600/50 rounded-lg p-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={formData.isAnonymous}
                       onChange={(e) => handleInputChange('isAnonymous', e.target.checked)}
-                      className="w-4 h-4 text-dhq-blue"
+                      className="w-5 h-5 text-green-600 rounded"
                     />
-                    <span className="text-gray-300">Submit anonymously (recommended)</span>
+                    <div>
+                      <span className="text-white font-semibold">Submit anonymously</span>
+                      <p className="text-green-300 text-sm">Recommended for your safety and security</p>
+                    </div>
                   </label>
                 </div>
 
                 {!formData.isAnonymous && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        <User className="w-4 h-4 inline mr-1" />
-                        Your Name (Optional)
+                      <label className="block text-white font-semibold mb-2">
+                        Full Name (Optional)
                       </label>
                       <Input
                         value={formData.reporterName}
                         onChange={(e) => handleInputChange('reporterName', e.target.value)}
-                        className="bg-gray-900/50 border-gray-600 text-white"
-                        placeholder="Full name"
+                        className="bg-white/10 border-white/30 text-white placeholder-gray-300"
+                        placeholder="Your full name"
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        <Phone className="w-4 h-4 inline mr-1" />
-                        Contact (Optional)
+                      <label className="block text-white font-semibold mb-2">
+                        Phone Number (Optional)
+                      </label>
+                      <Input
+                        value={formData.reporterPhone}
+                        onChange={(e) => handleInputChange('reporterPhone', e.target.value)}
+                        className="bg-white/10 border-white/30 text-white placeholder-gray-300"
+                        placeholder="Your phone number"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-semibold mb-2">
+                        Email Address (Optional)
+                      </label>
+                      <Input
+                        value={formData.reporterEmail}
+                        onChange={(e) => handleInputChange('reporterEmail', e.target.value)}
+                        className="bg-white/10 border-white/30 text-white placeholder-gray-300"
+                        placeholder="Your email address"
+                        type="email"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-white font-semibold mb-2">
+                        Contact Info (Optional)
                       </label>
                       <Input
                         value={formData.reporterContact}
                         onChange={(e) => handleInputChange('reporterContact', e.target.value)}
-                        className="bg-gray-900/50 border-gray-600 text-white"
-                        placeholder="Phone or email"
+                        className="bg-white/10 border-white/30 text-white placeholder-gray-300"
+                        placeholder="Alternative contact method"
                       />
                     </div>
                   </div>
@@ -585,37 +645,55 @@ const ReportCrime = () => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-6 border-t border-gray-700">
-              <div className="text-sm text-gray-400">
-                <p>🔒 All reports are encrypted and handled with strict confidentiality</p>
-                <p>📍 Your precise location will be shared with authorities for faster response</p>
-                <p>📋 You will receive a reference ID upon successful submission</p>
+            {/* Submit Button */}
+            <div className="flex justify-between items-center pt-8 border-t border-white/20">
+              <div className="text-gray-300 space-y-2">
+                <p className="flex items-center"><Lock className="w-4 h-4 mr-2 text-green-400" /> All data is encrypted and secure</p>
+                <p className="flex items-center"><MapPin className="w-4 h-4 mr-2 text-blue-400" /> Location shared for faster response</p>
+                <p className="flex items-center"><FileText className="w-4 h-4 mr-2 text-purple-400" /> Reference ID provided upon submission</p>
               </div>
               
               <Button 
                 type="submit" 
-                className={`px-8 ${
+                size="lg"
+                className={`px-12 py-4 text-lg font-bold ${
                   !locationData.hasPermission 
                     ? 'bg-gray-600 cursor-not-allowed' 
-                    : 'bg-dhq-blue hover:bg-blue-700'
-                } text-white`}
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700'
+                } text-white shadow-xl`}
                 disabled={loading || !locationData.hasPermission || uploading}
               >
-                {loading ? 'Submitting...' : uploading ? 'Uploading...' : 'Submit Report'}
+                {loading ? (
+                  <>
+                    <div className="animate-spin w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                    Submitting...
+                  </>
+                ) : uploading ? (
+                  <>
+                    <div className="animate-spin w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5 mr-2" />
+                    Submit Report
+                  </>
+                )}
               </Button>
             </div>
           </form>
         </Card>
 
         {/* Emergency Notice */}
-        <Card className="bg-red-900/20 border-red-700/50 p-4">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
+        <Card className="bg-red-900/30 border-red-600/50 p-6 mt-8">
+          <div className="flex items-start space-x-4">
+            <AlertTriangle className="w-8 h-8 text-red-400 mt-1 flex-shrink-0" />
             <div>
-              <h4 className="font-medium text-red-300">Emergency Situations</h4>
-              <p className="text-sm text-red-200 mt-1">
-                For immediate threats or emergencies, contact local emergency services (199, 112) 
-                or the nearest security agency directly before submitting this report.
+              <h4 className="font-bold text-red-300 text-lg mb-2">Emergency Situations</h4>
+              <p className="text-red-200">
+                For immediate threats or life-threatening emergencies, contact local emergency services (199, 112) 
+                or the nearest security agency directly before submitting this report. This portal is for intelligence 
+                gathering and non-emergency incident reporting.
               </p>
             </div>
           </div>
@@ -624,34 +702,35 @@ const ReportCrime = () => {
 
       {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <DialogContent className="bg-gray-800 text-white border-gray-700">
+        <DialogContent className="bg-gray-900 text-white border-gray-700 max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-center text-green-400 text-xl">
-              <CheckCircle className="w-8 h-8 mx-auto mb-2" />
+            <DialogTitle className="text-center text-green-400 text-2xl">
+              <CheckCircle className="w-12 h-12 mx-auto mb-4" />
               Report Submitted Successfully!
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 text-center">
-            <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-4">
-              <p className="text-green-300 mb-2">Your Reference Number:</p>
-              <div className="flex items-center justify-center space-x-2">
-                <span className="font-mono text-lg text-white bg-gray-900 px-3 py-1 rounded">
+          <div className="space-y-6 text-center">
+            <div className="bg-green-900/30 border border-green-600/50 rounded-lg p-6">
+              <p className="text-green-300 mb-3 font-semibold">Your Reference Number:</p>
+              <div className="flex items-center justify-center space-x-3">
+                <span className="font-mono text-xl text-white bg-gray-800 px-4 py-2 rounded-lg">
                   {serialNumber}
                 </span>
                 <Button 
                   size="sm" 
                   variant="outline"
                   onClick={() => copyToClipboard(serialNumber)}
-                  className="bg-transparent border-green-600 text-green-400"
+                  className="bg-transparent border-green-600 text-green-400 hover:bg-green-600/20"
                 >
                   <Copy className="w-4 h-4" />
                 </Button>
               </div>
             </div>
-            <div className="text-gray-300">
-              <p>• Save this reference number to track your report</p>
-              <p>• You will be notified of any status updates</p>
-              <p>• Use this number for any follow-up communication</p>
+            <div className="text-gray-300 space-y-2">
+              <p>✓ Save this reference number to track your report</p>
+              <p>✓ You will be notified of any status updates</p>
+              <p>✓ Use this number for any follow-up communication</p>
+              <p>✓ Your report has been forwarded to the appropriate unit</p>
             </div>
           </div>
         </DialogContent>
@@ -659,40 +738,61 @@ const ReportCrime = () => {
 
       {/* Tracking Modal */}
       <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
-        <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-2xl">
+        <DialogContent className="bg-gray-900 text-white border-gray-700 max-w-3xl">
           <DialogHeader>
-            <DialogTitle className="text-xl">Report Status</DialogTitle>
+            <DialogTitle className="text-2xl">Report Status & Details</DialogTitle>
           </DialogHeader>
           {trackingResult && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-400">Reference:</span>
-                  <span className="ml-2 font-mono">{trackingResult.serial_number || 'N/A'}</span>
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6 text-sm">
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <span className="text-gray-400">Reference Number:</span>
+                  <span className="ml-2 font-mono text-white font-bold">{trackingResult.serial_number || 'N/A'}</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">Status:</span>
-                  <span className={`ml-2 px-2 py-1 rounded text-xs ${
-                    trackingResult.status === 'resolved' ? 'bg-green-900/30 text-green-300' :
-                    trackingResult.status === 'assigned' ? 'bg-blue-900/30 text-blue-300' :
-                    'bg-yellow-900/30 text-yellow-300'
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <span className="text-gray-400">Current Status:</span>
+                  <span className={`ml-2 px-3 py-1 rounded-full text-xs font-bold ${
+                    trackingResult.status === 'resolved' ? 'bg-green-900/50 text-green-300' :
+                    trackingResult.status === 'assigned' ? 'bg-blue-900/50 text-blue-300' :
+                    'bg-yellow-900/50 text-yellow-300'
                   }`}>
                     {trackingResult.status.toUpperCase()}
                   </span>
                 </div>
-                <div>
+                <div className="bg-gray-800/50 p-4 rounded-lg">
                   <span className="text-gray-400">Submitted:</span>
-                  <span className="ml-2">{new Date(trackingResult.created_at).toLocaleDateString()}</span>
+                  <span className="ml-2 text-white">{new Date(trackingResult.created_at).toLocaleString()}</span>
                 </div>
-                <div>
-                  <span className="text-gray-400">Type:</span>
-                  <span className="ml-2">{trackingResult.threat_type}</span>
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <span className="text-gray-400">Report Type:</span>
+                  <span className="ml-2 text-white font-semibold">{trackingResult.threat_type}</span>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <span className="text-gray-400">Location:</span>
+                  <span className="ml-2 text-white">{trackingResult.state}</span>
+                </div>
+                <div className="bg-gray-800/50 p-4 rounded-lg">
+                  <span className="text-gray-400">Priority:</span>
+                  <span className={`ml-2 px-2 py-1 rounded text-xs font-bold ${
+                    trackingResult.urgency === 'critical' ? 'bg-red-900/50 text-red-300' :
+                    trackingResult.urgency === 'high' ? 'bg-orange-900/50 text-orange-300' :
+                    'bg-blue-900/50 text-blue-300'
+                  }`}>
+                    {trackingResult.urgency?.toUpperCase() || 'MEDIUM'}
+                  </span>
                 </div>
               </div>
-              <div className="bg-gray-900/50 p-3 rounded">
-                <h4 className="font-medium mb-2">Description:</h4>
-                <p className="text-gray-300 text-sm">{trackingResult.description}</p>
+              <div className="bg-gray-800/30 p-6 rounded-lg">
+                <h4 className="font-semibold mb-3 text-white">Description:</h4>
+                <p className="text-gray-300">{trackingResult.description}</p>
               </div>
+              {trackingResult.assigned_to && (
+                <div className="bg-blue-900/20 border border-blue-600/50 p-4 rounded-lg">
+                  <p className="text-blue-300">
+                    <strong>Assigned to:</strong> {trackingResult.assigned_to}
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

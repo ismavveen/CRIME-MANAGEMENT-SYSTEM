@@ -189,6 +189,7 @@ export type Database = {
           crime_type: string | null
           description: string
           device_info: Json | null
+          documents: string[] | null
           evidence: Json | null
           file_url: string | null
           full_address: string | null
@@ -203,17 +204,25 @@ export type Database = {
           location_accuracy: number | null
           longitude: number | null
           manual_location: string | null
+          metadata: Json | null
           priority: string
+          reporter_contact: string | null
+          reporter_email: string | null
+          reporter_name: string | null
+          reporter_phone: string | null
           reporter_type: string | null
           reporting_method: string | null
           response_time_hours: number | null
+          serial_number: string | null
           specific_area: string | null
           state: string | null
           status: string
+          submission_source: string | null
           threat_type: string
           timestamp: string | null
           updated_at: string
           urgency: string
+          validation_status: string | null
           videos: string[] | null
           witness_info: string | null
         }
@@ -226,6 +235,7 @@ export type Database = {
           crime_type?: string | null
           description: string
           device_info?: Json | null
+          documents?: string[] | null
           evidence?: Json | null
           file_url?: string | null
           full_address?: string | null
@@ -240,17 +250,25 @@ export type Database = {
           location_accuracy?: number | null
           longitude?: number | null
           manual_location?: string | null
+          metadata?: Json | null
           priority?: string
+          reporter_contact?: string | null
+          reporter_email?: string | null
+          reporter_name?: string | null
+          reporter_phone?: string | null
           reporter_type?: string | null
           reporting_method?: string | null
           response_time_hours?: number | null
+          serial_number?: string | null
           specific_area?: string | null
           state?: string | null
           status?: string
+          submission_source?: string | null
           threat_type: string
           timestamp?: string | null
           updated_at?: string
           urgency?: string
+          validation_status?: string | null
           videos?: string[] | null
           witness_info?: string | null
         }
@@ -263,6 +281,7 @@ export type Database = {
           crime_type?: string | null
           description?: string
           device_info?: Json | null
+          documents?: string[] | null
           evidence?: Json | null
           file_url?: string | null
           full_address?: string | null
@@ -277,17 +296,25 @@ export type Database = {
           location_accuracy?: number | null
           longitude?: number | null
           manual_location?: string | null
+          metadata?: Json | null
           priority?: string
+          reporter_contact?: string | null
+          reporter_email?: string | null
+          reporter_name?: string | null
+          reporter_phone?: string | null
           reporter_type?: string | null
           reporting_method?: string | null
           response_time_hours?: number | null
+          serial_number?: string | null
           specific_area?: string | null
           state?: string | null
           status?: string
+          submission_source?: string | null
           threat_type?: string
           timestamp?: string | null
           updated_at?: string
           urgency?: string
+          validation_status?: string | null
           videos?: string[] | null
           witness_info?: string | null
         }
