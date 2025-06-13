@@ -39,7 +39,7 @@ export interface Report {
   reporter_email?: string;
   submission_source?: string;
   validation_status?: string;
-  metadata?: any;
+  metadata?: Record<string, any>;
 }
 
 export const useReports = () => {
@@ -56,21 +56,48 @@ export const useReports = () => {
 
       if (error) throw error;
       
-      // Cast database rows to Report type with proper handling of new fields
-      const typedReports = (data || []).map(report => ({
-        ...report,
-        urgency: (report.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
-        priority: (report.priority as 'low' | 'medium' | 'high') || 'low',
-        documents: (report as any).documents || [],
-        serial_number: (report as any).serial_number || undefined,
-        reporter_name: (report as any).reporter_name || undefined,
-        reporter_contact: (report as any).reporter_contact || undefined,
-        reporter_phone: (report as any).reporter_phone || undefined,
-        reporter_email: (report as any).reporter_email || undefined,
-        submission_source: (report as any).submission_source || undefined,
-        validation_status: (report as any).validation_status || undefined,
-        metadata: (report as any).metadata || undefined
-      } as Report));
+      // Simplified mapping without complex type casting
+      const typedReports = (data || []).map(report => {
+        const mappedReport: Report = {
+          id: report.id,
+          serial_number: report.serial_number || undefined,
+          description: report.description || '',
+          threat_type: report.threat_type || report.crime_type || '',
+          location: report.location || '',
+          manual_location: report.manual_location || undefined,
+          urgency: (['low', 'medium', 'high', 'critical'].includes(report.urgency)) ? report.urgency : 'medium',
+          priority: (['low', 'medium', 'high'].includes(report.priority)) ? report.priority : 'low',
+          status: report.status || 'pending',
+          state: report.state || '',
+          local_government: report.local_government || undefined,
+          full_address: report.full_address || undefined,
+          landmark: report.landmark || undefined,
+          acknowledged_at: report.acknowledged_at || undefined,
+          assigned_commander_id: report.assigned_commander_id || undefined,
+          response_time_hours: report.response_time_hours || undefined,
+          created_at: report.created_at,
+          updated_at: report.updated_at,
+          latitude: report.latitude || undefined,
+          longitude: report.longitude || undefined,
+          file_url: report.file_url || undefined,
+          reporter_type: report.reporter_type || undefined,
+          is_anonymous: report.is_anonymous !== false,
+          timestamp: report.timestamp || undefined,
+          location_accuracy: report.location_accuracy || undefined,
+          assigned_to: report.assigned_to || undefined,
+          images: report.images || undefined,
+          videos: report.videos || undefined,
+          documents: report.documents || undefined,
+          reporter_name: report.reporter_name || undefined,
+          reporter_contact: report.reporter_contact || undefined,
+          reporter_phone: report.reporter_phone || undefined,
+          reporter_email: report.reporter_email || undefined,
+          submission_source: report.submission_source || undefined,
+          validation_status: report.validation_status || undefined,
+          metadata: report.metadata || undefined
+        };
+        return mappedReport;
+      });
       
       setReports(typedReports);
     } catch (error: any) {
@@ -87,7 +114,7 @@ export const useReports = () => {
 
   const updateReportStatus = async (reportId: string, status: string, assignedTo?: string) => {
     try {
-      const updateData: any = { status };
+      const updateData: Record<string, any> = { status };
       if (assignedTo) {
         updateData.assigned_to = assignedTo;
       }
@@ -132,16 +159,16 @@ export const useReports = () => {
         return null;
       }
 
-      // Convert database row to Report type with proper type handling
-      return {
+      // Simplified conversion without complex type casting
+      const mappedReport: Report = {
         id: data.id,
-        serial_number: (data as any).serial_number || undefined,
+        serial_number: data.serial_number || undefined,
         description: data.description || '',
         threat_type: data.threat_type || data.crime_type || '',
         location: data.location || '',
         manual_location: data.manual_location || undefined,
-        urgency: (data.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
-        priority: (data.priority as 'low' | 'medium' | 'high') || 'low',
+        urgency: (['low', 'medium', 'high', 'critical'].includes(data.urgency)) ? data.urgency : 'medium',
+        priority: (['low', 'medium', 'high'].includes(data.priority)) ? data.priority : 'low',
         status: data.status || 'pending',
         state: data.state || '',
         local_government: data.local_government || undefined,
@@ -156,21 +183,23 @@ export const useReports = () => {
         longitude: data.longitude || undefined,
         file_url: data.file_url || undefined,
         reporter_type: data.reporter_type || undefined,
-        is_anonymous: data.is_anonymous || false,
+        is_anonymous: data.is_anonymous !== false,
         timestamp: data.timestamp || undefined,
         location_accuracy: data.location_accuracy || undefined,
         assigned_to: data.assigned_to || undefined,
         images: data.images || undefined,
         videos: data.videos || undefined,
-        documents: (data as any).documents || undefined,
-        reporter_name: (data as any).reporter_name || undefined,
-        reporter_contact: (data as any).reporter_contact || undefined,
-        reporter_phone: (data as any).reporter_phone || undefined,
-        reporter_email: (data as any).reporter_email || undefined,
-        submission_source: (data as any).submission_source || undefined,
-        validation_status: (data as any).validation_status || undefined,
-        metadata: (data as any).metadata || undefined
+        documents: data.documents || undefined,
+        reporter_name: data.reporter_name || undefined,
+        reporter_contact: data.reporter_contact || undefined,
+        reporter_phone: data.reporter_phone || undefined,
+        reporter_email: data.reporter_email || undefined,
+        submission_source: data.submission_source || undefined,
+        validation_status: data.validation_status || undefined,
+        metadata: data.metadata || undefined
       };
+
+      return mappedReport;
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
       return null;
@@ -180,7 +209,7 @@ export const useReports = () => {
   useEffect(() => {
     fetchReports();
 
-    // Enhanced real-time subscription for immediate updates
+    // Real-time subscription for immediate updates
     const channel = supabase
       .channel('reports-realtime')
       .on('postgres_changes', {
@@ -189,13 +218,54 @@ export const useReports = () => {
         table: 'reports'
       }, (payload) => {
         console.log('New report received:', payload);
-        const newReport = payload.new as Report;
-        setReports(prev => [newReport, ...prev]);
+        const newReport = payload.new;
+        
+        // Convert the new report to our Report type
+        const mappedNewReport: Report = {
+          id: newReport.id,
+          serial_number: newReport.serial_number || undefined,
+          description: newReport.description || '',
+          threat_type: newReport.threat_type || newReport.crime_type || '',
+          location: newReport.location || '',
+          manual_location: newReport.manual_location || undefined,
+          urgency: (['low', 'medium', 'high', 'critical'].includes(newReport.urgency)) ? newReport.urgency : 'medium',
+          priority: (['low', 'medium', 'high'].includes(newReport.priority)) ? newReport.priority : 'low',
+          status: newReport.status || 'pending',
+          state: newReport.state || '',
+          local_government: newReport.local_government || undefined,
+          full_address: newReport.full_address || undefined,
+          landmark: newReport.landmark || undefined,
+          acknowledged_at: newReport.acknowledged_at || undefined,
+          assigned_commander_id: newReport.assigned_commander_id || undefined,
+          response_time_hours: newReport.response_time_hours || undefined,
+          created_at: newReport.created_at,
+          updated_at: newReport.updated_at,
+          latitude: newReport.latitude || undefined,
+          longitude: newReport.longitude || undefined,
+          file_url: newReport.file_url || undefined,
+          reporter_type: newReport.reporter_type || undefined,
+          is_anonymous: newReport.is_anonymous !== false,
+          timestamp: newReport.timestamp || undefined,
+          location_accuracy: newReport.location_accuracy || undefined,
+          assigned_to: newReport.assigned_to || undefined,
+          images: newReport.images || undefined,
+          videos: newReport.videos || undefined,
+          documents: newReport.documents || undefined,
+          reporter_name: newReport.reporter_name || undefined,
+          reporter_contact: newReport.reporter_contact || undefined,
+          reporter_phone: newReport.reporter_phone || undefined,
+          reporter_email: newReport.reporter_email || undefined,
+          submission_source: newReport.submission_source || undefined,
+          validation_status: newReport.validation_status || undefined,
+          metadata: newReport.metadata || undefined
+        };
+
+        setReports(prev => [mappedNewReport, ...prev]);
         
         // Show toast notification for new reports
         toast({
           title: "New Report Received",
-          description: `${newReport.threat_type || 'Security report'} from ${newReport.state || 'Unknown location'}`,
+          description: `${mappedNewReport.threat_type || 'Security report'} from ${mappedNewReport.state || 'Unknown location'}`,
         });
       })
       .on('postgres_changes', {
@@ -204,9 +274,15 @@ export const useReports = () => {
         table: 'reports'
       }, (payload) => {
         console.log('Report updated:', payload);
-        const updatedReport = payload.new as Report;
+        const updatedReport = payload.new;
+        
         setReports(prev => prev.map(report => 
-          report.id === updatedReport.id ? updatedReport : report
+          report.id === updatedReport.id ? {
+            ...report,
+            ...updatedReport,
+            urgency: (['low', 'medium', 'high', 'critical'].includes(updatedReport.urgency)) ? updatedReport.urgency : 'medium',
+            priority: (['low', 'medium', 'high'].includes(updatedReport.priority)) ? updatedReport.priority : 'low'
+          } : report
         ));
       })
       .on('postgres_changes', {
