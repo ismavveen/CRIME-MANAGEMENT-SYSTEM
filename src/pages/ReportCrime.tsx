@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -199,7 +200,14 @@ const ReportCrime = () => {
         landmark: formData.landmark,
         reporter_name: formData.isAnonymous ? null : formData.reporterName,
         reporter_contact: formData.isAnonymous ? null : formData.reporterContact,
-        serial_number: generatedSerialNumber
+        serial_number: generatedSerialNumber,
+        submission_source: 'internal_portal',
+        validation_status: 'pending',
+        metadata: {
+          submissionTimestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent,
+          source: 'internal_web_portal'
+        }
       };
 
       const { data, error } = await supabase
@@ -223,6 +231,7 @@ const ReportCrime = () => {
         description: `Your report has been received. Reference: ${generatedSerialNumber}`,
       });
 
+      // Reset form
       setFormData({
         description: '',
         location: '',
@@ -297,57 +306,6 @@ const ReportCrime = () => {
     });
   };
 
-  const reportingChannels = [
-    {
-      id: 'web_app',
-      title: 'Web Portal',
-      icon: <Globe className="w-6 h-6" />,
-      description: 'Secure web-based reporting with encryption',
-      status: 'PRIMARY',
-      active: formData.reporterType === 'web_app'
-    },
-    {
-      id: 'mobile_app',
-      title: 'Mobile App',
-      icon: <Smartphone className="w-6 h-6" />,
-      description: 'Field-ready mobile application',
-      status: 'OPERATIONAL',
-      active: formData.reporterType === 'mobile_app'
-    },
-    {
-      id: 'sms',
-      title: 'SMS Gateway',
-      icon: <MessageSquare className="w-6 h-6" />,
-      description: 'Text to 40404 - Network independent',
-      status: 'ACTIVE',
-      active: formData.reporterType === 'sms'
-    },
-    {
-      id: 'call_hotline',
-      title: 'Emergency Hotline',
-      icon: <Phone className="w-6 h-6" />,
-      description: '24/7 Operations Center: 199 | 112',
-      status: 'PRIORITY',
-      active: formData.reporterType === 'call_hotline'
-    },
-    {
-      id: 'email',
-      title: 'Secure Email',
-      icon: <Mail className="w-6 h-6" />,
-      description: 'intel@dhq.mil.ng - Encrypted transmission',
-      status: 'SECURE',
-      active: formData.reporterType === 'email'
-    },
-    {
-      id: 'manual',
-      title: 'Field Office',
-      icon: <UserCheck className="w-6 h-6" />,
-      description: 'Physical reporting at DHQ installations',
-      status: 'AVAILABLE',
-      active: formData.reporterType === 'manual'
-    }
-  ];
-
   const nigerianStates = [
     'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta',
     'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi',
@@ -369,7 +327,7 @@ const ReportCrime = () => {
             </div>
             <div className="text-left">
               <h1 className="text-4xl font-bold text-white mb-2">DEFENSE HEADQUARTERS</h1>
-              <p className="text-xl text-gray-300 mb-2">Intelligence & Crime Reporting Portal</p>
+              <p className="text-xl text-gray-300 mb-2">Crime Reporting & Monitoring Portal</p>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center text-green-400 text-sm font-semibold">
                   <Lock className="w-4 h-4 mr-2" />
@@ -420,45 +378,7 @@ const ReportCrime = () => {
           </div>
         </Card>
 
-        <Card className="bg-gray-800/80 border-gray-700/50 p-6 mb-6 backdrop-blur-sm">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center">
-            <MessageSquare className="w-6 h-6 mr-3 text-blue-400" />
-            INTELLIGENCE REPORTING CHANNELS
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {reportingChannels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => handleInputChange('reporterType', channel.id)}
-                className={`p-6 rounded-lg border-2 transition-all duration-300 text-left relative overflow-hidden ${
-                  channel.active
-                    ? 'border-blue-500 bg-blue-500/10 text-white shadow-lg shadow-blue-500/20'
-                    : 'border-gray-600 bg-gray-700/30 text-gray-300 hover:border-gray-500 hover:bg-gray-600/30'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`${channel.active ? 'text-blue-400' : 'text-gray-400'} transform ${channel.active ? 'scale-110' : ''} transition-transform`}>
-                    {channel.icon}
-                  </div>
-                  <div className={`text-xs px-2 py-1 rounded font-bold ${
-                    channel.status === 'PRIMARY' ? 'bg-blue-600 text-white' :
-                    channel.status === 'PRIORITY' ? 'bg-red-600 text-white' :
-                    channel.status === 'SECURE' ? 'bg-green-600 text-white' :
-                    'bg-gray-600 text-gray-200'
-                  }`}>
-                    {channel.status}
-                  </div>
-                </div>
-                <h3 className="font-bold text-lg mb-2">{channel.title}</h3>
-                <p className="text-sm text-gray-400 leading-relaxed">{channel.description}</p>
-                {channel.active && (
-                  <div className="absolute inset-0 border-2 border-blue-400 rounded-lg animate-pulse pointer-events-none"></div>
-                )}
-              </button>
-            ))}
-          </div>
-        </Card>
-
+        {/* Location Status Card */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -493,8 +413,9 @@ const ReportCrime = () => {
           )}
         </Card>
 
+        {/* Main Report Form */}
         <Card className="bg-gray-800/50 border-gray-700/50 p-6 mb-6">
-          <h2 className="text-xl font-semibold text-white mb-4">Submit Intelligence Report</h2>
+          <h2 className="text-xl font-semibold text-white mb-4">Submit Crime Report</h2>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -507,14 +428,16 @@ const ReportCrime = () => {
                 className="w-full bg-gray-900/50 border border-gray-600 rounded-md px-3 py-2 text-white"
                 required
               >
-                <option value="">Select threat type</option>
-                <option value="Security Threat">Security Threat</option>
-                <option value="Intelligence">Intelligence Information</option>
-                <option value="Criminal Activity">Criminal Activity</option>
-                <option value="Terrorism">Terrorism Related</option>
-                <option value="Weapons">Weapons/Explosives</option>
-                <option value="Trafficking">Human/Drug Trafficking</option>
-                <option value="Cyber Crime">Cyber Crime</option>
+                <option value="">Select crime type</option>
+                <option value="Armed Robbery">Armed Robbery</option>
+                <option value="Kidnapping">Kidnapping</option>
+                <option value="Terrorism">Terrorism</option>
+                <option value="Drug Trafficking">Drug Trafficking</option>
+                <option value="Human Trafficking">Human Trafficking</option>
+                <option value="Theft">Theft</option>
+                <option value="Vandalism">Vandalism</option>
+                <option value="Cybercrime">Cybercrime</option>
+                <option value="Fraud">Fraud</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -527,7 +450,7 @@ const ReportCrime = () => {
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 className="bg-gray-900/50 border-gray-600 text-white min-h-[120px]"
-                placeholder="Provide detailed information about the incident, suspicious activity, or intelligence..."
+                placeholder="Provide detailed information about the incident..."
                 required
               />
             </div>
@@ -587,24 +510,6 @@ const ReportCrime = () => {
                   placeholder="Nearby landmark"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                <MapPin className="w-4 h-4 inline mr-1" />
-                Additional Location Info (Optional)
-              </label>
-              <Input
-                value={formData.manualLocation}
-                onChange={(e) => handleInputChange('manualLocation', e.target.value)}
-                className="bg-gray-900/50 border-gray-600 text-white"
-                placeholder="Building name, floor, room, etc."
-              />
-              {locationData.hasPermission && (
-                <p className="text-xs text-green-400 mt-1">
-                  GPS coordinates will be automatically included
-                </p>
-              )}
             </div>
 
             <MediaUploadSection
@@ -685,9 +590,6 @@ const ReportCrime = () => {
                 <p>🔒 All reports are encrypted and handled with strict confidentiality</p>
                 <p>📍 Your precise location will be shared with authorities for faster response</p>
                 <p>📋 You will receive a reference ID upon successful submission</p>
-                {(images.length > 0 || videos.length > 0) && (
-                  <p>📁 Files will be securely stored and accessible to authorized personnel only</p>
-                )}
               </div>
               
               <Button 
@@ -705,6 +607,7 @@ const ReportCrime = () => {
           </form>
         </Card>
 
+        {/* Emergency Notice */}
         <Card className="bg-red-900/20 border-red-700/50 p-4">
           <div className="flex items-start space-x-3">
             <AlertTriangle className="w-5 h-5 text-red-400 mt-0.5" />
@@ -719,6 +622,7 @@ const ReportCrime = () => {
         </Card>
       </div>
 
+      {/* Success Modal */}
       <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
         <DialogContent className="bg-gray-800 text-white border-gray-700">
           <DialogHeader>
@@ -753,6 +657,7 @@ const ReportCrime = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Tracking Modal */}
       <Dialog open={showTrackingModal} onOpenChange={setShowTrackingModal}>
         <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-2xl">
           <DialogHeader>
@@ -788,16 +693,6 @@ const ReportCrime = () => {
                 <h4 className="font-medium mb-2">Description:</h4>
                 <p className="text-gray-300 text-sm">{trackingResult.description}</p>
               </div>
-              <div className="bg-gray-900/50 p-3 rounded">
-                <h4 className="font-medium mb-2">Location:</h4>
-                <p className="text-gray-300 text-sm">{trackingResult.full_address || trackingResult.location}</p>
-              </div>
-              {trackingResult.assigned_to && (
-                <div className="bg-blue-900/20 border border-blue-700/50 p-3 rounded">
-                  <h4 className="font-medium text-blue-300 mb-1">Assignment Update:</h4>
-                  <p className="text-gray-300 text-sm">Assigned to: {trackingResult.assigned_to}</p>
-                </div>
-              )}
             </div>
           )}
         </DialogContent>

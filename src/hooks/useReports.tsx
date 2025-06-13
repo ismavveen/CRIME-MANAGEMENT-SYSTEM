@@ -56,21 +56,21 @@ export const useReports = () => {
 
       if (error) throw error;
       
-      // Ensure urgency and priority are properly typed and handle new fields
+      // Cast database rows to Report type with proper handling of new fields
       const typedReports = (data || []).map(report => ({
         ...report,
         urgency: (report.urgency as 'low' | 'medium' | 'high' | 'critical') || 'medium',
         priority: (report.priority as 'low' | 'medium' | 'high') || 'low',
-        documents: report.documents || [],
-        serial_number: report.serial_number || undefined,
-        reporter_name: report.reporter_name || undefined,
-        reporter_contact: report.reporter_contact || undefined,
-        reporter_phone: report.reporter_phone || undefined,
-        reporter_email: report.reporter_email || undefined,
-        submission_source: report.submission_source || undefined,
-        validation_status: report.validation_status || undefined,
-        metadata: report.metadata || undefined
-      }));
+        documents: (report as any).documents || [],
+        serial_number: (report as any).serial_number || undefined,
+        reporter_name: (report as any).reporter_name || undefined,
+        reporter_contact: (report as any).reporter_contact || undefined,
+        reporter_phone: (report as any).reporter_phone || undefined,
+        reporter_email: (report as any).reporter_email || undefined,
+        submission_source: (report as any).submission_source || undefined,
+        validation_status: (report as any).validation_status || undefined,
+        metadata: (report as any).metadata || undefined
+      } as Report));
       
       setReports(typedReports);
     } catch (error: any) {
@@ -135,7 +135,7 @@ export const useReports = () => {
       // Convert database row to Report type with proper type handling
       return {
         id: data.id,
-        serial_number: data.serial_number || undefined,
+        serial_number: (data as any).serial_number || undefined,
         description: data.description || '',
         threat_type: data.threat_type || data.crime_type || '',
         location: data.location || '',
@@ -162,14 +162,14 @@ export const useReports = () => {
         assigned_to: data.assigned_to || undefined,
         images: data.images || undefined,
         videos: data.videos || undefined,
-        documents: data.documents || undefined,
-        reporter_name: data.reporter_name || undefined,
-        reporter_contact: data.reporter_contact || undefined,
-        reporter_phone: data.reporter_phone || undefined,
-        reporter_email: data.reporter_email || undefined,
-        submission_source: data.submission_source || undefined,
-        validation_status: data.validation_status || undefined,
-        metadata: data.metadata || undefined
+        documents: (data as any).documents || undefined,
+        reporter_name: (data as any).reporter_name || undefined,
+        reporter_contact: (data as any).reporter_contact || undefined,
+        reporter_phone: (data as any).reporter_phone || undefined,
+        reporter_email: (data as any).reporter_email || undefined,
+        submission_source: (data as any).submission_source || undefined,
+        validation_status: (data as any).validation_status || undefined,
+        metadata: (data as any).metadata || undefined
       };
     } catch (error: any) {
       console.error('Error fetching report by serial number:', error);
