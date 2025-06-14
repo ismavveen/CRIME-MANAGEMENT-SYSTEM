@@ -11,6 +11,7 @@ import { Search, Shield, Clock, MapPin, User, AlertTriangle, CheckCircle, Eye, F
 
 interface Report {
   id: string;
+  serial_number: string | null;
   description: string | null;
   location: string | null;
   status: string | null;
@@ -21,16 +22,16 @@ interface Report {
 }
 
 const TrackReport = () => {
-  const [reportId, setReportId] = useState('');
+  const [serialNumber, setSerialNumber] = useState('');
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleTrackReport = async () => {
-    if (!reportId.trim()) {
+    if (!serialNumber.trim()) {
       toast({
-        title: "Report ID Required",
-        description: "Please enter a valid report ID to track",
+        title: "Serial Number Required",
+        description: "Please enter a valid serial number to track your report",
         variant: "destructive",
       });
       return;
@@ -41,7 +42,7 @@ const TrackReport = () => {
       const { data, error } = await supabase
         .from('reports')
         .select('*')
-        .eq('id', reportId)
+        .eq('serial_number', serialNumber.trim())
         .maybeSingle();
 
       if (error) throw error;
@@ -49,7 +50,7 @@ const TrackReport = () => {
       if (!data) {
         toast({
           title: "Report Not Found",
-          description: "No report found with the provided ID",
+          description: "No report found with the provided serial number",
           variant: "destructive",
         });
         setReport(null);
@@ -134,9 +135,9 @@ const TrackReport = () => {
               
               <div className="flex space-x-4 mb-6">
                 <Input
-                  value={reportId}
-                  onChange={(e) => setReportId(e.target.value)}
-                  placeholder="Enter Report ID (e.g., 1a2b3c4d)"
+                  value={serialNumber}
+                  onChange={(e) => setSerialNumber(e.target.value)}
+                  placeholder="Enter Serial Number (e.g., DHQ20241214123456ABC)"
                   className="bg-gray-900/50 border-gray-600 text-white flex-1"
                   onKeyPress={(e) => e.key === 'Enter' && handleTrackReport()}
                 />
@@ -184,8 +185,8 @@ const TrackReport = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-gray-400 text-sm font-semibold">REPORT ID</label>
-                      <p className="text-white font-mono text-lg">{report.id.slice(0, 8)}</p>
+                      <label className="text-gray-400 text-sm font-semibold">SERIAL NUMBER</label>
+                      <p className="text-white font-mono text-lg">{report.serial_number || 'Not assigned'}</p>
                     </div>
                     <div>
                       <label className="text-gray-400 text-sm font-semibold">THREAT TYPE</label>
@@ -269,7 +270,7 @@ const TrackReport = () => {
             <div className="sticky top-6">
               <AIChatInterface 
                 userType="user" 
-                context={report ? `User is tracking report ${report.id.slice(0, 8)} with status: ${report.status}, threat type: ${report.threat_type}` : "User is on the report tracking page"}
+                context={report ? `User is tracking report ${report.serial_number} with status: ${report.status}, threat type: ${report.threat_type}` : "User is on the report tracking page"}
                 title="DHQ Tracking Assistant"
                 className="h-[600px]"
               />

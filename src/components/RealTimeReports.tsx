@@ -258,7 +258,7 @@ const RealTimeReports = () => {
       {selectedReport && (
         <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
           <h4 className="text-white font-semibold mb-2">
-            Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number}
+            Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number || 'Not assigned'}
           </h4>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
