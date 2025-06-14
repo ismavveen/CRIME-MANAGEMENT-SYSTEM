@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Mic, Square, Play, Pause, Download, Trash2 } from "lucide-react";
+import { Mic, Square, Play, Pause, Download, Trash2, Video, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface VoiceRecorderProps {
@@ -17,11 +17,17 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
   const [audioUrl, setAudioUrl] = useState<string>('');
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [recordingMode, setRecordingMode] = useState<'audio' | 'video'>('audio');
+  const [videoBlob, setVideoBlob] = useState<Blob | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string>('');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const { toast } = useToast();
 
@@ -33,13 +39,43 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
       if (audioUrl) {
         URL.revokeObjectURL(audioUrl);
       }
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
     };
-  }, [audioUrl]);
+  }, [audioUrl, videoUrl]);
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      const constraints = recordingMode === 'video' 
+        ? { 
+            audio: true, 
+            video: { 
+              width: { ideal: 640 }, 
+              height: { ideal: 480 },
+              facingMode: 'user' // Front camera for selfie-style recording
+            } 
+          }
+        : { audio: true };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      // Show live preview for video
+      if (recordingMode === 'video' && previewVideoRef.current) {
+        previewVideoRef.current.srcObject = stream;
+        previewVideoRef.current.play();
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: recordingMode === 'video' 
+          ? 'video/webm;codecs=vp9,opus' 
+          : 'audio/webm;codecs=opus'
+      });
+      
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -50,17 +86,32 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
-        setAudioBlob(blob);
-        const url = URL.createObjectURL(blob);
-        setAudioUrl(url);
+        const blob = new Blob(chunksRef.current, { 
+          type: recordingMode === 'video' ? 'video/webm' : 'audio/webm' 
+        });
         
-        if (onRecordingComplete) {
-          onRecordingComplete(blob, duration);
+        if (recordingMode === 'video') {
+          setVideoBlob(blob);
+          const url = URL.createObjectURL(blob);
+          setVideoUrl(url);
+          
+          // Stop preview
+          if (previewVideoRef.current) {
+            previewVideoRef.current.srcObject = null;
+          }
+        } else {
+          setAudioBlob(blob);
+          const url = URL.createObjectURL(blob);
+          setAudioUrl(url);
+          
+          if (onRecordingComplete) {
+            onRecordingComplete(blob, duration);
+          }
         }
 
-        // Stop all tracks to release microphone
+        // Stop all tracks to release camera/microphone
         stream.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
       };
 
       mediaRecorder.start();
@@ -73,14 +124,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
       }, 1000);
 
       toast({
-        title: "Recording Started",
-        description: "Speak clearly into your microphone.",
+        title: `${recordingMode === 'video' ? 'Video' : 'Audio'} Recording Started`,
+        description: `Speak clearly into your ${recordingMode === 'video' ? 'camera and microphone' : 'microphone'}.`,
       });
     } catch (error) {
-      console.error('Error accessing microphone:', error);
+      console.error('Error accessing media devices:', error);
       toast({
-        title: "Microphone Access Denied",
-        description: "Please allow microphone access to record audio.",
+        title: "Media Access Denied",
+        description: `Please allow ${recordingMode === 'video' ? 'camera and microphone' : 'microphone'} access to record.`,
         variant: "destructive",
       });
     }
@@ -97,9 +148,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
         timerRef.current = null;
       }
 
+      // Stop preview
+      if (previewVideoRef.current) {
+        previewVideoRef.current.srcObject = null;
+      }
+
       toast({
         title: "Recording Stopped",
-        description: "Your audio has been saved.",
+        description: `Your ${recordingMode === 'video' ? 'video' : 'audio'} has been saved.`,
       });
     }
   };
@@ -124,47 +180,58 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
     }
   };
 
-  const playAudio = () => {
-    if (audioRef.current) {
+  const playMedia = () => {
+    const mediaElement = recordingMode === 'video' ? videoRef.current : audioRef.current;
+    if (mediaElement) {
       if (isPlaying) {
-        audioRef.current.pause();
+        mediaElement.pause();
         setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        mediaElement.play();
         setIsPlaying(true);
       }
     }
   };
 
   const deleteRecording = () => {
-    setAudioBlob(null);
-    if (audioUrl) {
-      URL.revokeObjectURL(audioUrl);
+    if (recordingMode === 'video') {
+      setVideoBlob(null);
+      if (videoUrl) {
+        URL.revokeObjectURL(videoUrl);
+      }
+      setVideoUrl('');
+    } else {
+      setAudioBlob(null);
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
+      setAudioUrl('');
     }
-    setAudioUrl('');
+    
     setDuration(0);
     setIsPlaying(false);
     
     toast({
       title: "Recording Deleted",
-      description: "The audio recording has been removed.",
+      description: `The ${recordingMode === 'video' ? 'video' : 'audio'} recording has been removed.`,
     });
   };
 
   const downloadRecording = () => {
-    if (audioBlob) {
-      const url = URL.createObjectURL(audioBlob);
+    const blob = recordingMode === 'video' ? videoBlob : audioBlob;
+    const url = recordingMode === 'video' ? videoUrl : audioUrl;
+    
+    if (blob && url) {
       const a = document.createElement('a');
       a.href = url;
-      a.download = `crime-report-audio-${new Date().toISOString().slice(0, 19)}.webm`;
+      a.download = `crime-report-${recordingMode}-${new Date().toISOString().slice(0, 19)}.${recordingMode === 'video' ? 'webm' : 'webm'}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
       
       toast({
         title: "Download Started",
-        description: "Your audio recording is being downloaded.",
+        description: `Your ${recordingMode === 'video' ? 'video' : 'audio'} recording is being downloaded.`,
       });
     }
   };
@@ -175,25 +242,70 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const hasRecording = recordingMode === 'video' ? videoBlob : audioBlob;
+
   return (
     <Card className={`border-green-200 ${className}`}>
       <CardContent className="p-6">
-        <div className="text-center space-y-4">
-          <h3 className="text-lg font-semibold text-green-800">Voice Recording</h3>
-          <p className="text-sm text-green-600">Record your crime report using voice</p>
-          
-          <div className="text-2xl font-mono text-green-700">
-            {formatTime(duration)}
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="text-lg font-semibold text-green-800">Media Recording</h3>
+            <p className="text-sm text-green-600">Record voice testimony or video evidence</p>
           </div>
 
+          {/* Recording Mode Toggle */}
+          <div className="flex justify-center space-x-2">
+            <Button
+              variant={recordingMode === 'audio' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRecordingMode('audio')}
+              disabled={isRecording}
+              className={recordingMode === 'audio' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600'}
+            >
+              <Mic className="mr-2 h-4 w-4" />
+              Audio Only
+            </Button>
+            <Button
+              variant={recordingMode === 'video' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setRecordingMode('video')}
+              disabled={isRecording}
+              className={recordingMode === 'video' ? 'bg-green-600 text-white' : 'border-green-600 text-green-600'}
+            >
+              <Video className="mr-2 h-4 w-4" />
+              Video + Audio
+            </Button>
+          </div>
+
+          {/* Live Preview for Video */}
+          {recordingMode === 'video' && isRecording && (
+            <div className="flex justify-center">
+              <video
+                ref={previewVideoRef}
+                className="w-80 h-60 bg-gray-900 rounded-lg"
+                autoPlay
+                muted
+                playsInline
+              />
+            </div>
+          )}
+
+          {/* Timer */}
+          <div className="text-center">
+            <div className="text-2xl font-mono text-green-700">
+              {formatTime(duration)}
+            </div>
+          </div>
+
+          {/* Recording Controls */}
           <div className="flex justify-center space-x-4">
-            {!isRecording && !audioBlob && (
+            {!isRecording && !hasRecording && (
               <Button 
                 onClick={startRecording}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                <Mic className="mr-2 h-4 w-4" />
-                Start Recording
+                {recordingMode === 'video' ? <Camera className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
+                Start {recordingMode === 'video' ? 'Video' : 'Audio'} Recording
               </Button>
             )}
 
@@ -220,25 +332,42 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
             )}
           </div>
 
-          {audioBlob && (
+          {/* Playback and Actions */}
+          {hasRecording && (
             <div className="space-y-4">
-              <audio 
-                ref={audioRef} 
-                src={audioUrl} 
-                onEnded={() => setIsPlaying(false)}
-                className="hidden"
-              />
+              {/* Media Element */}
+              {recordingMode === 'video' ? (
+                <div className="flex justify-center">
+                  <video 
+                    ref={videoRef} 
+                    src={videoUrl} 
+                    onEnded={() => setIsPlaying(false)}
+                    className="w-80 h-60 bg-gray-900 rounded-lg"
+                    controls
+                  />
+                </div>
+              ) : (
+                <audio 
+                  ref={audioRef} 
+                  src={audioUrl} 
+                  onEnded={() => setIsPlaying(false)}
+                  className="hidden"
+                />
+              )}
               
+              {/* Control Buttons */}
               <div className="flex justify-center space-x-2">
-                <Button 
-                  onClick={playAudio}
-                  variant="outline"
-                  size="sm"
-                  className="border-green-500 text-green-700 hover:bg-green-50"
-                >
-                  {isPlaying ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
-                  {isPlaying ? 'Pause' : 'Play'}
-                </Button>
+                {recordingMode === 'audio' && (
+                  <Button 
+                    onClick={playMedia}
+                    variant="outline"
+                    size="sm"
+                    className="border-green-500 text-green-700 hover:bg-green-50"
+                  >
+                    {isPlaying ? <Pause className="mr-2 h-4 w-4" /> : <Play className="mr-2 h-4 w-4" />}
+                    {isPlaying ? 'Pause' : 'Play'}
+                  </Button>
+                )}
                 
                 <Button 
                   onClick={downloadRecording}
@@ -264,13 +393,24 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onRecordingComplete, clas
               <Button 
                 onClick={startRecording}
                 variant="outline"
-                className="border-green-500 text-green-700 hover:bg-green-50"
+                className="w-full border-green-500 text-green-700 hover:bg-green-50"
               >
-                <Mic className="mr-2 h-4 w-4" />
-                Record New
+                {recordingMode === 'video' ? <Camera className="mr-2 h-4 w-4" /> : <Mic className="mr-2 h-4 w-4" />}
+                Record New {recordingMode === 'video' ? 'Video' : 'Audio'}
               </Button>
             </div>
           )}
+
+          {/* Instructions */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-800">
+              <strong>Recording Tips:</strong> 
+              {recordingMode === 'video' 
+                ? ' Look directly at the camera and speak clearly. Ensure good lighting for better video quality.' 
+                : ' Speak clearly and avoid background noise for better audio quality.'
+              }
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

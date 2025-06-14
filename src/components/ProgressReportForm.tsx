@@ -1,18 +1,12 @@
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, ArrowLeft, ArrowRight, Shield, MapPin, FileText, Camera, Phone, Mail, User, AlertTriangle, Navigation, Upload, Video, Image } from "lucide-react";
+import { CheckCircle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import MediaUploadSection from "./MediaUploadSection";
+import ReporterInfoStep from "./interactive-steps/ReporterInfoStep";
+import CrimeDetailsStep from "./interactive-steps/CrimeDetailsStep";
+import EvidenceUploadStep from "./interactive-steps/EvidenceUploadStep";
+import ReviewSubmissionStep from "./interactive-steps/ReviewSubmissionStep";
 
 interface ProgressReportFormProps {
   onSuccess?: (reportId: string, serialNumber: string) => void;
@@ -20,7 +14,6 @@ interface ProgressReportFormProps {
 
 const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [locationData, setLocationData] = useState({
     latitude: null as number | null,
@@ -44,7 +37,6 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
     description: "",
     urgency: "medium",
     threatType: "",
-    enableLiveLocation: false,
     
     // Step 3: Attachments
     images: [] as File[],
@@ -54,47 +46,11 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
-  const nigerianStates = [
-    'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta',
-    'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi',
-    'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
-    'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'
-  ];
-
-  const threatTypes = [
-    'Kidnapping',
-    'Banditry', 
-    'Theft',
-    'Oil Vandalism',
-    'Intelligence',
-    'Armed Robbery',
-    'Terrorism',
-    'Drug Trafficking',
-    'Human Trafficking',
-    'Vandalism',
-    'Cybercrime',
-    'Fraud'
-  ];
-
   const steps = [
-    {
-      number: 1,
-      title: "Reporter Information",
-      description: "Your contact details (optional for anonymous reports)",
-      icon: User
-    },
-    {
-      number: 2,
-      title: "Crime Details", 
-      description: "Information about the incident",
-      icon: FileText
-    },
-    {
-      number: 3,
-      title: "Attachments & Submission",
-      description: "Upload evidence and submit your report",
-      icon: Camera
-    }
+    { number: 1, title: "Reporter Information", completed: false },
+    { number: 2, title: "Crime Details", completed: false },
+    { number: 3, title: "Evidence & Media", completed: false },
+    { number: 4, title: "Review & Submit", completed: false }
   ];
 
   const progress = (currentStep / steps.length) * 100;
@@ -183,337 +139,65 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
     }
   };
 
-  const uploadFiles = async (files: File[], type: 'image' | 'video'): Promise<string[]> => {
-    const uploadPromises = files.map(async (file) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-      const filePath = `${type}s/${fileName}`;
-
-      const { error } = await supabase.storage
-        .from('report-files')
-        .upload(filePath, file);
-
-      if (error) throw error;
-
-      const { data } = supabase.storage
-        .from('report-files')
-        .getPublicUrl(filePath);
-
-      return data.publicUrl;
-    });
-
-    return Promise.all(uploadPromises);
-  };
-
-  const handleSubmit = async () => {
-    if (!validateStep(currentStep)) return;
-
-    setLoading(true);
-    setUploading(true);
-
-    try {
-      let imageUrls: string[] = [];
-      let videoUrls: string[] = [];
-
-      if (formData.images.length > 0) {
-        imageUrls = await uploadFiles(formData.images, 'image');
-      }
-
-      if (formData.videos.length > 0) {
-        videoUrls = await uploadFiles(formData.videos, 'video');
-      }
-
-      const generatedSerialNumber = `DHQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-
-      const reportData = {
-        description: formData.description,
-        threat_type: formData.threatType,
-        urgency: formData.urgency,
-        state: formData.state,
-        local_government: formData.localGovernment,
-        is_anonymous: formData.isAnonymous,
-        reporter_name: formData.isAnonymous ? null : formData.reporterName,
-        reporter_phone: formData.isAnonymous ? null : formData.reporterPhone,
-        reporter_email: formData.isAnonymous ? null : formData.reporterEmail,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        location_accuracy: locationData.accuracy,
-        images: imageUrls,
-        videos: videoUrls,
-        serial_number: generatedSerialNumber,
-        status: 'pending',
-        priority: formData.urgency === 'critical' ? 'high' : formData.urgency === 'high' ? 'medium' : 'low',
-        timestamp: new Date().toISOString(),
-        submission_source: 'public_portal',
-        validation_status: 'pending',
-        metadata: {
-          submissionTimestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          source: 'progress_form',
-          hasLocation: locationData.hasPermission,
-          reportTitle: formData.reportTitle
-        }
-      };
-
-      const { data, error } = await supabase
-        .from('reports')
-        .insert([reportData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      toast({
-        title: "Report submitted successfully",
-        description: `Your report has been received. Reference: ${generatedSerialNumber}`,
-      });
-
-      onSuccess?.(data.id, generatedSerialNumber);
-
-    } catch (error: any) {
-      console.error('Error submitting report:', error);
-      toast({
-        title: "Submission failed",
-        description: error.message || "Failed to submit report. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-      setUploading(false);
-    }
-  };
-
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex items-center space-x-3">
-                <Shield className="h-5 w-5 text-green-600" />
-                <div>
-                  <Label className="text-green-800 font-semibold">Anonymous Reporting</Label>
-                  <p className="text-sm text-green-700">Recommended for your safety and security</p>
-                </div>
-              </div>
-              <Switch
-                checked={formData.isAnonymous}
-                onCheckedChange={(checked) => handleInputChange('isAnonymous', checked)}
-              />
-            </div>
-
-            {!formData.isAnonymous && (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="reporterName" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>Full Name *</span>
-                  </Label>
-                  <Input
-                    id="reporterName"
-                    value={formData.reporterName}
-                    onChange={(e) => handleInputChange('reporterName', e.target.value)}
-                    placeholder="Enter your full name"
-                    className={errors.reporterName ? 'border-red-500' : ''}
-                  />
-                  {errors.reporterName && <p className="text-sm text-red-600">{errors.reporterName}</p>}
-                </div>
-
-                <div>
-                  <Label htmlFor="reporterPhone" className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4" />
-                    <span>Phone Number</span>
-                  </Label>
-                  <Input
-                    id="reporterPhone"
-                    value={formData.reporterPhone}
-                    onChange={(e) => handleInputChange('reporterPhone', e.target.value)}
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="reporterEmail" className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4" />
-                    <span>Email Address</span>
-                  </Label>
-                  <Input
-                    id="reporterEmail"
-                    type="email"
-                    value={formData.reporterEmail}
-                    onChange={(e) => handleInputChange('reporterEmail', e.target.value)}
-                    placeholder="Enter your email address"
-                  />
-                </div>
-
-                {errors.contact && <p className="text-sm text-red-600">{errors.contact}</p>}
-              </div>
-            )}
-
-            {formData.isAnonymous && (
-              <div className="text-center p-6 bg-gray-50 rounded-lg">
-                <Shield className="h-12 w-12 text-green-600 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">Anonymous Reporting Enabled</h3>
-                <p className="text-gray-600">Your identity will be completely protected. No personal information is required.</p>
-              </div>
-            )}
-          </div>
+          <ReporterInfoStep
+            data={{
+              isAnonymous: formData.isAnonymous,
+              reporterName: formData.reporterName,
+              reporterPhone: formData.reporterPhone,
+              reporterEmail: formData.reporterEmail,
+            }}
+            onDataChange={handleInputChange}
+            onNext={handleNext}
+            errors={errors}
+          />
         );
 
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="state" className="flex items-center space-x-2">
-                  <MapPin className="h-4 w-4" />
-                  <span>State *</span>
-                </Label>
-                <Select value={formData.state} onValueChange={(value) => handleInputChange('state', value)}>
-                  <SelectTrigger className={errors.state ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nigerianStates.map(state => (
-                      <SelectItem key={state} value={state}>{state}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.state && <p className="text-sm text-red-600">{errors.state}</p>}
-              </div>
-
-              <div>
-                <Label htmlFor="localGovernment">Local Government Area *</Label>
-                <Input
-                  id="localGovernment"
-                  value={formData.localGovernment}
-                  onChange={(e) => handleInputChange('localGovernment', e.target.value)}
-                  placeholder="Enter LGA"
-                  className={errors.localGovernment ? 'border-red-500' : ''}
-                />
-                {errors.localGovernment && <p className="text-sm text-red-600">{errors.localGovernment}</p>}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reportTitle">Report Title *</Label>
-              <Input
-                id="reportTitle"
-                value={formData.reportTitle}
-                onChange={(e) => handleInputChange('reportTitle', e.target.value)}
-                placeholder="Brief title describing the incident"
-                className={errors.reportTitle ? 'border-red-500' : ''}
-              />
-              {errors.reportTitle && <p className="text-sm text-red-600">{errors.reportTitle}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="description">Detailed Description *</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
-                placeholder="Provide detailed information about the incident..."
-                className={`min-h-[120px] ${errors.description ? 'border-red-500' : ''}`}
-              />
-              <p className="text-sm text-gray-500 mt-1">{formData.description.length} characters (minimum 10)</p>
-              {errors.description && <p className="text-sm text-red-600">{errors.description}</p>}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="urgency">Priority Classification *</Label>
-                <Select value={formData.urgency} onValueChange={(value) => handleInputChange('urgency', value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low - General Information</SelectItem>
-                    <SelectItem value="medium">Medium - Requires Attention</SelectItem>
-                    <SelectItem value="high">High - Urgent Response</SelectItem>
-                    <SelectItem value="critical">Critical - Immediate Action</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="threatType">Threat Classification *</Label>
-                <Select value={formData.threatType} onValueChange={(value) => handleInputChange('threatType', value)}>
-                  <SelectTrigger className={errors.threatType ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Select threat type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {threatTypes.map(type => (
-                      <SelectItem key={type} value={type}>{type}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.threatType && <p className="text-sm text-red-600">{errors.threatType}</p>}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center space-x-3">
-                <Navigation className={`h-5 w-5 ${locationData.hasPermission ? 'text-green-600' : 'text-blue-600'}`} />
-                <div>
-                  <Label className="text-blue-800 font-semibold">Live Location Sharing</Label>
-                  <p className="text-sm text-blue-700">
-                    {locationData.hasPermission 
-                      ? `Location enabled (±${locationData.accuracy?.toFixed(0)}m accuracy)`
-                      : 'Enable for precise incident location'
-                    }
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant={locationData.hasPermission ? "secondary" : "default"}
-                onClick={requestLocationPermission}
-                disabled={locationData.isLoading}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {locationData.isLoading ? "Acquiring..." : locationData.hasPermission ? "Enabled" : "Enable Location"}
-              </Button>
-            </div>
-          </div>
+          <CrimeDetailsStep
+            data={{
+              state: formData.state,
+              localGovernment: formData.localGovernment,
+              reportTitle: formData.reportTitle,
+              description: formData.description,
+              urgency: formData.urgency,
+              threatType: formData.threatType,
+            }}
+            locationData={locationData}
+            onDataChange={handleInputChange}
+            onLocationRequest={requestLocationPermission}
+            onNext={handleNext}
+            onBack={handleBack}
+            errors={errors}
+          />
         );
 
       case 3:
         return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
-                <Upload className="h-5 w-5 mr-2" />
-                Upload Evidence (Optional)
-              </h3>
-              <MediaUploadSection
-                images={formData.images}
-                videos={formData.videos}
-                onImagesChange={(images) => handleInputChange('images', images)}
-                onVideosChange={(videos) => handleInputChange('videos', videos)}
-                uploading={uploading}
-              />
-            </div>
+          <EvidenceUploadStep
+            data={{
+              images: formData.images,
+              videos: formData.videos,
+            }}
+            onDataChange={handleInputChange}
+            onNext={handleNext}
+            onBack={handleBack}
+            uploading={uploading}
+          />
+        );
 
-            <Card className="border-green-200 bg-green-50">
-              <CardHeader>
-                <CardTitle className="text-green-800 flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Review Your Report
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div><strong>Reporter:</strong> {formData.isAnonymous ? 'Anonymous' : formData.reporterName}</div>
-                <div><strong>Location:</strong> {formData.state}, {formData.localGovernment}</div>
-                <div><strong>Title:</strong> {formData.reportTitle}</div>
-                <div><strong>Threat Type:</strong> {formData.threatType}</div>
-                <div><strong>Priority:</strong> {formData.urgency}</div>
-                <div><strong>Evidence:</strong> {formData.images.length} image(s), {formData.videos.length} video(s)</div>
-                <div><strong>Location Sharing:</strong> {locationData.hasPermission ? 'Enabled' : 'Disabled'}</div>
-              </CardContent>
-            </Card>
-          </div>
+      case 4:
+        return (
+          <ReviewSubmissionStep
+            data={formData}
+            locationData={locationData}
+            onBack={handleBack}
+            onSuccess={onSuccess || (() => {})}
+          />
         );
 
       default:
@@ -522,7 +206,7 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 min-h-screen">
       {/* Header */}
       <div className="text-center mb-8">
         <img 
@@ -530,24 +214,24 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
           alt="Defence Headquarters Logo" 
           className="h-16 w-16 object-contain mx-auto mb-4"
         />
-        <h1 className="text-3xl font-bold text-green-800 mb-2">Report Crime Form</h1>
+        <h1 className="text-3xl font-bold text-green-800 mb-2">Submit Crime Report</h1>
         <p className="text-green-600">Secure & Confidential Reporting System</p>
       </div>
 
-      {/* Progress Steps */}
+      {/* Progress Indicator */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           {steps.map((step, index) => (
             <div key={step.number} className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full ${
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
                 currentStep >= step.number 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-200 text-gray-600'
+                  ? 'bg-green-600 border-green-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-600'
               }`}>
                 {currentStep > step.number ? (
                   <CheckCircle className="h-5 w-5" />
                 ) : (
-                  <step.icon className="h-5 w-5" />
+                  step.number
                 )}
               </div>
               {index < steps.length - 1 && (
@@ -559,82 +243,29 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
           ))}
         </div>
         
-        <div className="text-center">
+        <div className="text-center mb-4">
           <h2 className="text-xl font-semibold text-gray-800">
             {steps[currentStep - 1]?.title}
           </h2>
-          <p className="text-gray-600">
-            {steps[currentStep - 1]?.description}
-          </p>
         </div>
         
-        <Progress value={progress} className="mt-4 h-2" />
+        <Progress value={progress} className="h-2" />
         <p className="text-sm text-gray-500 text-center mt-2">
           Step {currentStep} of {steps.length} • {Math.round(progress)}% complete
         </p>
       </div>
 
-      {/* Form Content */}
-      <Card className="border-green-200">
-        <CardContent className="p-6">
-          {renderStepContent()}
-        </CardContent>
-      </Card>
-
-      {/* Navigation */}
-      <div className="flex justify-between items-center mt-6">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleBack}
-          disabled={currentStep === 1}
-          className="flex items-center space-x-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span>Previous</span>
-        </Button>
-
-        <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <Shield className="h-4 w-4 text-green-600" />
-          <span>All data is encrypted and secure</span>
-        </div>
-
-        {currentStep === steps.length ? (
-          <Button 
-            onClick={handleSubmit}
-            disabled={loading || uploading}
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
-                <span>Submitting...</span>
-              </>
-            ) : (
-              <>
-                <CheckCircle className="h-4 w-4" />
-                <span>Submit Report</span>
-              </>
-            )}
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            onClick={handleNext}
-            className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2"
-          >
-            <span>Next</span>
-            <ArrowRight className="h-4 w-4" />
-          </Button>
-        )}
+      {/* Step Content */}
+      <div className="mb-8">
+        {renderStepContent()}
       </div>
 
-      {/* Auto-save indicator */}
-      <div className="mt-4 text-center">
-        <p className="text-sm text-green-600 flex items-center justify-center">
-          <CheckCircle className="h-4 w-4 mr-1" />
-          Your progress is automatically saved
-        </p>
+      {/* Security Notice */}
+      <div className="text-center mt-8">
+        <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
+          <Shield className="h-4 w-4" />
+          <span>All data is encrypted and secure • Your privacy is protected</span>
+        </div>
       </div>
     </div>
   );
