@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, Phone, Mail, MapPin, Smartphone, Globe, FileText, Lock, Clock, Users, AlertTriangle, CheckCircle, Eye, Mic, Heart, Star, Award } from "lucide-react";
@@ -21,13 +20,13 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Hero Section with Military Background */}
+      {/* Hero Section with New Military Background */}
       <section className="relative min-h-[80vh] flex items-center justify-center">
         {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('/lovable-uploads/24bcbf20-fabf-46c5-8b4a-82de3b711810.png')`
+            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.5)), url('/lovable-uploads/a0aa57d1-084a-4b45-b6d0-f81232c49e50.png')`
           }}
         />
         

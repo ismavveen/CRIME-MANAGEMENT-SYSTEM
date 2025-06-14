@@ -7,6 +7,7 @@ import ReporterInfoStep from "./interactive-steps/ReporterInfoStep";
 import CrimeDetailsStep from "./interactive-steps/CrimeDetailsStep";
 import EvidenceUploadStep from "./interactive-steps/EvidenceUploadStep";
 import ReviewSubmissionStep from "./interactive-steps/ReviewSubmissionStep";
+import ReportSuccessModal from "./ReportSuccessModal";
 
 interface ProgressReportFormProps {
   onSuccess?: (reportId: string, serialNumber: string) => void;
@@ -15,6 +16,9 @@ interface ProgressReportFormProps {
 const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [uploading, setUploading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submissionData, setSubmissionData] = useState<{reportId: string, serialNumber: string} | null>(null);
+  
   const [locationData, setLocationData] = useState({
     latitude: null as number | null,
     longitude: null as number | null,
@@ -139,6 +143,42 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
     }
   };
 
+  const handleSubmissionSuccess = (reportId: string, serialNumber: string) => {
+    setSubmissionData({ reportId, serialNumber });
+    setShowSuccessModal(true);
+    
+    if (onSuccess) {
+      onSuccess(reportId, serialNumber);
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    // Reset form
+    setCurrentStep(1);
+    setFormData({
+      isAnonymous: true,
+      reporterName: "",
+      reporterPhone: "",
+      reporterEmail: "",
+      state: "",
+      localGovernment: "",
+      reportTitle: "",
+      description: "",
+      urgency: "medium",
+      threatType: "",
+      images: [] as File[],
+      videos: [] as File[],
+    });
+    setLocationData({
+      latitude: null,
+      longitude: null,
+      accuracy: null,
+      hasPermission: false,
+      isLoading: false,
+    });
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -196,7 +236,7 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
             data={formData}
             locationData={locationData}
             onBack={handleBack}
-            onSuccess={onSuccess || (() => {})}
+            onSuccess={handleSubmissionSuccess}
           />
         );
 
@@ -267,6 +307,16 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
           <span>All data is encrypted and secure • Your privacy is protected</span>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && submissionData && (
+        <ReportSuccessModal
+          isOpen={showSuccessModal}
+          onClose={handleCloseSuccessModal}
+          reportId={submissionData.reportId}
+          serialNumber={submissionData.serialNumber}
+        />
+      )}
     </div>
   );
 };
