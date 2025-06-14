@@ -23,12 +23,27 @@ serve(async (req) => {
 
     console.log('Received report submission:', reportData);
 
-    // Generate serial number if not provided
-    const generateSerialNumber = () => {
-      const year = new Date().getFullYear();
-      const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-      const randomNum = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
-      return `${year}${month}${randomNum}`;
+    // Enhanced secure serial number generation with multiple layers
+    const generateSecureSerialNumber = () => {
+      const currentDate = new Date();
+      const year = currentDate.getFullYear();
+      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+      const day = currentDate.getDate().toString().padStart(2, '0');
+      
+      // Generate a more secure random component using crypto
+      const randomBytes = new Uint8Array(6);
+      crypto.getRandomValues(randomBytes);
+      const randomComponent = Array.from(randomBytes)
+        .map(b => b.toString(36))
+        .join('')
+        .substring(0, 8)
+        .toUpperCase();
+      
+      // Add timestamp component for uniqueness
+      const timestampComponent = currentDate.getTime().toString().slice(-6);
+      
+      // Combine components with DHQ prefix for official identification
+      return `DHQ${year}${month}${day}${timestampComponent}${randomComponent}`;
     };
 
     // Upload files if any
@@ -65,9 +80,34 @@ serve(async (req) => {
       }
     }
 
-    // Prepare report data for database insertion
+    // Generate unique serial number with retry logic for ultimate uniqueness
+    let serialNumber: string;
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    do {
+      serialNumber = generateSecureSerialNumber();
+      attempts++;
+      
+      // Check if serial number already exists
+      const { data: existingReport } = await supabaseClient
+        .from('reports')
+        .select('id')
+        .eq('serial_number', serialNumber)
+        .maybeSingle();
+      
+      if (!existingReport) {
+        break; // Unique serial number found
+      }
+      
+      if (attempts >= maxAttempts) {
+        throw new Error('Unable to generate unique serial number after multiple attempts');
+      }
+    } while (attempts < maxAttempts);
+
+    // Prepare report data for database insertion with secure serial number
     const dbReportData = {
-      serial_number: generateSerialNumber(),
+      serial_number: serialNumber,
       description: reportData.description,
       threat_type: reportData.threatType || reportData.threat_type,
       location: reportData.location,
@@ -102,15 +142,16 @@ serve(async (req) => {
           images: uploadedImages.length,
           videos: uploadedVideos.length,
           documents: uploadedDocuments.length
-        }
+        },
+        serialNumberGenerated: new Date().toISOString()
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
-    console.log('Inserting report data:', dbReportData);
+    console.log('Inserting report with secure serial number:', serialNumber);
 
-    // Insert the report
+    // Insert the report with the securely generated serial number
     const { data: insertedReport, error: insertError } = await supabaseClient
       .from('reports')
       .insert([dbReportData])
@@ -122,14 +163,14 @@ serve(async (req) => {
       throw insertError;
     }
 
-    console.log('Report inserted successfully:', insertedReport);
+    console.log('Report inserted successfully with serial number:', insertedReport.serial_number);
 
     return new Response(
       JSON.stringify({
         success: true,
         reportId: insertedReport.id,
         serialNumber: insertedReport.serial_number,
-        message: 'Report submitted successfully'
+        message: 'Report submitted successfully with secure reference number'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
