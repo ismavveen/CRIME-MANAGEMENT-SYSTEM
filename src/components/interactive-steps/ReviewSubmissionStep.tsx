@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Send, FileText, MapPin, User, AlertTriangle, Calendar, Phone, Mail, Image, Video, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
 
 interface ReviewSubmissionStepProps {
   data: {
@@ -32,6 +33,7 @@ interface ReviewSubmissionStepProps {
 const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewSubmissionStepProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const supabase = useSupabaseClient();
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -81,22 +83,12 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
       console.log('Submitting to edge function:', { reportData, fileCount: files.length });
 
       // Submit via edge function
-      const response = await fetch('/functions/v1/submit-report', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          reportData,
-          files
-        })
+      const { data: result, error } = await supabase.functions.invoke('submit-report', {
+        body: { reportData, files }
       });
 
-      const result = await response.json();
-      console.log('Submission response:', result);
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to submit report');
+      if (error || !result?.success) {
+        throw new Error(result?.error || error?.message || 'Failed to submit report');
       }
       
       toast({

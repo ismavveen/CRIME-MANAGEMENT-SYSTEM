@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -21,9 +20,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useNavigate } from "react-router-dom";
 
 const Navigation = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogoClick = () => {
+    navigate("/");
+  };
 
   const navigationItems = [
     {
@@ -78,8 +83,12 @@ const Navigation = () => {
     <nav className="bg-white shadow-sm border-b border-green-200 relative z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 flex-shrink-0">
+          {/* Clickable Logo */}
+          <div 
+            className="flex items-center space-x-3 flex-shrink-0 cursor-pointer" 
+            onClick={handleLogoClick}
+            style={{ userSelect: "none" }}
+          >
             <img 
               src="/lovable-uploads/0300e6fb-5eb3-4bee-9542-d2935a35734c.png" 
               alt="Defence Headquarters Logo" 
@@ -89,8 +98,7 @@ const Navigation = () => {
               <h1 className="text-lg font-bold text-green-800">Defence HQ</h1>
               <p className="text-xs text-green-600">Crime Portal</p>
             </div>
-          </Link>
-
+          </div>
           {/* Desktop Navigation - Compact */}
           <div className="hidden lg:flex items-center space-x-1 flex-1 justify-center max-w-4xl">
             {navigationItems.map((item) => (
@@ -125,13 +133,7 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Emergency Button & Mobile Menu */}
           <div className="flex items-center space-x-2 flex-shrink-0">
-            <Button variant="outline" size="sm" className="hidden md:flex border-red-600 text-red-600 hover:bg-red-50 px-3 py-2 text-sm">
-              <Phone className="mr-1 h-4 w-4" />
-              199
-            </Button>
-
             {/* Mobile Menu */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>

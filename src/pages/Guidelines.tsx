@@ -1,7 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, FileText, AlertTriangle, Camera, Phone, CheckCircle, Users, Clock } from "lucide-react";
+import { CheckCircle, FileText, Phone, Shield, AlertTriangle, MapPin, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import Navigation from "../components/Navigation";
 
@@ -9,233 +8,141 @@ const Guidelines = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
       <Navigation />
-      
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-green-800 mb-4">Crime Reporting Guidelines</h1>
-            <p className="text-green-600 text-lg">
-              Your safety is our priority. Follow these guidelines to report crimes effectively and securely.
-            </p>
-          </div>
-
-          {/* How to Report */}
-          <Card className="mb-8 border-green-200">
+        <div className="max-w-4xl mx-auto mb-10 text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-green-800 mb-4">Crime Reporting Guidelines</h1>
+          <p className="text-green-700 text-lg mb-4">
+            To ensure your report is processed promptly and accurately, please review the following guidelines.
+            Well-prepared and precise reports help security teams act swiftly and appropriately.
+          </p>
+          <p className="text-green-700 mb-6">
+            Reporting is open to all Nigerians—anonymity is guaranteed if you want it. Attach evidence where possible, and give as much location detail as you can.
+          </p>
+        </div>
+        {/* General Guidelines */}
+        <div className="space-y-6 mb-8">
+          <Card className="border-green-200">
             <CardHeader>
-              <CardTitle className="text-green-800 flex items-center text-2xl">
-                <FileText className="h-6 w-6 mr-3" />
-                How to Report a Crime
+              <CardTitle className="text-green-800 flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                General Reporting Principles
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl font-bold text-green-600">1</span>
-                  </div>
-                  <h3 className="font-semibold text-green-800 mb-2">Choose Your Method</h3>
-                  <p className="text-gray-600 text-sm">Online form, SMS, phone call, or in-person reporting</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl font-bold text-green-600">2</span>
-                  </div>
-                  <h3 className="font-semibold text-green-800 mb-2">Provide Details</h3>
-                  <p className="text-gray-600 text-sm">Accurate information about the incident and location</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl font-bold text-green-600">3</span>
-                  </div>
-                  <h3 className="font-semibold text-green-800 mb-2">Submit Evidence</h3>
-                  <p className="text-gray-600 text-sm">Photos, videos, or audio recordings if available</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl font-bold text-green-600">4</span>
-                  </div>
-                  <h3 className="font-semibold text-green-800 mb-2">Track Progress</h3>
-                  <p className="text-gray-600 text-sm">Use your reference number to monitor the report</p>
-                </div>
-              </div>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>Be as specific and detailed as possible when describing the incident.</li>
+                <li>Provide accurate location information, including addresses or landmarks.</li>
+                <li>Include dates and times of the event.</li>
+                <li>Attach any supporting evidence, such as photos or videos, if available and safe to collect.</li>
+                <li>If you choose to remain anonymous, ensure you do not include any personally identifiable information in the report details.</li>
+              </ul>
             </CardContent>
           </Card>
 
-          {/* What to Report */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <Card className="border-blue-200">
-              <CardHeader>
-                <CardTitle className="text-blue-800 flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2" />
-                  What to Report
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-blue-700 mb-2">High Priority Crimes</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Terrorism and insurgency activities</li>
-                      <li>• Kidnapping and hostage situations</li>
-                      <li>• Armed robbery and banditry</li>
-                      <li>• Cyber crimes and fraud</li>
-                      <li>• Drug trafficking</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-blue-700 mb-2">Infrastructure Threats</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Oil pipeline vandalism</li>
-                      <li>• Attacks on government facilities</li>
-                      <li>• Threats to military installations</li>
-                      <li>• Critical infrastructure damage</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-blue-700 mb-2">Community Security</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Ethnic or religious conflicts</li>
-                      <li>• Illegal arms possession</li>
-                      <li>• Suspicious activities</li>
-                      <li>• Border security issues</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-orange-200">
-              <CardHeader>
-                <CardTitle className="text-orange-800 flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  Safety Guidelines
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-orange-700 mb-2">Personal Safety</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Do not confront criminals directly</li>
-                      <li>• Report from a safe location</li>
-                      <li>• Use anonymous reporting when necessary</li>
-                      <li>• Do not share sensitive information publicly</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-orange-700 mb-2">Evidence Collection</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Only collect evidence if safe to do so</li>
-                      <li>• Do not tamper with crime scenes</li>
-                      <li>• Take photos/videos from a safe distance</li>
-                      <li>• Note important details immediately</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-orange-700 mb-2">Information Accuracy</h4>
-                    <ul className="space-y-1 text-gray-700 text-sm">
-                      <li>• Provide accurate time and location</li>
-                      <li>• Describe what you actually witnessed</li>
-                      <li>• Avoid speculation or assumptions</li>
-                      <li>• Include all relevant details</li>
-                    </ul>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Reporting Channels */}
-          <Card className="mb-8 border-purple-200">
+          {/* Anonymity */}
+          <Card className="border-green-200">
             <CardHeader>
-              <CardTitle className="text-purple-800 flex items-center">
-                <Phone className="h-5 w-5 mr-2" />
-                Available Reporting Channels
+              <CardTitle className="text-green-800 flex items-center">
+                <Shield className="h-5 w-5 mr-2" />
+                Maintaining Anonymity
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <FileText className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <h4 className="font-semibold text-purple-800 mb-1">Online Form</h4>
-                  <p className="text-gray-600 text-sm">Secure web-based reporting with file uploads</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Phone className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <h4 className="font-semibold text-purple-800 mb-1">Hotline</h4>
-                  <p className="text-gray-600 text-sm">24/7 emergency number: 199</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <span className="text-2xl text-purple-600 mx-auto mb-2 block">SMS</span>
-                  <h4 className="font-semibold text-purple-800 mb-1">Text Message</h4>
-                  <p className="text-gray-600 text-sm">Send reports via SMS to 32123</p>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Users className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <h4 className="font-semibold text-purple-800 mb-1">In Person</h4>
-                  <p className="text-gray-600 text-sm">Visit Defense HQ offices directly</p>
-                </div>
-              </div>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>When submitting a report, select the anonymous option if you wish to remain unidentified.</li>
+                <li>Do not include your name, contact information, or any other personal details in the report description.</li>
+                <li>Be aware that providing too much detail may inadvertently reveal your identity.</li>
+              </ul>
             </CardContent>
           </Card>
 
-          {/* Best Practices */}
-          <Card className="mb-8 border-teal-200">
+          {/* Types of Incidents */}
+          <Card className="border-green-200">
             <CardHeader>
-              <CardTitle className="text-teal-800 flex items-center">
-                <CheckCircle className="h-5 w-5 mr-2" />
-                Best Practices for Effective Reporting
+              <CardTitle className="text-green-800 flex items-center">
+                <AlertTriangle className="h-5 w-5 mr-2" />
+                What Types of Incidents to Report
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h4 className="font-semibold text-teal-700 mb-3 flex items-center">
-                    <Camera className="h-4 w-4 mr-2" />
-                    Evidence Documentation
-                  </h4>
-                  <ul className="space-y-2 text-gray-700 text-sm">
-                    <li>• Take clear, well-lit photos</li>
-                    <li>• Record videos with stable footage</li>
-                    <li>• Include timestamp and location data</li>
-                    <li>• Capture multiple angles if possible</li>
-                    <li>• Keep original files unedited</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-teal-700 mb-3 flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Timing and Details
-                  </h4>
-                  <ul className="space-y-2 text-gray-700 text-sm">
-                    <li>• Report incidents as soon as possible</li>
-                    <li>• Provide exact time and date</li>
-                    <li>• Include weather conditions if relevant</li>
-                    <li>• Note the number of people involved</li>
-                    <li>• Describe vehicles, clothing, or weapons</li>
-                  </ul>
-                </div>
-              </div>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>Crimes in progress or those that have already occurred.</li>
+                <li>Suspicious activities that may indicate potential threats.</li>
+                <li>Security breaches or vulnerabilities.</li>
+                <li>Acts of violence or threats to public safety.</li>
+                <li>Corruption or illegal activities within government or private sectors.</li>
+              </ul>
             </CardContent>
           </Card>
 
-          {/* Call to Action */}
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Ready to Report?</h3>
-            <p className="text-gray-600 mb-6">Choose your preferred reporting method below</p>
-            <div className="space-x-4">
-              <Link to="/report">
-                <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3">
-                  File Online Report
-                </Button>
-              </Link>
-              <Link to="/emergency-contacts">
-                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-3">
-                  Emergency Contacts
-                </Button>
-              </Link>
-            </div>
-          </div>
+          {/* Evidence */}
+          <Card className="border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-800 flex items-center">
+                <FileText className="h-5 w-5 mr-2" />
+                Submitting Evidence
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>Photos and videos should be clear and directly relevant to the incident.</li>
+                <li>Ensure that any audio recordings are audible and understandable.</li>
+                <li>Documents should be scanned or photographed clearly.</li>
+                <li>All evidence should be submitted through secure channels to protect its integrity and confidentiality.</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* Location */}
+          <Card className="border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-800 flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                Providing Location Details
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>Include the full address, if known.</li>
+                <li>Provide nearby landmarks or recognizable features.</li>
+                <li>Use GPS coordinates if available for precise locations.</li>
+                <li>Describe the environment (e.g., urban, rural, residential).</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          {/* Follow-Up */}
+          <Card className="border-green-200">
+            <CardHeader>
+              <CardTitle className="text-green-800 flex items-center">
+                <Mail className="h-5 w-5 mr-2" />
+                What to Expect After Submitting a Report
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc list-inside space-y-2 text-green-600">
+                <li>After submission, your report will be reviewed by security personnel.</li>
+                <li>If you provided contact information, you may be contacted for additional details.</li>
+                <li>Due to the volume of reports, not all submissions may receive an individual response.</li>
+                <li>All reports are taken seriously and contribute to overall security intelligence.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="text-center">
+          <Link to="/report">
+            <Button className="bg-green-700 hover:bg-green-800 mr-4">
+              <FileText className="mr-2 h-4 w-4" />
+              Start Reporting Now
+            </Button>
+          </Link>
+          <Link to="/contact">
+            <Button variant="outline" className="border-green-600 text-green-600">
+              <Phone className="mr-2 h-4 w-4" />
+              Contact Us
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
