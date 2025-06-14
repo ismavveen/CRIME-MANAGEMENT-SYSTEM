@@ -1,7 +1,8 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Shield, Users, Siren } from "lucide-react";
+import { AlertTriangle, Shield, Users, Siren, MapPin } from "lucide-react";
 import Navigation from "../components/Navigation";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Emergency = () => {
   const emergencyServices = [
@@ -34,6 +35,7 @@ const Emergency = () => {
       icon: Users
     }
   ];
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
       <Navigation />
@@ -63,6 +65,16 @@ const Emergency = () => {
                 </Card>
               );
             })}
+          </div>
+          {/* Add link to Emergency Location Sharing */}
+          <div className="mb-8 text-center">
+            <Button
+              className="bg-green-600 text-white text-lg font-semibold px-8 py-4 rounded shadow-lg inline-flex items-center"
+              onClick={() => navigate("/emergency-location")}
+            >
+              <MapPin className="mr-2 h-6 w-6" />
+              Emergency Location Sharing
+            </Button>
           </div>
           <div className="max-w-3xl mx-auto text-center border-t border-red-100 pt-8 mt-8">
             <h2 className="text-2xl text-red-800 font-bold mb-2">When should I use these hotlines?</h2>

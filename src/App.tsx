@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +27,7 @@ import TrackReport from "./pages/TrackReport";
 import ReportCrimeWithChat from "./pages/ReportCrimeWithChat";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import EmergencyLocation from "./pages/EmergencyLocation";
 
 const queryClient = new QueryClient();
 
@@ -95,6 +95,8 @@ function App() {
                   <CommanderPortal />
                 </ProtectedRoute>
               } />
+              
+              <Route path="/emergency-location" element={<EmergencyLocation />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
