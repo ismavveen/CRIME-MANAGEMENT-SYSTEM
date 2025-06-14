@@ -32,20 +32,22 @@ const Navigation = () => {
       items: [
         { title: 'New Report', href: '/report', icon: FileText },
         { title: 'Anonymous Report', href: '/report?anonymous=true', icon: Shield },
+        { title: 'Track Report', href: '/track-report', icon: MapPin },
       ]
     },
     {
       title: 'Emergency',
       icon: AlertTriangle,
       items: [
+        { title: 'Emergency Services', href: '/emergency', icon: AlertTriangle },
         { title: 'Hotline Numbers', href: '/emergency-contacts', icon: Phone },
-        { title: 'Immediate Help', href: '/emergency-help', icon: MapPin },
       ]
     },
     {
       title: 'Guidelines',
       icon: Shield,
       items: [
+        { title: 'Reporting Guidelines', href: '/guidelines', icon: Shield },
         { title: 'How to Report', href: '/how-to-report', icon: FileText },
         { title: 'What to Report', href: '/what-to-report', icon: AlertTriangle },
       ]
@@ -54,15 +56,15 @@ const Navigation = () => {
       title: 'Contact',
       icon: MessageSquare,
       items: [
-        { title: 'Feedback', href: '/feedback', icon: MessageSquare },
-        { title: 'Contact DHQ', href: '/contact', icon: Phone },
+        { title: 'Contact DHQ', href: '/contact', icon: MessageSquare },
+        { title: 'Emergency Contacts', href: '/emergency-contacts', icon: Phone },
       ]
     },
     {
       title: 'Resources',
       icon: Download,
       items: [
-        { title: 'Downloads', href: '/downloads', icon: Download },
+        { title: 'Downloads & Resources', href: '/resources', icon: Download },
       ]
     },
     {
@@ -101,7 +103,7 @@ const Navigation = () => {
                       <ChevronDown className="h-3 w-3 ml-1" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-48 z-50">
+                  <DropdownMenuContent align="start" className="w-48 z-50 bg-white">
                     {item.items.map((subItem) => (
                       <DropdownMenuItem key={subItem.title} asChild>
                         <Link to={subItem.href} className="flex items-center text-sm">
@@ -137,7 +139,7 @@ const Navigation = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="right" className="w-80 z-50">
+              <SheetContent side="right" className="w-80 z-50 bg-white">
                 <div className="py-6">
                   <div className="space-y-4">
                     {navigationItems.map((item) => (
