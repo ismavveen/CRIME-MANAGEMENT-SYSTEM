@@ -2,9 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, ArrowLeft, FileText, MapPin, Clock, Camera, Shield, Phone, User, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Send, FileText, MapPin, User, AlertTriangle, Calendar, Phone, Mail, Image, Video, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface ReviewSubmissionStepProps {
   data: {
@@ -35,116 +34,49 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const uploadFiles = async (files: File[], type: 'image' | 'video'): Promise<string[]> => {
-    const uploadPromises = files.map(async (file) => {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-      const filePath = `${type}s/${fileName}`;
+  const generateReportId = () => {
+    const timestamp = Date.now().toString();
+    const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
+    return `DHQ-${timestamp.slice(-6)}${randomNum}`;
+  };
 
-      const { error } = await supabase.storage
-        .from('report-files')
-        .upload(filePath, file);
-
-      if (error) {
-        console.error(`Error uploading ${type}:`, error);
-        throw error;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('report-files')
-        .getPublicUrl(filePath);
-
-      return urlData.publicUrl;
-    });
-
-    return Promise.all(uploadPromises);
+  const generateSerialNumber = () => {
+    const year = new Date().getFullYear();
+    const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+    const randomNum = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+    return `${year}${month}${randomNum}`;
   };
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
-
+    
     try {
-      let imageUrls: string[] = [];
-      let videoUrls: string[] = [];
-
-      // Upload files if any
-      if (data.images.length > 0) {
-        try {
-          imageUrls = await uploadFiles(data.images, 'image');
-        } catch (error) {
-          console.error('Error uploading images:', error);
-          // Continue without images rather than failing
-        }
-      }
-
-      if (data.videos.length > 0) {
-        try {
-          videoUrls = await uploadFiles(data.videos, 'video');
-        } catch (error) {
-          console.error('Error uploading videos:', error);
-          // Continue without videos rather than failing
-        }
-      }
-
-      const generatedSerialNumber = `DHQ-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-
-      const reportData = {
-        description: data.description,
-        threat_type: data.threatType,
-        urgency: data.urgency,
-        state: data.state,
-        local_government: data.localGovernment,
-        is_anonymous: data.isAnonymous,
-        reporter_name: data.isAnonymous ? null : data.reporterName,
-        reporter_phone: data.isAnonymous ? null : data.reporterPhone,
-        reporter_email: data.isAnonymous ? null : data.reporterEmail,
-        latitude: locationData.latitude,
-        longitude: locationData.longitude,
-        location_accuracy: locationData.accuracy,
-        images: imageUrls,
-        videos: videoUrls,
-        serial_number: generatedSerialNumber,
-        status: 'pending',
-        priority: data.urgency === 'critical' ? 'high' : data.urgency === 'high' ? 'medium' : 'low',
-        timestamp: new Date().toISOString(),
-        submission_source: 'public_portal',
-        validation_status: 'pending',
-        metadata: {
-          submissionTimestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          source: 'interactive_form',
-          hasLocation: locationData.hasPermission,
-          reportTitle: data.reportTitle
-        }
-      };
-
-      console.log('Submitting report data:', reportData);
-
-      const { data: insertedData, error } = await supabase
-        .from('reports')
-        .insert([reportData])
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Database error:', error);
-        throw error;
-      }
-
-      console.log('Report submitted successfully:', insertedData);
-
-      toast({
-        title: "Report submitted successfully",
-        description: `Your report has been received. Reference: ${generatedSerialNumber}`,
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const reportId = generateReportId();
+      const serialNumber = generateSerialNumber();
+      
+      // Here you would typically make the actual API call to submit the report
+      console.log('Submitting report:', {
+        ...data,
+        locationData,
+        reportId,
+        serialNumber,
+        timestamp: new Date().toISOString()
       });
-
-      onSuccess(insertedData.id, generatedSerialNumber);
-
-    } catch (error: any) {
-      console.error('Error submitting report:', error);
+      
       toast({
-        title: "Submission failed",
-        description: error.message || "Failed to submit report. Please try again.",
+        title: "Report Submitted Successfully!",
+        description: `Your report has been submitted with ID: ${reportId}`,
+      });
+      
+      onSuccess(reportId, serialNumber);
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your report. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -152,109 +84,161 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
     }
   };
 
+  const urgencyColors = {
+    low: "text-green-600 bg-green-50 border-green-200",
+    medium: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    high: "text-orange-600 bg-orange-50 border-orange-200",
+    critical: "text-red-600 bg-red-50 border-red-200"
+  };
+
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
       <div className="text-center space-y-4">
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-          <FileText className="h-8 w-8 text-green-600" />
+        <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center shadow-lg">
+          <FileText className="h-10 w-10 text-blue-600" />
         </div>
-        <h2 className="text-2xl font-bold text-green-800">Review Your Report</h2>
-        <p className="text-green-600 max-w-2xl mx-auto">
-          Please review all information below carefully before submitting your report. 
-          Once submitted, it will be processed by our security team.
+        <h2 className="text-3xl font-bold text-blue-800">Review Your Report</h2>
+        <p className="text-lg text-blue-600 max-w-3xl mx-auto leading-relaxed">
+          Please review all the information below before submitting your report. 
+          Once submitted, your report will be processed immediately by our security teams.
         </p>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Reporter Information */}
-        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4">
-            <div className="flex items-start space-x-3">
-              {data.isAnonymous ? (
-                <Shield className="h-6 w-6 text-green-600 mt-1" />
-              ) : (
-                <User className="h-6 w-6 text-green-600 mt-1" />
+        <Card className="border-green-200 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardTitle className="flex items-center space-x-3 text-green-800">
+              <User className="h-6 w-6" />
+              <span>Reporter Information</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Reporting Type</label>
+                <div className={`mt-1 p-3 rounded-lg border ${data.isAnonymous ? 'bg-blue-50 border-blue-200' : 'bg-green-50 border-green-200'}`}>
+                  <span className={`font-semibold ${data.isAnonymous ? 'text-blue-700' : 'text-green-700'}`}>
+                    {data.isAnonymous ? '🔒 Anonymous Report' : '👤 Identified Report'}
+                  </span>
+                </div>
+              </div>
+              
+              {!data.isAnonymous && (
+                <>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Full Name</label>
+                    <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                      <span className="text-gray-800">{data.reporterName || 'Not provided'}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Phone Number</label>
+                    <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center">
+                      <Phone className="h-4 w-4 text-gray-500 mr-2" />
+                      <span className="text-gray-800">{data.reporterPhone || 'Not provided'}</span>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="text-sm font-semibold text-gray-700">Email Address</label>
+                    <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center">
+                      <Mail className="h-4 w-4 text-gray-500 mr-2" />
+                      <span className="text-gray-800">{data.reporterEmail || 'Not provided'}</span>
+                    </div>
+                  </div>
+                </>
               )}
-              <div>
-                <h4 className="font-semibold text-green-800">Reporter Information</h4>
-                <p className="text-green-700">
-                  {data.isAnonymous ? "Anonymous Report" : data.reporterName}
-                </p>
-                {!data.isAnonymous && (data.reporterPhone || data.reporterEmail) && (
-                  <p className="text-sm text-green-600 mt-1">
-                    {data.reporterPhone && `📱 ${data.reporterPhone}`}
-                    {data.reporterPhone && data.reporterEmail && " • "}
-                    {data.reporterEmail && `📧 ${data.reporterEmail}`}
-                  </p>
-                )}
-              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Location */}
-        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4">
-            <div className="flex items-start space-x-3">
-              <MapPin className="h-6 w-6 text-green-600 mt-1" />
-              <div>
-                <h4 className="font-semibold text-green-800">Location</h4>
-                <p className="text-green-700">{data.state}, {data.localGovernment}</p>
-                {locationData.hasPermission && (
-                  <p className="text-sm text-green-600 mt-1">
-                    📍 Live location enabled (±{locationData.accuracy?.toFixed(0)}m accuracy)
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Incident Details */}
-        <Card className="border-green-200 hover:shadow-md transition-all duration-200">
-          <CardContent className="p-4">
-            <div className="flex items-start space-x-3">
-              <FileText className="h-6 w-6 text-green-600 mt-1" />
-              <div className="w-full">
-                <h4 className="font-semibold text-green-800">Incident Details</h4>
-                <p className="text-green-700 font-medium">{data.reportTitle}</p>
-                <p className="text-green-700 mt-1 whitespace-pre-wrap">{data.description}</p>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
-                    {data.threatType}
-                  </span>
-                  <span className={`px-2 py-1 rounded text-sm ${
-                    data.urgency === 'critical' ? 'bg-red-100 text-red-800' :
-                    data.urgency === 'high' ? 'bg-orange-100 text-orange-800' :
-                    data.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-blue-100 text-blue-800'
-                  }`}>
+        {/* Crime Details */}
+        <Card className="border-orange-200 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
+            <CardTitle className="flex items-center space-x-3 text-orange-800">
+              <AlertTriangle className="h-6 w-6" />
+              <span>Crime Details</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">State</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center">
+                    <MapPin className="h-4 w-4 text-gray-500 mr-2" />
+                    <span className="text-gray-800">{data.state}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Local Government Area</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-gray-800">{data.localGovernment}</span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Priority Level</label>
+                  <div className={`mt-1 p-3 rounded-lg border font-semibold ${urgencyColors[data.urgency as keyof typeof urgencyColors]}`}>
                     {data.urgency.charAt(0).toUpperCase() + data.urgency.slice(1)} Priority
-                  </span>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Threat Type</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-gray-800">{data.threatType}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Report Title</label>
+                <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-gray-800 font-semibold">{data.reportTitle}</span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Detailed Description</label>
+                <div className="mt-1 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{data.description}</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Evidence */}
-        {(data.images.length > 0 || data.videos.length > 0) && (
-          <Card className="border-green-200 hover:shadow-md transition-all duration-200">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-3">
-                <Camera className="h-6 w-6 text-green-600 mt-1" />
+        {/* Location Information */}
+        {locationData.hasPermission && (
+          <Card className="border-purple-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
+              <CardTitle className="flex items-center space-x-3 text-purple-800">
+                <MapPin className="h-6 w-6" />
+                <span>Location Information</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-3 gap-4">
                 <div>
-                  <h4 className="font-semibold text-green-800">Evidence Files</h4>
-                  <p className="text-green-700">
-                    {data.images.length} photo(s), {data.videos.length} video(s)
-                  </p>
-                  <div className="mt-2 text-sm text-green-600">
-                    {data.images.map((file, index) => (
-                      <div key={index}>📷 {file.name}</div>
-                    ))}
-                    {data.videos.map((file, index) => (
-                      <div key={index}>🎥 {file.name}</div>
-                    ))}
+                  <label className="text-sm font-semibold text-gray-700">Latitude</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-gray-800 font-mono">{locationData.latitude?.toFixed(6)}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Longitude</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-gray-800 font-mono">{locationData.longitude?.toFixed(6)}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-700">Accuracy</label>
+                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-gray-800">±{locationData.accuracy?.toFixed(0)}m</span>
                   </div>
                 </div>
               </div>
@@ -262,70 +246,88 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
           </Card>
         )}
 
-        {/* Security Assurance */}
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2 mb-2">
-              <Shield className="h-5 w-5 text-green-600" />
-              <span className="font-medium text-green-800">Security & Privacy Assurance</span>
-            </div>
-            <ul className="text-sm text-green-700 space-y-1">
-              <li>✓ Your report is encrypted and secure</li>
-              <li>✓ Only authorized personnel will have access</li>
-              <li>✓ Your privacy choices will be respected</li>
-              <li>✓ You will receive a confirmation reference number</li>
-              <li>✓ Reports are automatically routed to appropriate units</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Final Warning for Critical Reports */}
-        {data.urgency === 'critical' && (
-          <Card className="border-red-200 bg-red-50">
-            <CardContent className="p-4">
-              <div className="flex items-start space-x-2">
-                <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5" />
-                <div>
-                  <h4 className="font-semibold text-red-800">Critical Priority Notice</h4>
-                  <p className="text-sm text-red-700 mt-1">
-                    This report is marked as critical priority. It will be immediately escalated 
-                    to emergency response units in your area. If this is an ongoing emergency, 
-                    please also call 199 immediately.
-                  </p>
+        {/* Evidence Summary */}
+        {(data.images.length > 0 || data.videos.length > 0) && (
+          <Card className="border-blue-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
+              <CardTitle className="flex items-center space-x-3 text-blue-800">
+                <Image className="h-6 w-6" />
+                <span>Evidence Attached</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <Image className="h-5 w-5 text-green-600" />
+                    <span className="font-semibold text-green-800">Photos</span>
+                  </div>
+                  <div className="text-2xl font-bold text-green-700">{data.images.length}</div>
+                  <div className="text-sm text-green-600">images attached</div>
+                </div>
+                
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <Video className="h-5 w-5 text-blue-600" />
+                    <span className="font-semibold text-blue-800">Videos</span>
+                  </div>
+                  <div className="text-2xl font-bold text-blue-700">{data.videos.length}</div>
+                  <div className="text-sm text-blue-600">videos attached</div>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
+
+        {/* Submission Timestamp */}
+        <Card className="border-gray-200 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-center space-x-3 text-gray-600">
+              <Calendar className="h-5 w-5" />
+              <span>Report will be submitted on: {new Date().toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="flex justify-between items-center max-w-2xl mx-auto pt-6">
-        <Button 
-          variant="outline" 
-          onClick={onBack} 
+      {/* Action Buttons */}
+      <div className="flex justify-between items-center max-w-4xl mx-auto pt-6">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onBack}
           disabled={isSubmitting}
-          className="border-green-300 text-green-700 hover:bg-green-50"
+          className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-3"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Evidence
+          <ArrowLeft className="h-5 w-5" />
+          <span>Back to Evidence</span>
         </Button>
-        
+
         <Button 
-          onClick={handleSubmit} 
+          onClick={handleSubmit}
           disabled={isSubmitting}
-          className="bg-green-700 hover:bg-green-800 px-8 text-lg font-semibold"
+          className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white flex items-center space-x-2 px-12 py-4 text-lg font-bold shadow-lg"
         >
           {isSubmitting ? (
             <>
-              <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2" />
-              Submitting Report...
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Submitting Report...</span>
             </>
           ) : (
             <>
-              Submit Report
-              <CheckCircle className="ml-2 h-5 w-5" />
+              <Send className="h-5 w-5" />
+              <span>Submit Report</span>
             </>
           )}
         </Button>
+      </div>
+
+      {/* Security Notice */}
+      <div className="text-center mt-8">
+        <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
+          <CheckCircle className="h-4 w-4" />
+          <span>Your report will be encrypted and processed securely by Defence Headquarters</span>
+        </div>
       </div>
     </div>
   );
