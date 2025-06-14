@@ -15,9 +15,9 @@ export interface AuditLog {
   metadata?: any;
   timestamp: string;
   session_id?: string;
-  ip_address?: string;
-  user_agent?: string;
-  access_method?: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  access_method?: string | null;
   severity_level: string;
   is_sensitive: boolean;
   created_at: string;
@@ -90,7 +90,16 @@ export const useAuditLogs = () => {
       const { data, error } = await query;
 
       if (error) throw error;
-      setAuditLogs(data || []);
+      
+      // Type assertion to handle the IP address type conversion
+      const typedData = (data || []).map(log => ({
+        ...log,
+        ip_address: log.ip_address as string | null,
+        user_agent: log.user_agent as string | null,
+        access_method: log.access_method as string | null
+      })) as AuditLog[];
+      
+      setAuditLogs(typedData);
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);
       toast({
@@ -115,7 +124,19 @@ export const useAuditLogs = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      
+      // Type assertion for nested audit_log data
+      const typedData = (data || []).map(trail => ({
+        ...trail,
+        audit_log: trail.audit_log ? {
+          ...trail.audit_log,
+          ip_address: trail.audit_log.ip_address as string | null,
+          user_agent: trail.audit_log.user_agent as string | null,
+          access_method: trail.audit_log.access_method as string | null
+        } : undefined
+      })) as ReportAuditTrail[];
+      
+      return typedData;
     } catch (error: any) {
       console.error('Error fetching report audit trail:', error);
       toast({
@@ -139,7 +160,19 @@ export const useAuditLogs = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      
+      // Type assertion for nested audit_log data
+      const typedData = (data || []).map(accessLog => ({
+        ...accessLog,
+        audit_log: accessLog.audit_log ? {
+          ...accessLog.audit_log,
+          ip_address: accessLog.audit_log.ip_address as string | null,
+          user_agent: accessLog.audit_log.user_agent as string | null,
+          access_method: accessLog.audit_log.access_method as string | null
+        } : undefined
+      })) as ReportAccessLog[];
+      
+      return typedData;
     } catch (error: any) {
       console.error('Error fetching access logs:', error);
       toast({

@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +26,7 @@ import HowToReport from "./pages/HowToReport";
 import WhatToReport from "./pages/WhatToReport";
 import TrackReport from "./pages/TrackReport";
 import ReportCrimeWithChat from "./pages/ReportCrimeWithChat";
+import AuditDashboard from "./pages/AuditDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EmergencyLocation from "./pages/EmergencyLocation";
@@ -36,8 +38,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <Toaster />
-          <Sonner />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -95,12 +95,19 @@ function App() {
                   <CommanderPortal />
                 </ProtectedRoute>
               } />
+              <Route path="/audit" element={
+                <ProtectedRoute>
+                  <AuditDashboard />
+                </ProtectedRoute>
+              } />
               
               <Route path="/emergency-location" element={<EmergencyLocation />} />
               
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
+          <Toaster />
+          <Sonner />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
