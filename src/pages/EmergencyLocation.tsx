@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 import { MapPin, Shield, AlertTriangle, ArrowLeft } from "lucide-react";
 import Navigation from "../components/Navigation";
 import { useNavigate } from "react-router-dom";
+import { useGoogleMaps } from "../hooks/useGoogleMaps";
 
 const AUTHORITY_NAME = "Defence Headquarters Emergency Response";
 
@@ -28,49 +30,39 @@ const EmergencyLocation = () => {
   const [watchId, setWatchId] = useState<number | null>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
+  const { isLoaded: mapLoaded, error: mapError } = useGoogleMaps();
 
-  // Update map marker when location changes
+  // Update map marker when location changes and map is loaded
   useEffect(() => {
-    if (location && mapRef.current && window.google) {
-      const map = new window.google.maps.Map(mapRef.current, {
-        center: { lat: location.latitude, lng: location.longitude },
-        zoom: 17,
-      });
-      new window.google.maps.Marker({
-        position: { lat: location.latitude, lng: location.longitude },
-        map,
-        icon: {
-          path: window.google.maps.SymbolPath.CIRCLE,
-          scale: 12,
-          fillColor: "#22c55e",
-          fillOpacity: 0.9,
-          strokeWeight: 2,
-          strokeColor: "#be123c"
-        },
-        title: "You"
-      });
+    if (location && mapRef.current && mapLoaded && window.google) {
+      console.log("Creating map with location:", location);
+      try {
+        const map = new window.google.maps.Map(mapRef.current, {
+          center: { lat: location.latitude, lng: location.longitude },
+          zoom: 17,
+        });
+        
+        new window.google.maps.Marker({
+          position: { lat: location.latitude, lng: location.longitude },
+          map,
+          icon: {
+            path: window.google.maps.SymbolPath.CIRCLE,
+            scale: 12,
+            fillColor: "#22c55e",
+            fillOpacity: 0.9,
+            strokeWeight: 2,
+            strokeColor: "#be123c"
+          },
+          title: "Your Current Location"
+        });
+        
+        console.log("Map and marker created successfully");
+      } catch (err) {
+        console.error("Error creating map:", err);
+        setError("Failed to load map. Please try again.");
+      }
     }
-  }, [location]);
-
-  // Load Google Maps API only when needed
-  const [mapLoaded, setMapLoaded] = useState(false);
-  useEffect(() => {
-    if (sharing && !window.google && !mapLoaded) {
-      // Only load script if needed
-      const script = document.createElement("script");
-      script.src =
-        "https://maps.googleapis.com/maps/api/js?key=AIzaSyDwhXSGX7S9ISS4LF2UUzRnXQobS2MYWMI";
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-      return () => {
-        document.head.removeChild(script);
-      };
-    } else if (window.google) {
-      setMapLoaded(true);
-    }
-  }, [sharing, mapLoaded]);
+  }, [location, mapLoaded]);
 
   // Stop sharing location
   const stopSharing = () => {
@@ -81,6 +73,7 @@ const EmergencyLocation = () => {
     setLocation(null);
     setSharing(false);
     setError(null);
+    console.log("Location sharing stopped");
   };
 
   // Start real-time location sharing
@@ -94,10 +87,14 @@ const EmergencyLocation = () => {
       setError("Geolocation is not supported by your browser.");
       return;
     }
+    
+    console.log("Starting location sharing...");
     setSharing(true);
     setError(null);
+    
     const id = navigator.geolocation.watchPosition(
       (pos) => {
+        console.log("Location updated:", pos.coords);
         setLocation({
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude,
@@ -106,10 +103,15 @@ const EmergencyLocation = () => {
         setError(null);
       },
       (e) => {
-        setError("Unable to retrieve your location. Please check permissions.");
+        console.error("Geolocation error:", e);
+        setError("Unable to retrieve your location. Please check permissions and try again.");
         setSharing(false);
       },
-      { enableHighAccuracy: true }
+      { 
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 1000
+      }
     );
     setWatchId(id);
   };
@@ -166,6 +168,7 @@ const EmergencyLocation = () => {
             </div>
           </CardContent>
         </Card>
+
         {/* Warning Message */}
         <Card className="mb-6 border-l-4 border-red-600 bg-red-50">
           <CardContent className="p-4 flex items-center">
@@ -175,6 +178,17 @@ const EmergencyLocation = () => {
             </span>
           </CardContent>
         </Card>
+
+        {/* Map Loading Error */}
+        {mapError && (
+          <Card className="mb-6 border-l-4 border-red-600 bg-red-50">
+            <CardContent className="p-4">
+              <div className="text-red-700">
+                Map loading error: {mapError}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action Button & Info */}
         {!sharing && (
@@ -228,21 +242,38 @@ const EmergencyLocation = () => {
               {error && (
                 <div className="bg-red-100 text-red-700 p-2 mb-2 rounded">{error}</div>
               )}
-              <div ref={mapRef} className="w-full h-56 rounded-lg border border-green-100 shadow-sm mb-4 bg-gray-100" />
+              
+              {/* Map Container */}
+              <div className="w-full h-56 rounded-lg border border-green-100 shadow-sm mb-4 bg-gray-100 relative">
+                {!mapLoaded ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-gray-500">Loading map...</div>
+                  </div>
+                ) : (
+                  <div ref={mapRef} className="w-full h-full rounded-lg" />
+                )}
+              </div>
+
               {location && (
                 <div className="mb-4 text-center text-green-800">
-                  Sharing live: <span className="font-mono">{location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}</span>
+                  <div className="font-semibold">Live Location:</div>
+                  <div className="font-mono text-sm">
+                    {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                  </div>
                   {location.accuracy && (
-                    <span className="ml-2 text-xs text-gray-500">(±{location.accuracy.toFixed(0)}m)</span>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Accuracy: ±{location.accuracy.toFixed(0)} meters
+                    </div>
                   )}
                 </div>
               )}
+              
               <Button
                 variant="destructive"
                 className="w-full font-bold text-lg py-4"
                 onClick={stopSharing}
               >
-                Stop Sharing
+                Stop Sharing Location
               </Button>
             </CardContent>
           </Card>
