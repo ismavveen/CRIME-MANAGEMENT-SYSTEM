@@ -23,6 +23,14 @@ serve(async (req) => {
 
     console.log('Received report submission:', reportData);
 
+    // Generate serial number if not provided
+    const generateSerialNumber = () => {
+      const year = new Date().getFullYear();
+      const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
+      const randomNum = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
+      return `${year}${month}${randomNum}`;
+    };
+
     // Upload files if any
     let uploadedImages: string[] = [];
     let uploadedVideos: string[] = [];
@@ -30,9 +38,10 @@ serve(async (req) => {
 
     if (files && files.length > 0) {
       for (const file of files) {
+        const fileName = `${Date.now()}-${file.name}`;
         const { data: fileData, error: fileError } = await supabaseClient.storage
           .from('report-files')
-          .upload(`${Date.now()}-${file.name}`, file.data, {
+          .upload(fileName, file.data, {
             contentType: file.type,
           });
 
@@ -58,6 +67,7 @@ serve(async (req) => {
 
     // Prepare report data for database insertion
     const dbReportData = {
+      serial_number: generateSerialNumber(),
       description: reportData.description,
       threat_type: reportData.threatType || reportData.threat_type,
       location: reportData.location,
@@ -93,8 +103,12 @@ serve(async (req) => {
           videos: uploadedVideos.length,
           documents: uploadedDocuments.length
         }
-      }
+      },
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+
+    console.log('Inserting report data:', dbReportData);
 
     // Insert the report
     const { data: insertedReport, error: insertError } = await supabaseClient
@@ -109,24 +123,6 @@ serve(async (req) => {
     }
 
     console.log('Report inserted successfully:', insertedReport);
-
-    // Create a submission tracking record
-    const { error: submissionError } = await supabaseClient
-      .from('report_submissions')
-      .insert([{
-        report_id: insertedReport.id,
-        processing_status: 'received',
-        file_upload_status: {
-          images: uploadedImages.length,
-          videos: uploadedVideos.length,
-          documents: uploadedDocuments.length,
-          totalFiles: files?.length || 0
-        }
-      }]);
-
-    if (submissionError) {
-      console.error('Submission tracking error:', submissionError);
-    }
 
     return new Response(
       JSON.stringify({

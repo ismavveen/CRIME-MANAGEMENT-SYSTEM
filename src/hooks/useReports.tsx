@@ -94,20 +94,28 @@ export const useReports = () => {
 
   const fetchReports = async () => {
     try {
+      setLoading(true);
+      console.log('Fetching reports from database...');
+      
       const { data, error } = await supabase
         .from('reports')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching reports:', error);
+        throw error;
+      }
       
+      console.log('Raw reports data:', data);
       const typedReports = (data || []).map(mapDatabaseToReport);
+      console.log('Mapped reports:', typedReports);
       setReports(typedReports);
     } catch (error: any) {
       console.error('Error fetching reports:', error);
       toast({
         title: "Failed to load reports",
-        description: error.message,
+        description: error.message || 'Unknown error occurred',
         variant: "destructive",
       });
     } finally {
@@ -117,7 +125,10 @@ export const useReports = () => {
 
   const updateReportStatus = async (reportId: string, status: string, assignedTo?: string) => {
     try {
-      const updateData: Record<string, any> = { status };
+      const updateData: Record<string, any> = { 
+        status,
+        updated_at: new Date().toISOString()
+      };
       if (assignedTo) {
         updateData.assigned_to = assignedTo;
       }
@@ -134,7 +145,8 @@ export const useReports = () => {
         description: `Report status updated to ${status}`,
       });
 
-      fetchReports();
+      // Immediately refresh reports
+      await fetchReports();
     } catch (error: any) {
       console.error('Error updating report:', error);
       toast({
@@ -170,9 +182,11 @@ export const useReports = () => {
   };
 
   useEffect(() => {
+    // Initial fetch
     fetchReports();
 
-    // Real-time subscription for immediate updates
+    // Set up real-time subscription
+    console.log('Setting up real-time subscription...');
     const channel = supabase
       .channel('reports-realtime')
       .on('postgres_changes', {
@@ -180,7 +194,7 @@ export const useReports = () => {
         schema: 'public',
         table: 'reports'
       }, (payload) => {
-        console.log('New report received:', payload);
+        console.log('New report received via realtime:', payload);
         const newReport = mapDatabaseToReport(payload.new);
         setReports(prev => [newReport, ...prev]);
         
@@ -194,7 +208,7 @@ export const useReports = () => {
         schema: 'public',
         table: 'reports'
       }, (payload) => {
-        console.log('Report updated:', payload);
+        console.log('Report updated via realtime:', payload);
         const updatedReport = mapDatabaseToReport(payload.new);
         
         setReports(prev => prev.map(report => 
@@ -206,12 +220,15 @@ export const useReports = () => {
         schema: 'public',
         table: 'reports'
       }, (payload) => {
-        console.log('Report deleted:', payload);
+        console.log('Report deleted via realtime:', payload);
         setReports(prev => prev.filter(report => report.id !== payload.old.id));
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up realtime subscription...');
       supabase.removeChannel(channel);
     };
   }, [toast]);

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,49 +33,83 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const generateReportId = () => {
-    const timestamp = Date.now().toString();
-    const randomNum = Math.floor(Math.random() * 9999).toString().padStart(4, '0');
-    return `DHQ-${timestamp.slice(-6)}${randomNum}`;
-  };
-
-  const generateSerialNumber = () => {
-    const year = new Date().getFullYear();
-    const month = (new Date().getMonth() + 1).toString().padStart(2, '0');
-    const randomNum = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
-    return `${year}${month}${randomNum}`;
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('Starting report submission...');
       
-      const reportId = generateReportId();
-      const serialNumber = generateSerialNumber();
+      // Prepare form data for submission
+      const reportData = {
+        description: data.description,
+        threatType: data.threatType,
+        urgency: data.urgency,
+        state: data.state,
+        localGovernment: data.localGovernment,
+        location: `${data.state}, ${data.localGovernment}`,
+        isAnonymous: data.isAnonymous,
+        reporterName: data.isAnonymous ? null : data.reporterName,
+        reporterPhone: data.isAnonymous ? null : data.reporterPhone,
+        reporterEmail: data.isAnonymous ? null : data.reporterEmail,
+        latitude: locationData.latitude,
+        longitude: locationData.longitude,
+        locationAccuracy: locationData.accuracy
+      };
+
+      // Prepare files for upload
+      const files: any[] = [];
       
-      // Here you would typically make the actual API call to submit the report
-      console.log('Submitting report:', {
-        ...data,
-        locationData,
-        reportId,
-        serialNumber,
-        timestamp: new Date().toISOString()
+      // Convert File objects to uploadable format
+      for (const image of data.images) {
+        const arrayBuffer = await image.arrayBuffer();
+        files.push({
+          name: image.name,
+          type: image.type,
+          data: Array.from(new Uint8Array(arrayBuffer))
+        });
+      }
+      
+      for (const video of data.videos) {
+        const arrayBuffer = await video.arrayBuffer();
+        files.push({
+          name: video.name,
+          type: video.type,
+          data: Array.from(new Uint8Array(arrayBuffer))
+        });
+      }
+
+      console.log('Submitting to edge function:', { reportData, fileCount: files.length });
+
+      // Submit via edge function
+      const response = await fetch('/functions/v1/submit-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reportData,
+          files
+        })
       });
+
+      const result = await response.json();
+      console.log('Submission response:', result);
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to submit report');
+      }
       
       toast({
         title: "Report Submitted Successfully!",
-        description: `Your report has been submitted with ID: ${reportId}`,
+        description: `Your report has been submitted with ID: ${result.reportId}`,
       });
       
-      onSuccess(reportId, serialNumber);
-    } catch (error) {
+      onSuccess(result.reportId, result.serialNumber);
+    } catch (error: any) {
       console.error('Submission error:', error);
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your report. Please try again.",
+        description: error.message || "There was an error submitting your report. Please try again.",
         variant: "destructive",
       });
     } finally {
