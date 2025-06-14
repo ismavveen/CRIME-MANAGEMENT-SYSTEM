@@ -1,7 +1,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Copy, Download, Share2 } from "lucide-react";
+import { CheckCircle, Copy, Download, Share2, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ReportSuccessModalProps {
