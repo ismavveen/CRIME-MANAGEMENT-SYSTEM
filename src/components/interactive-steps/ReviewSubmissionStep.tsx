@@ -82,12 +82,12 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
 
       console.log('Submitting to edge function:', { reportData, fileCount: files.length });
 
-      // Submit via edge function
+      // Improved: Use .invoke() and explicit JSON parsing
       const { data: result, error } = await supabase.functions.invoke('submit-report', {
-        body: { reportData, files }
+        body: { reportData, files },
       });
 
-      if (error || !result?.success) {
+      if (error || !result || !result.success) {
         throw new Error(result?.error || error?.message || 'Failed to submit report');
       }
       

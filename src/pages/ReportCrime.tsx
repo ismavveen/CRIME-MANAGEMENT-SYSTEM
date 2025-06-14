@@ -1,19 +1,16 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Phone, Shield, Clock, FileText, AlertTriangle, Users, Mail, MapPin, Lock, CheckCircle, Menu, X, ChevronDown } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { FileText, AlertTriangle } from 'lucide-react';
 import ProgressReportForm from '@/components/ProgressReportForm';
 import ReportSuccessModal from '@/components/ReportSuccessModal';
-import Navigation from "@/components/Navigation"; // Use navigation bar
+import Navigation from "@/components/Navigation";
 
 const ReportCrime = () => {
-  // ... keep React states as before ...
   const [showForm, setShowForm] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [reportId, setReportId] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleReportSuccess = (id: string, serial: string) => {
     setReportId(id);
@@ -21,9 +18,11 @@ const ReportCrime = () => {
     setShowSuccessModal(true);
     setShowForm(false);
   };
+
   const handleStartReport = () => {
     setShowForm(true);
   };
+
   if (showForm) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100">
@@ -41,18 +40,17 @@ const ReportCrime = () => {
   return (
     <div className="min-h-screen bg-white">
       <Navigation />
-      {/* Hero Section - focus on report, no hotline */}
+      {/* Hero Section - only reporting, no hotline */}
       <section className="relative bg-cover bg-center bg-no-repeat min-h-[70vh] flex items-center justify-center"
         style={{
           backgroundImage: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('/lovable-uploads/a0aa57d1-084a-4b45-b6d0-f81232c49e50.png')"
         }}>
         <div className="container mx-auto px-4 py-20">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-6 text-center">
-            Report Security Issues and Crime — Securely and Easily
+            Report a Crime or Threat – Join the Mission For a Safer Nigeria
           </h1>
           <p className="text-lg md:text-xl text-green-100 mb-8 max-w-3xl mx-auto text-center leading-relaxed">
-            Your reports help defend Nigeria. Submit tips, crime details, or threats—anonymously or with your details. 
-            We treat every report with utmost confidentiality and urgency. Instant investigation begins once you file.
+            Use this secure portal to submit crime or security reports directly to Defence Headquarters. You can be completely anonymous, or share your details for follow-up. Every credible report helps protect lives and strengthen national security. Fill out the easy form and your tip will be sent instantly for review and action.
           </p>
           <div className="flex justify-center">
             <Button 
@@ -68,28 +66,26 @@ const ReportCrime = () => {
       </section>
       <div className="bg-gray-50 py-12">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold text-green-800 mb-4">Why Report?</h2>
+          <h2 className="text-2xl font-bold text-green-800 mb-4">Why Should You Report?</h2>
           <p className="text-green-700 font-medium mb-6">
-            Your voice is crucial to national security and keeping communities across Nigeria safe. 
-            Every piece of information helps us build intelligence, respond faster, and stop crime.
+            Play your part in building a safer community. Each report could save lives, help prevent crime, and ensure justice. Anonymity is guaranteed when you want it, and all information is handled securely by the Nigerian Defence Headquarters.
           </p>
           <ul className="list-disc text-left max-w-2xl mx-auto space-y-3 text-green-700">
-            <li>Remain completely anonymous or include your contact for follow-up.</li>
-            <li>Attach evidence such as images or videos for better investigation.</li>
-            <li>Every report is treated confidentially and securely by the Defence Headquarters.</li>
-            <li>Reporting crime could save lives!</li>
+            <li>Stay anonymous or provide contact for updates – you decide.</li>
+            <li>Easily attach photos, videos, or documents as evidence.</li>
+            <li>Help security forces rapidly prioritize and respond to real incidents.</li>
+            <li>Your tip makes a real difference in the fight against crime and insecurity.</li>
           </ul>
         </div>
       </div>
-      <div className="bg-red-50 border-t border-red-200 py-8">
+      <div className="bg-yellow-50 border-t border-yellow-200 py-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-start space-x-4">
-            <AlertTriangle className="w-8 h-8 text-red-600 mt-1 flex-shrink-0" />
+            <AlertTriangle className="w-8 h-8 text-yellow-600 mt-1 flex-shrink-0" />
             <div>
-              <h4 className="font-bold text-red-800 text-lg mb-2">Emergency Situations</h4>
-              <p className="text-red-700">
-                For life-threatening emergencies, please contact emergency services directly.
-                This platform is primarily for reporting intelligence or crimes that require DHQ follow-up—NOT for urgent rescue!
+              <h4 className="font-bold text-yellow-800 text-lg mb-2">When To Call Emergency Services?</h4>
+              <p className="text-yellow-700">
+                If you are in immediate danger or witness a serious crime in progress, call national emergency services instead of waiting. This web portal is for non-urgent tips and investigations.
               </p>
             </div>
           </div>

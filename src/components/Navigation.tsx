@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
   Menu, 
-  Phone, 
   FileText, 
   AlertTriangle, 
   Shield, 
@@ -13,17 +13,15 @@ import {
   ChevronDown,
   MapPin
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNavigate } from "react-router-dom";
 
 const Navigation = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
   const handleLogoClick = () => {
@@ -45,7 +43,7 @@ const Navigation = () => {
       icon: AlertTriangle,
       items: [
         { title: 'Emergency Services', href: '/emergency', icon: AlertTriangle },
-        { title: 'Hotline Numbers', href: '/emergency-contacts', icon: Phone },
+        { title: 'Hotline Numbers', href: '/emergency-contacts', icon: FileText },
       ]
     },
     {
@@ -62,7 +60,7 @@ const Navigation = () => {
       icon: MessageSquare,
       items: [
         { title: 'Contact DHQ', href: '/contact', icon: MessageSquare },
-        { title: 'Emergency Contacts', href: '/emergency-contacts', icon: Phone },
+        { title: 'Emergency Contacts', href: '/emergency-contacts', icon: FileText },
       ]
     },
     {
@@ -132,10 +130,9 @@ const Navigation = () => {
               )
             ))}
           </div>
-
+          {/* Mobile Menu */}
           <div className="flex items-center space-x-2 flex-shrink-0">
-            {/* Mobile Menu */}
-            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="sm" className="lg:hidden p-2">
                   <Menu className="h-5 w-5" />
@@ -158,7 +155,7 @@ const Navigation = () => {
                                   key={subItem.title}
                                   to={subItem.href}
                                   className="flex items-center text-green-600 hover:text-green-800 py-1"
-                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  // No emergency hotline in mobile menu either
                                 >
                                   <subItem.icon className="h-4 w-4 mr-2" />
                                   {subItem.title}
@@ -170,7 +167,6 @@ const Navigation = () => {
                           <Link
                             to={item.href!}
                             className="flex items-center text-green-700 hover:text-green-800 font-medium"
-                            onClick={() => setIsMobileMenuOpen(false)}
                           >
                             <item.icon className="h-4 w-4 mr-2" />
                             {item.title}
@@ -178,12 +174,7 @@ const Navigation = () => {
                         )}
                       </div>
                     ))}
-                    <div className="pt-4 border-t border-green-200">
-                      <Button className="w-full bg-red-600 hover:bg-red-700 text-white">
-                        <Phone className="mr-2 h-4 w-4" />
-                        Emergency: 199
-                      </Button>
-                    </div>
+                    {/* Emergency hotline button removed here */}
                   </div>
                 </div>
               </SheetContent>
