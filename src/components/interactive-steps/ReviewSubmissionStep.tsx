@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Send, FileText, MapPin, User, AlertTriangle, Calendar, Phone, Mail, Image, Video, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ReviewSubmissionStepProps {
   data: {
@@ -33,7 +33,6 @@ interface ReviewSubmissionStepProps {
 const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewSubmissionStepProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const supabase = useSupabaseClient();
 
   const handleSubmit = async () => {
     setIsSubmitting(true);
