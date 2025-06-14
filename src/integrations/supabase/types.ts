@@ -63,6 +63,66 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          access_method: string | null
+          action_type: string
+          actor_id: string | null
+          actor_type: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          ip_address: unknown | null
+          is_sensitive: boolean | null
+          metadata: Json | null
+          new_values: Json | null
+          old_values: Json | null
+          session_id: string | null
+          severity_level: string | null
+          timestamp: string
+          user_agent: string | null
+        }
+        Insert: {
+          access_method?: string | null
+          action_type: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          ip_address?: unknown | null
+          is_sensitive?: boolean | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          session_id?: string | null
+          severity_level?: string | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Update: {
+          access_method?: string | null
+          action_type?: string
+          actor_id?: string | null
+          actor_type?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          ip_address?: unknown | null
+          is_sensitive?: boolean | null
+          metadata?: Json | null
+          new_values?: Json | null
+          old_values?: Json | null
+          session_id?: string | null
+          severity_level?: string | null
+          timestamp?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       image_analysis: {
         Row: {
           analyzed_at: string
@@ -178,6 +238,91 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      report_access_logs: {
+        Row: {
+          access_type: string
+          accessed_sections: Json | null
+          audit_log_id: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          purpose: string | null
+          report_id: string
+        }
+        Insert: {
+          access_type: string
+          accessed_sections?: Json | null
+          audit_log_id: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          purpose?: string | null
+          report_id: string
+        }
+        Update: {
+          access_type?: string
+          accessed_sections?: Json | null
+          audit_log_id?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          purpose?: string | null
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_access_logs_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_audit_trail: {
+        Row: {
+          approved_by: string | null
+          audit_log_id: string
+          change_reason: string | null
+          created_at: string
+          field_changed: string | null
+          id: string
+          new_value: string | null
+          previous_value: string | null
+          report_id: string
+        }
+        Insert: {
+          approved_by?: string | null
+          audit_log_id: string
+          change_reason?: string | null
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          previous_value?: string | null
+          report_id: string
+        }
+        Update: {
+          approved_by?: string | null
+          audit_log_id?: string
+          change_reason?: string | null
+          created_at?: string
+          field_changed?: string | null
+          id?: string
+          new_value?: string | null
+          previous_value?: string | null
+          report_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_audit_trail_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reports: {
         Row: {
@@ -344,6 +489,50 @@ export type Database = {
         }
         Relationships: []
       }
+      system_operation_logs: {
+        Row: {
+          audit_log_id: string
+          component: string
+          created_at: string
+          error_details: Json | null
+          execution_time_ms: number | null
+          id: string
+          operation_type: string
+          resource_usage: Json | null
+          status: string
+        }
+        Insert: {
+          audit_log_id: string
+          component: string
+          created_at?: string
+          error_details?: Json | null
+          execution_time_ms?: number | null
+          id?: string
+          operation_type: string
+          resource_usage?: Json | null
+          status?: string
+        }
+        Update: {
+          audit_log_id?: string
+          component?: string
+          created_at?: string
+          error_details?: Json | null
+          execution_time_ms?: number | null
+          id?: string
+          operation_type?: string
+          resource_usage?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_operation_logs_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       unit_commanders: {
         Row: {
           active_assignments: number | null
@@ -419,12 +608,82 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_logs: {
+        Row: {
+          activity_type: string
+          audit_log_id: string
+          created_at: string
+          device_fingerprint: string | null
+          failure_reason: string | null
+          id: string
+          location_data: Json | null
+          login_method: string | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          audit_log_id: string
+          created_at?: string
+          device_fingerprint?: string | null
+          failure_reason?: string | null
+          id?: string
+          location_data?: Json | null
+          login_method?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          audit_log_id?: string
+          created_at?: string
+          device_fingerprint?: string | null
+          failure_reason?: string | null
+          id?: string
+          location_data?: Json | null
+          login_method?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_audit_log_id_fkey"
+            columns: ["audit_log_id"]
+            isOneToOne: false
+            referencedRelation: "audit_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      log_report_access: {
+        Args: {
+          p_report_id: string
+          p_access_type?: string
+          p_duration_seconds?: number
+          p_accessed_sections?: Json
+          p_purpose?: string
+        }
+        Returns: string
+      }
+      log_user_activity: {
+        Args: {
+          p_user_id: string
+          p_activity_type: string
+          p_success?: boolean
+          p_failure_reason?: string
+          p_metadata?: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

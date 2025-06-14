@@ -1,18 +1,22 @@
-
 import React, { useState, useEffect } from 'react';
 import { useReports } from '@/hooks/useReports';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History } from 'lucide-react';
 import DispatchModal from './DispatchModal';
+import ReportAuditModal from './ReportAuditModal';
 
 const RealTimeReports = () => {
   const { reports, loading, refetch } = useReports();
+  const { logReportAccess } = useAuditLogs();
   const [filter, setFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
+  const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [reportToDispatch, setReportToDispatch] = useState<any>(null);
+  const [reportForAudit, setReportForAudit] = useState<any>(null);
 
   // Get the most recent reports
   const recentReports = reports
@@ -128,6 +132,27 @@ const RealTimeReports = () => {
     refetch();
   };
 
+  const handleReportSelection = async (reportId: string) => {
+    setSelectedReport(reportId);
+    
+    // Log the report access
+    const report = reports.find(r => r.id === reportId);
+    if (report) {
+      await logReportAccess(
+        reportId, 
+        'view', 
+        undefined, 
+        { section: 'report_details' }, 
+        'Administrative review'
+      );
+    }
+  };
+
+  const handleAuditClick = (report: any) => {
+    setReportForAudit(report);
+    setAuditModalOpen(true);
+  };
+
   return (
     <div className="dhq-card p-6 animate-fade-in-up">
       <div className="flex items-center justify-between mb-6">
@@ -189,7 +214,7 @@ const RealTimeReports = () => {
                 className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors cursor-pointer ${
                   selectedReport === report.id ? 'bg-blue-900/20' : ''
                 } ${report.submission_source === 'external_portal' ? 'border-l-4 border-l-purple-500' : ''}`}
-                onClick={() => setSelectedReport(report.id)}
+                onClick={() => handleReportSelection(report.id)}
               >
                 <div className="col-span-1 text-white font-mono text-xs">
                   {report.serial_number || `CRP-${report.id.slice(0, 3)}`}
@@ -233,7 +258,7 @@ const RealTimeReports = () => {
                   {getMediaCount(report)}
                 </div>
                 
-                <div className="col-span-2 flex space-x-2">
+                <div className="col-span-2 flex space-x-1">
                   {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
@@ -247,6 +272,17 @@ const RealTimeReports = () => {
                       Dispatch
                     </Button>
                   )}
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="h-6 px-2 text-xs bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAuditClick(report);
+                    }}
+                  >
+                    <History className="h-3 w-3" />
+                  </Button>
                 </div>
               </div>
             ))
@@ -257,9 +293,23 @@ const RealTimeReports = () => {
       {/* Enhanced Report Details */}
       {selectedReport && (
         <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-          <h4 className="text-white font-semibold mb-2">
-            Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number || 'Not assigned'}
-          </h4>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-white font-semibold">
+              Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number || 'Not assigned'}
+            </h4>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                const report = reports.find(r => r.id === selectedReport);
+                if (report) handleAuditClick(report);
+              }}
+              className="border-purple-500 text-purple-300 hover:bg-purple-600/20"
+            >
+              <History className="h-4 w-4 mr-2" />
+              View Audit Trail
+            </Button>
+          </div>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
             return report ? (
@@ -306,6 +356,14 @@ const RealTimeReports = () => {
         onOpenChange={setDispatchModalOpen}
         report={reportToDispatch}
         onAssignmentComplete={handleAssignmentComplete}
+      />
+
+      {/* Audit Modal */}
+      <ReportAuditModal
+        open={auditModalOpen}
+        onOpenChange={setAuditModalOpen}
+        reportId={reportForAudit?.id || ''}
+        reportTitle={reportForAudit?.description || reportForAudit?.threat_type}
       />
     </div>
   );
