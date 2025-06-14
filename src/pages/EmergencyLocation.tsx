@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { MapPin, Shield, AlertTriangle } from "lucide-react";
+import { MapPin, Shield, AlertTriangle, ArrowLeft } from "lucide-react";
+import Navigation from "../components/Navigation";
+import { useNavigate } from "react-router-dom";
 
 const AUTHORITY_NAME = "Defence Headquarters Emergency Response";
 
@@ -26,6 +27,7 @@ const EmergencyLocation = () => {
   const [error, setError] = useState<string | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   // Update map marker when location changes
   useEffect(() => {
@@ -123,7 +125,21 @@ const EmergencyLocation = () => {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
+      <Navigation />
+      
       <div className="container mx-auto px-4 py-8 max-w-xl flex flex-col flex-1">
+        {/* Back Link */}
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            onClick={() => navigate(-1)}
+            className="flex items-center text-green-700 hover:text-green-800 hover:bg-green-50 p-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
+        </div>
+
         {/* Title & Header */}
         <Card className="bg-red-700 p-0 rounded-lg mb-8 shadow-lg">
           <CardHeader className="pb-0">
