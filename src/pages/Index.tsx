@@ -4,9 +4,8 @@ import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
 import IncidentTable from '../components/IncidentTable';
 import NotificationPanel from '../components/NotificationPanel';
-import RealTimeReports from '../components/RealTimeReports';
 import ReportDetailsModal from '../components/ReportDetailsModal';
-import { useReports } from '@/hooks/useReports';
+import { useReports, Report } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { FileText, CircleArrowUp, CircleAlert, CircleCheck, Target, Activity } from 'lucide-react';
@@ -15,7 +14,7 @@ const Index = () => {
   const { reports, loading: reportsLoading } = useReports();
   const { assignments } = useAssignments();
   const { metrics, loading: metricsLoading } = useSystemMetrics();
-  const [selectedReport, setSelectedReport] = useState<any>(null);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
 
   const loading = reportsLoading || metricsLoading;
 
@@ -23,7 +22,7 @@ const Index = () => {
     console.log(`Clicked on ${type} stat card`);
   };
 
-  const handleMarkerClick = (report: any) => {
+  const handleMarkerClick = (report: Report) => {
     setSelectedReport(report);
   };
 
@@ -151,7 +150,7 @@ const Index = () => {
 
         {/* Real-Time Reports Section */}
         <div className="mb-8 animate-fade-in-up">
-          <RealTimeReports />
+          <IncidentTable reports={reports} onIncidentClick={handleMarkerClick} />
         </div>
       </div>
 
