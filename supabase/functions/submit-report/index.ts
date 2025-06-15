@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -24,27 +23,11 @@ serve(async (req) => {
     console.log('Received report submission:', reportData);
     console.log('Files to upload:', files?.length || 0);
 
-    // Enhanced secure serial number generation with multiple layers
+    // Generate a secure serial number in the format DHQ-YYYY-NNNNNN
     const generateSecureSerialNumber = () => {
-      const currentDate = new Date();
-      const year = currentDate.getFullYear();
-      const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-      const day = currentDate.getDate().toString().padStart(2, '0');
-      
-      // Generate a more secure random component using crypto
-      const randomBytes = new Uint8Array(6);
-      crypto.getRandomValues(randomBytes);
-      const randomComponent = Array.from(randomBytes)
-        .map(b => b.toString(36))
-        .join('')
-        .substring(0, 8)
-        .toUpperCase();
-      
-      // Add timestamp component for uniqueness
-      const timestampComponent = currentDate.getTime().toString().slice(-6);
-      
-      // Combine components with DHQ prefix for official identification
-      return `DHQ${year}${month}${day}${timestampComponent}${randomComponent}`;
+      const year = new Date().getFullYear();
+      const randomNumber = Math.floor(Math.random() * 1000000);
+      return `DHQ-${year}-${String(randomNumber).padStart(6, '0')}`;
     };
 
     // Upload files if any with proper error handling

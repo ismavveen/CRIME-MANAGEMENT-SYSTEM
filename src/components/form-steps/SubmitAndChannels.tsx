@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -20,10 +19,9 @@ const SubmitAndChannels = ({ data, onUpdate, onBack }: SubmitAndChannelsProps) =
   const [referenceNumber, setReferenceNumber] = useState("");
 
   const generateReferenceNumber = () => {
-    const prefix = "DHQ";
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
+    const year = new Date().getFullYear();
+    const randomNumber = Math.floor(Math.random() * 1000000);
+    return `DHQ-${year}-${String(randomNumber).padStart(6, '0')}`;
   };
 
   const handleSubmit = async () => {
