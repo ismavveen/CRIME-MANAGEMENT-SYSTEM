@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useReports, Report } from '@/hooks/useReports';
+import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send, FileText, History, Shield } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, FileText, History, Shield, Loader2 } from 'lucide-react';
 import DispatchModal from './DispatchModal';
 import ReportAuditModal from './ReportAuditModal';
+import ReturnForRevisionDialog from './admin-dashboard/ReturnForRevisionDialog';
+
 
 interface RealTimeReportsProps {
   reportsData?: Report[];
@@ -16,6 +19,7 @@ interface RealTimeReportsProps {
 
 const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsProps) => {
   const { reports: fetchedReports, loading: fetchedLoading, refetch: fetchedRefetch } = useReports();
+  const { assignments, updateAssignmentStatus } = useAssignments();
   const { logReportAccess } = useAuditLogs();
   const [filter, setFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
@@ -23,6 +27,10 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [reportToDispatch, setReportToDispatch] = useState<Report | null>(null);
   const [reportForAudit, setReportForAudit] = useState<Report | null>(null);
+
+  const [revisionDialogOpen, setRevisionDialogOpen] = useState(false);
+  const [assignmentToRevise, setAssignmentToRevise] = useState<Assignment | null>(null);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const reports = reportsData ?? fetchedReports;
   const loading = isLoading ?? fetchedLoading;
@@ -43,6 +51,8 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
     switch (status?.toLowerCase()) {
       case 'resolved':
         return <CheckCircle className="h-4 w-4 text-green-400" />;
+      case 'verified':
+        return <CheckCircle className="h-4 w-4 text-teal-400" />;
       case 'pending':
         return <AlertTriangle className="h-4 w-4 text-yellow-400" />;
       case 'assigned':
@@ -56,6 +66,8 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
     switch (status?.toLowerCase()) {
       case 'resolved':
         return 'bg-green-900/30 text-green-300 border-green-700/50';
+      case 'verified':
+        return 'bg-teal-900/30 text-teal-300 border-teal-700/50';
       case 'pending':
         return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
       case 'assigned':
@@ -144,6 +156,27 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
     setAuditModalOpen(true);
   };
 
+  const handleVerifyResolution = async (assignmentId: string) => {
+    setIsUpdatingStatus(true);
+    await updateAssignmentStatus(assignmentId, 'verified');
+    setIsUpdatingStatus(false);
+  };
+
+  const handleOpenRevisionDialog = (assignment: Assignment) => {
+    setAssignmentToRevise(assignment);
+    setRevisionDialogOpen(true);
+  };
+
+  const handleRevisionSubmit = async (reason: string) => {
+    if (!assignmentToRevise) return;
+    setIsUpdatingStatus(true);
+    await updateAssignmentStatus(assignmentToRevise.id, 'needs_revision', reason);
+    setIsUpdatingStatus(false);
+    setRevisionDialogOpen(false);
+    setAssignmentToRevise(null);
+  };
+
+
   return (
     <div className="dhq-card p-6 animate-fade-in-up">
       <div className="flex items-center justify-between mb-6">
@@ -206,7 +239,8 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
                 className={`grid grid-cols-12 gap-4 p-4 items-center border-b border-gray-700/30 hover:bg-gray-700/20 transition-all duration-200 cursor-pointer ${
                   selectedReport === report.id ? 'bg-blue-900/20 border-l-4 border-l-blue-400' : ''
                 } ${
-                  (report.urgency === 'critical' || report.priority === 'high') ? 'border-l-4 border-l-red-500' : ''
+                  (report.urgency === 'critical' || report.priority === 'high') ? 'border-l-4 border-l-red-500' : 
+                  (report.status === 'resolved') ? 'border-l-4 border-l-green-500' : ''
                 }`}
                 onClick={() => handleReportSelection(report.id)}
               >
@@ -310,96 +344,170 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
           </div>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
+            const assignment = assignments.find(a => a.report_id === selectedReport);
+
             return report ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-gray-400 text-sm font-medium">Incident Description</label>
-                    <p className="text-gray-300 bg-gray-700/30 p-3 rounded mt-1">{report.description}</p>
-                  </div>
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Incident Description</label>
+                      <p className="text-gray-300 bg-gray-700/30 p-3 rounded mt-1">{report.description}</p>
+                    </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-gray-400 text-sm font-medium">Threat Type</label>
-                      <p className={`font-semibold mt-1 ${getThreatColor(report.threat_type)}`}>
-                        {report.threat_type}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-gray-400 text-sm font-medium">Priority Level</label>
-                      <Badge className={`mt-1 ${getUrgencyColor(report.urgency, report.priority)}`}>
-                        {report.priority || report.urgency}
-                      </Badge>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-gray-400 text-sm font-medium">Location Details</label>
-                    <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-1">
-                      <p className="text-gray-300"><strong>Address:</strong> {report.full_address || report.location || report.manual_location}</p>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <p className="text-gray-300"><strong>State:</strong> {report.state}</p>
-                        <p className="text-gray-300"><strong>LGA:</strong> {report.local_government}</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-gray-400 text-sm font-medium">Threat Type</label>
+                        <p className={`font-semibold mt-1 ${getThreatColor(report.threat_type)}`}>
+                          {report.threat_type}
+                        </p>
                       </div>
-                      {report.landmark && (
-                        <p className="text-gray-300"><strong>Landmark:</strong> {report.landmark}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-gray-400 text-sm font-medium">Report Timeline</label>
-                    <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-2">
-                      <p className="text-gray-300 text-sm">
-                        <strong>Submitted:</strong> {new Date(report.created_at).toLocaleString()}
-                      </p>
-                      <p className="text-gray-300 text-sm">
-                        <strong>Source:</strong> {report.submission_source === 'external_portal' ? 'External Portal' : 'Internal System'}
-                      </p>
-                      <p className="text-gray-300 text-sm">
-                        <strong>Status:</strong> 
-                        <Badge className={`ml-2 ${getStatusColor(report.status)}`}>
-                          {report.status}
+                      <div>
+                        <label className="text-gray-400 text-sm font-medium">Priority Level</label>
+                        <Badge className={`mt-1 ${getUrgencyColor(report.urgency, report.priority)}`}>
+                          {report.priority || report.urgency}
                         </Badge>
-                      </p>
+                      </div>
                     </div>
-                  </div>
 
-                  {!report.is_anonymous && (
                     <div>
-                      <label className="text-gray-400 text-sm font-medium">Reporter Information</label>
+                      <label className="text-gray-400 text-sm font-medium">Location Details</label>
                       <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-1">
-                        {report.reporter_name && (
-                          <p className="text-gray-300 text-sm"><strong>Name:</strong> {report.reporter_name}</p>
-                        )}
-                        {report.reporter_phone && (
-                          <p className="text-gray-300 text-sm"><strong>Phone:</strong> {report.reporter_phone}</p>
-                        )}
-                        {report.reporter_email && (
-                          <p className="text-gray-300 text-sm"><strong>Email:</strong> {report.reporter_email}</p>
+                        <p className="text-gray-300"><strong>Address:</strong> {report.full_address || report.location || report.manual_location}</p>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <p className="text-gray-300"><strong>State:</strong> {report.state}</p>
+                          <p className="text-gray-300"><strong>LGA:</strong> {report.local_government}</p>
+                        </div>
+                        {report.landmark && (
+                          <p className="text-gray-300"><strong>Landmark:</strong> {report.landmark}</p>
                         )}
                       </div>
                     </div>
-                  )}
+                  </div>
 
-                  {report.validation_status && (
+                  <div className="space-y-4">
                     <div>
-                      <label className="text-gray-400 text-sm font-medium">Validation Status</label>
-                      <div className="mt-1">
-                        <Badge className={`${
-                          report.validation_status === 'validated' ? 'bg-green-900/30 text-green-300 border-green-700/50' :
-                          report.validation_status === 'rejected' ? 'bg-red-900/30 text-red-300 border-red-700/50' :
-                          'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
-                        }`}>
-                          {report.validation_status.charAt(0).toUpperCase() + report.validation_status.slice(1)}
-                        </Badge>
+                      <label className="text-gray-400 text-sm font-medium">Report Timeline</label>
+                      <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-2">
+                        <p className="text-gray-300 text-sm">
+                          <strong>Submitted:</strong> {new Date(report.created_at).toLocaleString()}
+                        </p>
+                        <p className="text-gray-300 text-sm">
+                          <strong>Source:</strong> {report.submission_source === 'external_portal' ? 'External Portal' : 'Internal System'}
+                        </p>
+                        <p className="text-gray-300 text-sm">
+                          <strong>Status:</strong> 
+                          <Badge className={`ml-2 ${getStatusColor(report.status)}`}>
+                            {report.status}
+                          </Badge>
+                        </p>
                       </div>
                     </div>
-                  )}
+
+                    {!report.is_anonymous && (
+                      <div>
+                        <label className="text-gray-400 text-sm font-medium">Reporter Information</label>
+                        <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-1">
+                          {report.reporter_name && (
+                            <p className="text-gray-300 text-sm"><strong>Name:</strong> {report.reporter_name}</p>
+                          )}
+                          {report.reporter_phone && (
+                            <p className="text-gray-300 text-sm"><strong>Phone:</strong> {report.reporter_phone}</p>
+                          )}
+                          {report.reporter_email && (
+                            <p className="text-gray-300 text-sm"><strong>Email:</strong> {report.reporter_email}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {report.validation_status && (
+                      <div>
+                        <label className="text-gray-400 text-sm font-medium">Validation Status</label>
+                        <div className="mt-1">
+                          <Badge className={`${
+                            report.validation_status === 'validated' ? 'bg-green-900/30 text-green-300 border-green-700/50' :
+                            report.validation_status === 'rejected' ? 'bg-red-900/30 text-red-300 border-red-700/50' :
+                            'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+                          }`}>
+                            {report.validation_status.charAt(0).toUpperCase() + report.validation_status.slice(1)}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+
+                    {assignment && report.status === 'verified' && (
+                       <div>
+                        <label className="text-gray-400 text-sm font-medium">Verification Status</label>
+                        <div className="mt-1">
+                          <Badge className="bg-teal-900/30 text-teal-300 border-teal-700/50 flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4" />
+                            Resolution Verified & Closed
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+                {assignment && assignment.status === 'resolved' && (
+                  <div className="mt-6 pt-6 border-t border-gray-700/50">
+                    <h4 className="text-white font-semibold text-lg flex items-center space-x-2 mb-4">
+                      <Shield className="h-5 w-5 text-green-400" />
+                      <span>Resolution Details for Verification</span>
+                    </h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                         <div>
+                          <label className="text-gray-400 text-sm font-medium">Resolution Summary</label>
+                          <p className="text-gray-300 bg-gray-700/30 p-3 rounded mt-1">{assignment.resolution_notes}</p>
+                        </div>
+                        {assignment.witness_info && (
+                          <div>
+                            <label className="text-gray-400 text-sm font-medium">Witness Information</label>
+                            <p className="text-gray-300 bg-gray-700/30 p-3 rounded mt-1 whitespace-pre-wrap">{assignment.witness_info}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-gray-400 text-sm font-medium">Supporting Evidence</label>
+                          <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-2">
+                            {assignment.resolution_evidence && Array.isArray(assignment.resolution_evidence) && assignment.resolution_evidence.length > 0 ? (
+                              assignment.resolution_evidence.map((file: any, index: number) => (
+                                <a href={file.url} target="_blank" rel="noopener noreferrer" key={index} className="flex items-center space-x-2 text-blue-400 hover:underline">
+                                  <FileText className="h-4 w-4" />
+                                  <span>{file.name}</span>
+                                </a>
+                              ))
+                            ) : (
+                              <p className="text-gray-400">No evidence uploaded.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                     <div className="flex justify-end mt-6 space-x-2">
+                        <Button
+                          variant="outline"
+                          className="bg-yellow-600/20 border-yellow-500 text-yellow-300 hover:bg-yellow-600/30"
+                          onClick={() => handleOpenRevisionDialog(assignment)}
+                          disabled={isUpdatingStatus}
+                        >
+                           {isUpdatingStatus && assignmentToRevise?.id === assignment.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                           Return for Revision
+                        </Button>
+                        <Button
+                          className="bg-green-600 hover:bg-green-700"
+                          onClick={() => handleVerifyResolution(assignment.id)}
+                          disabled={isUpdatingStatus}
+                        >
+                          {isUpdatingStatus && !assignmentToRevise && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Verify & Close Report
+                        </Button>
+                      </div>
+                  </div>
+                )}
+              </>
             ) : null;
           })()}
         </div>
@@ -418,6 +526,15 @@ const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsP
         reportId={reportForAudit?.id || ''}
         reportTitle={reportForAudit?.description || reportForAudit?.threat_type}
       />
+
+      {assignmentToRevise && (
+        <ReturnForRevisionDialog
+            open={revisionDialogOpen}
+            onOpenChange={setRevisionDialogOpen}
+            onSubmit={handleRevisionSubmit}
+            isSubmitting={isUpdatingStatus}
+        />
+      )}
     </div>
   );
 };

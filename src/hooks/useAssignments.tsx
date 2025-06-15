@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +8,7 @@ export interface Assignment {
   report_id: string;
   commander_id: string;
   assigned_at: string;
-  status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected';
+  status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected' | 'verified' | 'needs_revision';
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
@@ -115,7 +116,7 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected',
+    status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected' | 'verified' | 'needs_revision',
     notes?: string,
     operationData?: {
       operation_outcome?: string;
@@ -187,6 +188,35 @@ export const useAssignments = () => {
         }
       }
 
+      if (status === 'verified') {
+        if (assignment) {
+            await supabase.from('reports').update({ status: 'verified' }).eq('id', assignment.report_id);
+            await supabase.from('notifications').insert({
+              title: 'Resolution Verified',
+              message: `Your resolution for report #${assignment.report_id.slice(0, 8)} has been verified.`,
+              type: 'info'
+            });
+        }
+      }
+
+      if (status === 'needs_revision') {
+          if (assignment) {
+            // Revert status to 'accepted' so it goes back into the commander's active queue
+            // and clear previous resolution data.
+            updateData.status = 'accepted'; 
+            updateData.resolution_notes = null;
+            updateData.resolution_evidence = null;
+            updateData.witness_info = null;
+            updateData.resolved_at = null;
+            
+            await supabase.from('notifications').insert({
+              title: 'Resolution Requires Revision',
+              message: `Your report submission requires revision. Reason: ${notes}`,
+              type: 'update'
+            });
+          }
+      }
+
       const { error } = await supabase
         .from('assignments')
         .update(updateData)
@@ -203,6 +233,16 @@ export const useAssignments = () => {
       if (status === 'resolved' && resolutionData) {
         successTitle = 'Resolution Submitted';
         successDescription = 'Your report has been submitted for verification.';
+      }
+      
+      if (status === 'verified') {
+        successTitle = 'Resolution Verified';
+        successDescription = 'The resolution has been marked as verified.';
+      }
+
+      if (status === 'needs_revision') {
+        successTitle = 'Returned for Revision';
+        successDescription = 'The resolution has been sent back to the commander for revision.';
       }
 
       toast({
