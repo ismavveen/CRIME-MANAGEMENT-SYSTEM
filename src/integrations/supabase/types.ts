@@ -123,6 +123,59 @@ export type Database = {
         }
         Relationships: []
       }
+      file_scan_logs: {
+        Row: {
+          created_at: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id: string
+          report_id: string | null
+          scan_details: Json | null
+          scan_result: string
+          scan_timestamp: string
+          scanner_version: string | null
+          threats_detected: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          file_size: number
+          file_type: string
+          file_url: string
+          id?: string
+          report_id?: string | null
+          scan_details?: Json | null
+          scan_result?: string
+          scan_timestamp?: string
+          scanner_version?: string | null
+          threats_detected?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          id?: string
+          report_id?: string | null
+          scan_details?: Json | null
+          scan_result?: string
+          scan_timestamp?: string
+          scanner_version?: string | null
+          threats_detected?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "file_scan_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       image_analysis: {
         Row: {
           analyzed_at: string
