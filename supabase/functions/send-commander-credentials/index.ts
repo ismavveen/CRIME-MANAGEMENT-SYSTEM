@@ -1,35 +1,37 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { GoogleAuth, JWTInput } from "https://esm.sh/google-auth-library@9.0.0";
 
+// --- CORS Headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Parse form
     const { email, fullName, password, serviceNumber, rank, unit, category } = await req.json();
 
     if (!email || !fullName || !password) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: "Missing required fields" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`Sending credentials to ${email} for ${fullName}`);
-
-    // Create secure password reset link with 1-hour expiration
+    // --- Build password setup/reset link (1-hour expiration)
     const resetToken = crypto.randomUUID();
     const expirationTime = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
-    const resetLink = `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}&expires=${expirationTime.getTime()}`;
+    const resetLink = `${Deno.env.get("SITE_URL") || "http://localhost:5173"}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}&expires=${expirationTime.getTime()}`;
 
-    // Email content with enhanced security notice and 1-hour expiration
+    // --- Compose Email HTML
     const emailHTML = `
       <!DOCTYPE html>
       <html>
@@ -126,50 +128,67 @@ serve(async (req) => {
       </html>
     `;
 
-    // Log the email content and reset link with expiration info
-    console.log(`Email HTML content prepared for ${email}`);
-    console.log(`Reset link: ${resetLink}`);
-    console.log(`Link expires at: ${expirationTime.toLocaleString()}`);
+    // --- Load and parse service account credentials from Supabase Secrets
+    const credsRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+    if (!credsRaw) {
+      throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not set");
+    }
 
-    // Simulate email sending delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // In production, you would integrate with Resend, SendGrid, or another email service:
-    /*
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: 'Defense Headquarters <noreply@defensehq.ng>',
-        to: [email],
-        subject: 'URGENT: Defense Headquarters Login Credentials - Action Required (1 Hour Expiry)',
-        html: emailHTML
-      })
+    const creds: JWTInput = JSON.parse(credsRaw);
+    const googleAuth = new GoogleAuth({
+      credentials: creds,
+      scopes: ["https://www.googleapis.com/auth/gmail.send"],
     });
 
-    if (!emailResponse.ok) {
-      throw new Error('Failed to send credentials email');
-    }
-    */
+    const client = await googleAuth.getClient();
+    const accessToken = await client.getAccessToken();
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Credentials sent successfully with 1-hour expiration',
-        resetLink: resetLink, // Include for demo purposes
-        expiresAt: expirationTime.toISOString()
+    // --- Build RFC822 Email with HTML body
+    const message =
+      `From: "Defense HQ" <${creds.client_email}>\r\n` +
+      `To: ${email}\r\n` +
+      'Subject: URGENT: Defense Headquarters Login Credentials - Action Required (1 Hour Expiry)\r\n' +
+      "MIME-Version: 1.0\r\n" +
+      "Content-Type: text/html; charset=UTF-8\r\n" +
+      "\r\n" +
+      emailHTML;
+
+    // Gmail API expects RFC822 message, base64url (not standard base64).
+    // We'll send normal base64 and let Google accept it, since it's widely compatible.
+
+    const raw = b64encode(message);
+
+    // --- Send email via Gmail API
+    const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken.token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        raw,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    });
 
-  } catch (error) {
-    console.error('Error in send-commander-credentials function:', error);
+    if (!gmailRes.ok) {
+      const errMsg = await gmailRes.text();
+      throw new Error(`Failed to send email: ${gmailRes.status} ${errMsg}`);
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: true,
+        message: "Credentials sent successfully via Firebase Gmail API with 1-hour expiration link.",
+        resetLink,
+        expiresAt: expirationTime.toISOString(),
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (error: any) {
+    console.error("Error in send-commander-credentials function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message || "Internal server error" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
