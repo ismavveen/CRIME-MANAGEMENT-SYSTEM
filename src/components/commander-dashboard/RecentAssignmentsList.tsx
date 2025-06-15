@@ -4,12 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users } from 'lucide-react';
-
-interface Assignment {
-  id: string;
-  created_at: string;
-  status: 'pending' | 'accepted' | 'resolved' | 'in_progress';
-}
+import { Assignment } from '@/hooks/useAssignments';
 
 interface RecentAssignmentsListProps {
   assignments: Assignment[];
@@ -18,6 +13,20 @@ interface RecentAssignmentsListProps {
 }
 
 const RecentAssignmentsList: React.FC<RecentAssignmentsListProps> = ({ assignments, commanderState, handleAcceptAssignment }) => {
+  const getBadgeVariant = (status: Assignment['status']) => {
+    switch (status) {
+      case 'pending':
+        return 'destructive';
+      case 'accepted':
+      case 'responded_to':
+        return 'default';
+      case 'resolved':
+        return 'secondary';
+      default:
+        return 'secondary';
+    }
+  };
+  
   return (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
@@ -42,10 +51,10 @@ const RecentAssignmentsList: React.FC<RecentAssignmentsListProps> = ({ assignmen
                 </div>
                 <div className="flex items-center space-x-2">
                   <Badge
-                    variant={assignment.status === 'pending' ? 'destructive' :
-                            assignment.status === 'accepted' ? 'default' : 'secondary'}
+                    variant={getBadgeVariant(assignment.status)}
+                    className="capitalize"
                   >
-                    {assignment.status}
+                    {assignment.status.replace('_', ' ')}
                   </Badge>
                   {assignment.status === 'pending' && (
                     <Button
