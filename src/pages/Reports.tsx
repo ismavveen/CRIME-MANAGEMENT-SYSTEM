@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import FileScanDashboard from '@/components/FileScanDashboard';
 import { FileText, Activity, BarChart3, Shield, History, Users, Eye } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState('reports');
@@ -196,4 +198,5 @@ const Reports = () => {
     </div>
   );
 };
+
 export default Reports;
