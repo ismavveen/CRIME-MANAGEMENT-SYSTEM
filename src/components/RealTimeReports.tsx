@@ -225,10 +225,10 @@ const RealTimeReports = () => {
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: false,
     });
   };
 
@@ -308,8 +308,7 @@ const RealTimeReports = () => {
       {/* Enhanced Reports Grid */}
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
-          <div className="col-span-1">ID</div>
-          <div className="col-span-1">Time</div>
+          <div className="col-span-2">Time</div>
           <div className="col-span-2">Location</div>
           <div className="col-span-2">Threat Type</div>
           <div className="col-span-1">Source</div>
@@ -342,19 +341,10 @@ const RealTimeReports = () => {
                 }`}
                 onClick={() => handleReportSelection(report.id)}
               >
-                <div className="col-span-1 text-white font-mono text-xs">
-                  <div className="font-semibold">
-                    {report.serial_number || `CRP-${report.id.slice(0, 3)}`}
-                  </div>
-                  <div className="text-gray-400 text-xs">
-                    {formatDate(report.created_at)}
-                  </div>
-                </div>
-                
-                <div className="col-span-1 text-gray-300 text-xs">
+                <div className="col-span-2 text-gray-300 text-xs">
                   <div className="font-medium">{formatTime(report.created_at)}</div>
                   <div className="text-gray-400">
-                    {Math.floor((Date.now() - new Date(report.created_at).getTime()) / 60000)}m ago
+                    {formatDate(report.created_at)}
                   </div>
                 </div>
                 
