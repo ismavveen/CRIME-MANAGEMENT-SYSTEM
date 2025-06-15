@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
@@ -6,11 +5,12 @@ import { useToast } from '@/hooks/use-toast';
 import DashboardSidebar from './DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
-import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3 } from 'lucide-react';
+import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3, ListTodo } from 'lucide-react';
 import GoogleMapsHeatmap from './GoogleMapsHeatmap';
 import RealTimeReports from './RealTimeReports';
 import ReportDetailsModal from './ReportDetailsModal';
 import ChartsSection from './ChartsSection';
+import RecentAssignmentsList from './commander-dashboard/RecentAssignmentsList';
 
 interface CommanderDashboardProps {
   commanderId: string;
@@ -20,12 +20,13 @@ interface CommanderDashboardProps {
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, commanderState, onLogout }) => {
   const { reports, loading: reportsLoading, refetch: refetchReports } = useReports();
-  const { assignments, loading: assignmentsLoading } = useAssignments();
+  const { assignments, loading: assignmentsLoading, updateAssignmentStatus } = useAssignments();
   const { toast } = useToast();
 
   const [stateReports, setStateReports] = useState<Report[]>([]);
   const [commanderAssignments, setCommanderAssignments] = useState<Assignment[]>([]);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [isUpdatingAssignment, setIsUpdatingAssignment] = useState(false);
 
   const loading = reportsLoading || assignmentsLoading;
 
@@ -54,6 +55,19 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
   
   const handleMarkerClick = (report: Report) => {
     setSelectedReport(report);
+  };
+
+  const handleAcceptAssignment = async (assignmentId: string) => {
+    setIsUpdatingAssignment(true);
+    await updateAssignmentStatus(assignmentId, 'accepted');
+    setIsUpdatingAssignment(false);
+    toast({ title: "Assignment Accepted", description: "The report status is now 'Received'. You can proceed with the operation." });
+  };
+
+  const handleRejectAssignment = async (assignmentId: string, reason: string) => {
+    setIsUpdatingAssignment(true);
+    await updateAssignmentStatus(assignmentId, 'rejected', reason);
+    setIsUpdatingAssignment(false);
   };
 
   const displayStateName = commanderState.toUpperCase() === 'FCT' ? 'Abuja' : commanderState;
@@ -127,6 +141,36 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
             icon={<Target size={24} />}
           />
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <RecentAssignmentsList
+                assignments={commanderAssignments.filter(a => a.status === 'pending')}
+                commanderState={commanderState}
+                handleAcceptAssignment={handleAcceptAssignment}
+                handleRejectAssignment={handleRejectAssignment}
+                isUpdating={isUpdatingAssignment}
+            />
+            {/* Placeholder for accepted/active assignments */}
+            <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                        <ListTodo className="h-5 w-5 text-green-400" />
+                        Active Assignments
+                    </CardTitle>
+                    <CardDescription className="text-gray-400">
+                        Assignments you have accepted and are working on.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-8">
+                        <p className="text-gray-400">
+                            {commanderAssignments.filter(a => a.status === 'accepted' || a.status === 'responded_to').length} active assignment(s).
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+
 
         <div className="mb-8 animate-slide-in-right">
           <div className="flex items-center justify-between mb-6">

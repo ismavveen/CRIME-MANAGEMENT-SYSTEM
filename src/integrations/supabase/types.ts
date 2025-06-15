@@ -11,40 +11,70 @@ export type Database = {
     Tables: {
       assignments: {
         Row: {
+          accepted_at: string | null
           assigned_at: string
+          casualties: number | null
+          civilians_rescued: number | null
           commander_id: string
           created_at: string
+          custom_message: string | null
           id: string
+          injured_personnel: number | null
+          operation_outcome: string | null
+          rejection_reason: string | null
           report_id: string
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
+          response_timeframe: number | null
+          response_timestamp: string | null
           status: string | null
           updated_at: string
+          weapons_recovered: number | null
         }
         Insert: {
+          accepted_at?: string | null
           assigned_at?: string
+          casualties?: number | null
+          civilians_rescued?: number | null
           commander_id: string
           created_at?: string
+          custom_message?: string | null
           id?: string
+          injured_personnel?: number | null
+          operation_outcome?: string | null
+          rejection_reason?: string | null
           report_id: string
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          response_timeframe?: number | null
+          response_timestamp?: string | null
           status?: string | null
           updated_at?: string
+          weapons_recovered?: number | null
         }
         Update: {
+          accepted_at?: string | null
           assigned_at?: string
+          casualties?: number | null
+          civilians_rescued?: number | null
           commander_id?: string
           created_at?: string
+          custom_message?: string | null
           id?: string
+          injured_personnel?: number | null
+          operation_outcome?: string | null
+          rejection_reason?: string | null
           report_id?: string
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
+          response_timeframe?: number | null
+          response_timestamp?: string | null
           status?: string | null
           updated_at?: string
+          weapons_recovered?: number | null
         }
         Relationships: [
           {

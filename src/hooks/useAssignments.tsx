@@ -7,7 +7,7 @@ export interface Assignment {
   report_id: string;
   commander_id: string;
   assigned_at: string;
-  status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned';
+  status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected';
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
@@ -21,6 +21,8 @@ export interface Assignment {
   custom_message: string | null;
   created_at: string;
   updated_at: string;
+  accepted_at: string | null;
+  rejection_reason: string | null;
 }
 
 export const useAssignments = () => {
@@ -43,7 +45,7 @@ export const useAssignments = () => {
         report_id: assignment.report_id,
         commander_id: assignment.commander_id,
         assigned_at: assignment.assigned_at,
-        status: assignment.status as 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned',
+        status: assignment.status as 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected',
         resolved_at: assignment.resolved_at,
         resolved_by: assignment.resolved_by,
         resolution_notes: assignment.resolution_notes,
@@ -56,7 +58,9 @@ export const useAssignments = () => {
         weapons_recovered: (assignment as any).weapons_recovered || null,
         custom_message: (assignment as any).custom_message || null,
         created_at: assignment.created_at,
-        updated_at: assignment.updated_at
+        updated_at: assignment.updated_at,
+        accepted_at: assignment.accepted_at,
+        rejection_reason: assignment.rejection_reason,
       }));
 
       setAssignments(typedAssignments);
@@ -107,8 +111,8 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned',
-    resolutionNotes?: string,
+    status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned' | 'rejected',
+    notes?: string,
     operationData?: {
       operation_outcome?: string;
       casualties?: number;
@@ -123,6 +127,26 @@ export const useAssignments = () => {
         status,
         updated_at: new Date().toISOString()
       };
+      
+      const assignment = assignments.find(a => a.id === assignmentId);
+
+      if (status === 'accepted') {
+        updateData.accepted_at = new Date().toISOString();
+        if (assignment) {
+            // Per requirements, update report status to show it's received by commander
+            await supabase.from('reports').update({ status: 'accepted' }).eq('id', assignment.report_id);
+        }
+      }
+
+      if (status === 'rejected') {
+          if (notes) {
+            updateData.rejection_reason = notes;
+          }
+          if (assignment) {
+            // Per requirements, revert report status to 'pending' to re-appear in admin queue
+            await supabase.from('reports').update({ status: 'pending', assigned_to: null, assigned_commander_id: null }).eq('id', assignment.report_id);
+          }
+      }
       
       if (status === 'responded_to') {
         updateData.response_timestamp = new Date().toISOString();
@@ -142,8 +166,8 @@ export const useAssignments = () => {
       if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
         updateData.resolved_by = 'Current User';
-        if (resolutionNotes) {
-          updateData.resolution_notes = resolutionNotes;
+        if (notes) {
+          updateData.resolution_notes = notes;
         }
       }
 
@@ -153,9 +177,11 @@ export const useAssignments = () => {
         .eq('id', assignmentId);
 
       if (error) throw error;
+      
+      const successMessage = status === 'rejected' ? 'Assignment Rejected' : 'Status Updated';
 
       toast({
-        title: "Status Updated",
+        title: successMessage,
         description: `Assignment status updated to ${status.replace('_', ' ')}`,
       });
 
