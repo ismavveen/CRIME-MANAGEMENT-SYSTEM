@@ -10,7 +10,8 @@ import {
   Settings, 
   Shield,
   UserCog,
-  BarChart3
+  BarChart3,
+  Activity
 } from 'lucide-react';
 
 const DashboardSidebar = () => {
@@ -23,6 +24,7 @@ const DashboardSidebar = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/reports', label: 'Reports & Intel', icon: FileText },
+    { path: '/audit', label: 'Audit & Logs', icon: Activity, badge: 'LIVE' },
     { path: '/charts', label: 'Analytics & Charts', icon: BarChart3 },
     { path: '/unit-commanders', label: 'Unit Commanders', icon: Shield },
     { path: '/users', label: 'Users', icon: Users },
@@ -56,7 +58,7 @@ const DashboardSidebar = () => {
               <li key={item.path}>
                 <Link
                   to={item.path}
-                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-300 group dhq-caption font-medium text-sm ${
+                  className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-300 group dhq-caption font-medium text-sm relative ${
                     active
                       ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/25'
                       : 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-lg'
@@ -69,7 +71,13 @@ const DashboardSidebar = () => {
                     }`}
                   />
                   <span className="font-medium tracking-wide truncate">{item.label}</span>
-                  {active && (
+                  {item.badge && (
+                    <div className="flex items-center space-x-1 ml-auto">
+                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <span className="text-green-400 text-xs font-bold">{item.badge}</span>
+                    </div>
+                  )}
+                  {active && !item.badge && (
                     <div className="w-1.5 h-1.5 bg-white rounded-full ml-auto animate-pulse flex-shrink-0"></div>
                   )}
                 </Link>
