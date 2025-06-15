@@ -1,12 +1,12 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import RealTimeReports from '@/components/RealTimeReports';
-import AuditDashboard from '@/pages/AuditDashboard';
 import ReportAnalytics from '@/components/ReportAnalytics';
-import FileScanDashboard from '@/components/FileScanDashboard';
-import { FileText, Activity, BarChart3, Shield, History, Users, Eye } from 'lucide-react';
+import AssignedReports from '@/components/AssignedReports';
+import PendingReportsSection from '@/components/PendingReportsSection';
+import ResolvedReports from '@/components/ResolvedReports';
+import { FileText, BarChart3, Shield, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ const Reports = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
+    <div>
       {/* Header */}
       <div className="p-6 border-b border-gray-700/50">
         <div className="flex items-center justify-between">
@@ -47,7 +47,7 @@ const Reports = () => {
       {/* Navigation Tabs */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50 mb-6">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 mb-6">
             <TabsTrigger 
               value="reports" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
@@ -55,14 +55,26 @@ const Reports = () => {
               <FileText className="h-4 w-4" />
               <span>Live Reports</span>
             </TabsTrigger>
-            {/* Removed Audit & Logs Tab */}
             <TabsTrigger 
-              value="security" 
+              value="pending" 
+              className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
+            >
+              <Clock className="h-4 w-4" />
+              <span>Pending</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="assigned" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
             >
               <Shield className="h-4 w-4" />
-              <span>File Security</span>
-              <Badge className="bg-red-600 text-white text-xs ml-1">NEW</Badge>
+              <span>Assigned</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="resolved" 
+              className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
+            >
+              <CheckCircle className="h-4 w-4" />
+              <span>Resolved</span>
             </TabsTrigger>
             <TabsTrigger 
               value="analytics" 
@@ -71,13 +83,6 @@ const Reports = () => {
               <BarChart3 className="h-4 w-4" />
               <span>Analytics</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="intelligence" 
-              className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
-            >
-              <Shield className="h-4 w-4" />
-              <span>Intelligence</span>
-            </TabsTrigger>
           </TabsList>
 
           {/* Live Reports Tab */}
@@ -85,44 +90,24 @@ const Reports = () => {
             <RealTimeReports />
           </TabsContent>
 
-          {/* Audit & Logs Tab Removed */}
+          {/* Pending Reports Tab */}
+          <TabsContent value="pending" className="space-y-6">
+            <PendingReportsSection />
+          </TabsContent>
+          
+          {/* Assigned Reports Tab */}
+          <TabsContent value="assigned" className="space-y-6">
+            <AssignedReports />
+          </TabsContent>
 
-          {/* File Security Tab */}
-          <TabsContent value="security" className="space-y-6">
-            <FileScanDashboard />
+          {/* Resolved Reports Tab */}
+          <TabsContent value="resolved" className="space-y-6">
+            <ResolvedReports />
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <ReportAnalytics />
-          </TabsContent>
-
-          {/* Intelligence Tab */}
-          <TabsContent value="intelligence" className="space-y-6">
-            <Card className="bg-gray-800/50 border-gray-700/50">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-white">
-                  <Shield className="h-5 w-5 text-cyan-400" />
-                  <span>Intelligence Overview</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-4 bg-gray-700/30 rounded-lg">
-                    <h3 className="text-white font-semibold mb-2">Threat Analysis</h3>
-                    <p className="text-gray-300 text-sm">Real-time threat classification and pattern analysis</p>
-                  </div>
-                  <div className="p-4 bg-gray-700/30 rounded-lg">
-                    <h3 className="text-white font-semibold mb-2">Geographic Intelligence</h3>
-                    <p className="text-gray-300 text-sm">Location-based threat mapping and hotspot identification</p>
-                  </div>
-                  <div className="p-4 bg-gray-700/30 rounded-lg">
-                    <h3 className="text-white font-semibold mb-2">Predictive Analytics</h3>
-                    <p className="text-gray-300 text-sm">AI-powered threat prediction and risk assessment</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
         </Tabs>
       </div>

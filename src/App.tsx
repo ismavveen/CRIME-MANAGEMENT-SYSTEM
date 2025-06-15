@@ -30,6 +30,7 @@ import AuditDashboard from "./pages/AuditDashboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import EmergencyLocation from "./pages/EmergencyLocation";
+import DashboardLayout from "./components/DashboardLayout";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +41,7 @@ function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<DashboardLayout><Index /></DashboardLayout>} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/report" element={<ReportCrime />} />
               <Route path="/emergency" element={<Emergency />} />
@@ -57,47 +58,65 @@ function App() {
               {/* Protected Routes */}
               <Route path="/reports" element={
                 <ProtectedRoute>
-                  <Reports />
+                  <DashboardLayout>
+                    <Reports />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/unit-commanders" element={
                 <ProtectedRoute>
-                  <UnitCommanders />
+                  <DashboardLayout>
+                    <UnitCommanders />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/users" element={
                 <ProtectedRoute>
-                  <Users />
+                  <DashboardLayout>
+                    <Users />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/calendar" element={
                 <ProtectedRoute>
-                  <Calendar />
+                  <DashboardLayout>
+                    <Calendar />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/inbox" element={
                 <ProtectedRoute>
-                  <Inbox />
+                  <DashboardLayout>
+                    <Inbox />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/settings" element={
                 <ProtectedRoute>
-                  <Settings />
+                  <DashboardLayout>
+                    <Settings />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/charts" element={
                 <ProtectedRoute>
-                  <Charts />
+                  <DashboardLayout>
+                    <Charts />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/commander-portal" element={
                 <ProtectedRoute>
-                  <CommanderPortal />
+                  <DashboardLayout>
+                    <CommanderPortal />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               <Route path="/audit" element={
                 <ProtectedRoute>
-                  <AuditDashboard />
+                  <DashboardLayout>
+                    <AuditDashboard />
+                  </DashboardLayout>
                 </ProtectedRoute>
               } />
               
