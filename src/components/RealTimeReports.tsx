@@ -359,11 +359,8 @@ const RealTimeReports = () => {
                 </div>
                 
                 <div className="col-span-2">
-                  <div className={`text-xs font-medium ${getThreatColor(report.threat_type)} mb-1`}>
+                  <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
-                  </div>
-                  <div className="text-gray-400 text-xs truncate">
-                    {report.description?.slice(0, 40)}...
                   </div>
                 </div>
                 
