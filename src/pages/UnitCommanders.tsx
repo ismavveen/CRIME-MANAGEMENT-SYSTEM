@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import DashboardSidebar from '../components/DashboardSidebar';
 import CommanderRegistration from '../components/CommanderRegistration';
 import ResponseUnitCard from '../components/ResponseUnitCard';
 import UnitCommanderStats from '../components/UnitCommanderStats';
@@ -37,22 +36,17 @@ const UnitCommanders = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dhq-dark-bg">
-        <DashboardSidebar />
-        <div className="ml-64 p-8">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-white">Loading response units...</div>
-          </div>
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-white">Loading response units...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
-      <DashboardSidebar />
-      
-      <div className="ml-64 p-6 space-y-6">
+    <>
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -141,7 +135,7 @@ const UnitCommanders = () => {
           }}
         />
       )}
-    </div>
+    </>
   );
 };
 
