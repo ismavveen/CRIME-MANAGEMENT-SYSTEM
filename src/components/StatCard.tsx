@@ -61,16 +61,16 @@ const StatCard: React.FC<StatCardProps> = ({
 
   return (
     <div 
-      className={`stat-card p-6 group animate-fade-in-up ${getGlowEffect()} ${onClick ? 'cursor-pointer' : ''}`}
+      className={`stat-card p-4 group animate-fade-in-up ${getGlowEffect()} ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-gray-400 text-sm font-medium mb-3 dhq-caption uppercase tracking-wider">
+          <p className="text-gray-400 text-sm font-medium mb-2 dhq-caption uppercase tracking-wider">
             {title}
           </p>
-          <div className="flex items-baseline space-x-3 mb-2">
-            <h3 className={`text-4xl font-bold dhq-heading ${getStatusColor()} transition-all duration-300`}>
+          <div className="flex items-baseline space-x-2 mb-2">
+            <h3 className={`text-3xl font-bold dhq-heading ${getStatusColor()} transition-all duration-300`}>
               {value}
             </h3>
             {trendValue && (

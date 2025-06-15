@@ -80,7 +80,7 @@ const Index = () => {
             title="TOTAL REPORTS"
             value={loading ? "..." : metrics.total_reports.toString()}
             subtitle="ALL INCIDENTS"
-            icon={<FileText size={28} />}
+            icon={<FileText size={24} />}
             status="neutral"
             onClick={() => handleStatCardClick('total_reports')}
           />
@@ -89,7 +89,7 @@ const Index = () => {
             value={loading ? "..." : metrics.resolved_reports.toString()}
             subtitle="COMPLETED MISSIONS"
             status="success"
-            icon={<CircleCheck size={28} />}
+            icon={<CircleCheck size={24} />}
             onClick={() => handleStatCardClick('resolved_reports')}
           />
           <StatCard
@@ -97,7 +97,7 @@ const Index = () => {
             value={loading ? "..." : metrics.pending_reports.toString()}
             subtitle="AWAITING ACTION"
             status="warning"
-            icon={<CircleAlert size={28} />}
+            icon={<CircleAlert size={24} />}
             onClick={() => handleStatCardClick('pending_reports')}
           />
           <StatCard
@@ -105,7 +105,7 @@ const Index = () => {
             value="15 min"
             subtitle="AVERAGE RESPONSE"
             status="success"
-            icon={<Target size={28} />}
+            icon={<Target size={24} />}
             onClick={() => handleStatCardClick('response_time')}
           />
         </div>
