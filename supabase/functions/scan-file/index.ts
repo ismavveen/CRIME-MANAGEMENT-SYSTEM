@@ -56,12 +56,12 @@ serve(async (req) => {
     // Perform VirusTotal scanning
     const scanResult = await performVirusTotalScan(fileBuffer, fileType, virusTotalApiKey);
 
-    // Create scan log entry
+    // Create scan log entry with proper UUID validation
     const { error: logError } = await supabaseClient
       .from('file_scan_logs')
       .insert({
         file_url: fileUrl,
-        report_id: reportId,
+        report_id: reportId && reportId.length === 36 ? reportId : null, // Validate UUID format
         file_type: fileType,
         file_size: fileSize,
         scan_result: scanResult.status,
@@ -73,6 +73,18 @@ serve(async (req) => {
 
     if (logError) {
       console.error('Failed to log scan result:', logError);
+    }
+
+    // Create notification for threat detection
+    if (scanResult.status === 'infected' || scanResult.status === 'suspicious') {
+      await supabaseClient
+        .from('notifications')
+        .insert({
+          type: 'security_alert',
+          title: `🚨 Security Threat Detected`,
+          message: `File scan detected ${scanResult.threats.length} threat(s) in uploaded file. File access has been blocked for security.`,
+          is_read: false
+        });
     }
 
     return new Response(
@@ -126,6 +138,9 @@ async function performVirusTotalScan(fileBuffer: ArrayBuffer, fileType: string, 
     });
 
     if (!uploadResponse.ok) {
+      if (uploadResponse.status === 403) {
+        throw new Error('VirusTotal API key is invalid or has exceeded rate limits');
+      }
       throw new Error(`VirusTotal upload failed: ${uploadResponse.status}`);
     }
 
@@ -137,17 +152,35 @@ async function performVirusTotalScan(fileBuffer: ArrayBuffer, fileType: string, 
     }
 
     // Wait a moment for initial scan
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Increased wait time
 
-    // Get scan report
-    const reportResponse = await fetch(`https://www.virustotal.com/vtapi/v2/file/report?apikey=${apiKey}&resource=${uploadResult.resource}`);
-    
-    if (!reportResponse.ok) {
-      throw new Error(`VirusTotal report failed: ${reportResponse.status}`);
+    // Get scan report with retries
+    let reportResult;
+    let attempts = 0;
+    const maxAttempts = 3;
+
+    while (attempts < maxAttempts) {
+      const reportResponse = await fetch(`https://www.virustotal.com/vtapi/v2/file/report?apikey=${apiKey}&resource=${uploadResult.resource}`);
+      
+      if (!reportResponse.ok) {
+        throw new Error(`VirusTotal report failed: ${reportResponse.status}`);
+      }
+
+      reportResult = await reportResponse.json();
+      console.log('VirusTotal scan report:', reportResult);
+
+      if (reportResult.response_code === 1) {
+        break; // Report is ready
+      } else if (reportResult.response_code === -2) {
+        // Still queued, wait and retry
+        attempts++;
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        }
+      } else {
+        break; // Other response codes
+      }
     }
-
-    const reportResult = await reportResponse.json();
-    console.log('VirusTotal scan report:', reportResult);
 
     // Parse results
     if (reportResult.response_code === 1) {

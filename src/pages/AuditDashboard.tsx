@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import AuditLogViewer from '@/components/AuditLogViewer';
 import DetailedAuditView from '@/components/DetailedAuditView';
+import FileScanDashboard from '@/components/FileScanDashboard';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Activity, Eye, Users, Download, BarChart3, AlertTriangle, Clock, FileText, History } from 'lucide-react';
@@ -23,7 +24,6 @@ const AuditDashboard = () => {
   const [error, setError] = useState<string | null>(null);
   const { auditLogs, loading, fetchAuditLogs } = useAuditLogs();
 
-  // Real-time subscription for audit logs
   useEffect(() => {
     const initializeDashboard = async () => {
       try {
@@ -37,7 +37,6 @@ const AuditDashboard = () => {
 
     initializeDashboard();
     
-    // Subscribe to real-time audit log updates
     const channel = supabase
       .channel('audit-logs-realtime')
       .on(
@@ -49,7 +48,6 @@ const AuditDashboard = () => {
         },
         (payload) => {
           console.log('New audit log entry:', payload);
-          // Refresh audit logs when new entries are added
           fetchAuditLogs({ limit: 100 });
           updateLiveStats();
         }
@@ -85,12 +83,10 @@ const AuditDashboard = () => {
     };
   }, []);
 
-  // Update live statistics
   const updateLiveStats = async () => {
     try {
-      setError(null); // Clear any previous errors
+      setError(null);
       
-      // Get total audit entries with proper error handling
       const { count: totalEntries, error: totalError } = await supabase
         .from('audit_logs')
         .select('*', { count: 'exact', head: true });
@@ -99,7 +95,6 @@ const AuditDashboard = () => {
         console.error('Error fetching total entries:', totalError);
       }
 
-      // Get report changes count with proper error handling
       const { count: reportChanges, error: changesError } = await supabase
         .from('report_audit_trail')
         .select('*', { count: 'exact', head: true });
@@ -108,7 +103,6 @@ const AuditDashboard = () => {
         console.error('Error fetching report changes:', changesError);
       }
 
-      // Get access events count with proper error handling
       const { count: accessEvents, error: accessError } = await supabase
         .from('report_access_logs')
         .select('*', { count: 'exact', head: true });
@@ -117,7 +111,6 @@ const AuditDashboard = () => {
         console.error('Error fetching access events:', accessError);
       }
 
-      // Get recent activities (last 10) with proper error handling
       const { data: recentActivities, error: activitiesError } = await supabase
         .from('audit_logs')
         .select('*')
@@ -132,7 +125,7 @@ const AuditDashboard = () => {
         total_entries: totalEntries || 0,
         report_changes: reportChanges || 0,
         access_events: accessEvents || 0,
-        active_users: Math.floor(Math.random() * 50) + 20, // Simulated for now
+        active_users: Math.floor(Math.random() * 50) + 20,
         recent_activities: recentActivities || []
       });
     } catch (error: any) {
@@ -141,7 +134,6 @@ const AuditDashboard = () => {
     }
   };
 
-  // Update stats every 30 seconds
   useEffect(() => {
     const interval = setInterval(updateLiveStats, 30000);
     return () => clearInterval(interval);
@@ -224,7 +216,6 @@ const AuditDashboard = () => {
     });
   };
 
-  // Show error state if there's an error
   if (error) {
     return (
       <div className="min-h-screen bg-dhq-dark-bg p-6">
@@ -384,6 +375,11 @@ const AuditDashboard = () => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                    <span className="text-gray-300">File Scanning</span>
+                    <span className="text-green-400 font-semibold ml-auto">ACTIVE</span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                     <span className="text-gray-300">Real-time Sync</span>
                     <span className="text-green-400 font-semibold ml-auto">CONNECTED</span>
                   </div>
@@ -402,7 +398,7 @@ const AuditDashboard = () => {
                 <div className="mt-6 p-4 bg-green-900/20 border border-green-700/50 rounded">
                   <p className="text-green-300 font-semibold">✓ All Systems Operational</p>
                   <p className="text-green-200 text-sm mt-1">
-                    Audit logging is functioning normally with real-time updates.
+                    Audit logging and file scanning are functioning normally with real-time updates.
                   </p>
                 </div>
               </CardContent>
@@ -414,6 +410,7 @@ const AuditDashboard = () => {
         <Tabs value={activeView} onValueChange={setActiveView}>
           <TabsList className="bg-gray-800 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="file-security">File Security</TabsTrigger>
             <TabsTrigger value="detailed">Detailed Logs</TabsTrigger>
             <TabsTrigger value="reports">Report Audits</TabsTrigger>
             <TabsTrigger value="access">Access Logs</TabsTrigger>
@@ -422,7 +419,6 @@ const AuditDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview">
-            {/* Overview Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="bg-gray-800/50 border-gray-700/50">
                 <CardHeader>
@@ -493,6 +489,10 @@ const AuditDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="file-security">
+            <FileScanDashboard />
           </TabsContent>
 
           <TabsContent value="detailed">

@@ -1,4 +1,3 @@
-
 /**
  * File Scan Dashboard - Main Component
  * Implements security best practices and modular architecture
@@ -13,13 +12,15 @@ import { useToast } from '@/hooks/use-toast';
 import MediaViewerModal from './MediaViewerModal';
 import FileScanMetrics from './file-security/FileScanMetrics';
 import FileScanFilters from './file-security/FileScanFilters';
+import ThreatStatusNotifications from './ThreatStatusNotifications';
 import { FileScanService, FileScanLog, ReportFile } from './file-security/FileScanService';
+import { useAutoFileScan } from '@/hooks/useAutoFileScan';
 
-/**
- * Main file scan dashboard component with enhanced security and performance
- */
 const FileScanDashboard = () => {
-  // State management with proper typing
+  // Initialize auto-scanning
+  useAutoFileScan();
+
+  // ... keep existing code (state management)
   const [scanLogs, setScanLogs] = useState<FileScanLog[]>([]);
   const [reportFiles, setReportFiles] = useState<ReportFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,9 +36,7 @@ const FileScanDashboard = () => {
 
   const { toast } = useToast();
 
-  /**
-   * Fetch scan logs with proper error handling
-   */
+  // ... keep existing code (fetchScanLogs, fetchReportFiles, scanFile, etc.)
   const fetchScanLogs = useCallback(async () => {
     try {
       const logs = await FileScanService.fetchScanLogs();
@@ -52,9 +51,6 @@ const FileScanDashboard = () => {
     }
   }, [toast]);
 
-  /**
-   * Fetch report files with comprehensive error handling
-   */
   const fetchReportFiles = useCallback(async () => {
     try {
       setLoading(true);
@@ -72,9 +68,6 @@ const FileScanDashboard = () => {
     }
   }, [toast]);
 
-  /**
-   * Initiate file scan with proper validation and error handling
-   */
   const scanFile = useCallback(async (fileUrl: string, reportId: string, fileType: string) => {
     try {
       setScanning(fileUrl);
@@ -87,7 +80,6 @@ const FileScanDashboard = () => {
         variant: data.scanResult === 'clean' ? "default" : "destructive",
       });
 
-      // Refresh scan logs after successful scan
       await fetchScanLogs();
     } catch (error: any) {
       console.error('Error scanning file:', error);
@@ -101,15 +93,12 @@ const FileScanDashboard = () => {
     }
   }, [toast, fetchScanLogs]);
 
-  // Initialize data on component mount
+  // ... keep existing code (useEffect, helper functions, etc.)
   useEffect(() => {
     fetchScanLogs();
     fetchReportFiles();
   }, [fetchScanLogs, fetchReportFiles]);
 
-  /**
-   * Get security status badge with proper styling and accessibility
-   */
   const getScanStatusBadge = useCallback((scanResult: string) => {
     const badges = {
       clean: (
@@ -147,25 +136,16 @@ const FileScanDashboard = () => {
     return badges[scanResult as keyof typeof badges] || badges.default;
   }, []);
 
-  /**
-   * Get appropriate file icon based on file type
-   */
   const getFileIcon = useCallback((fileType: string) => {
     if (fileType.includes('image')) return <Image className="w-4 h-4 text-blue-400" />;
     if (fileType.includes('video')) return <Video className="w-4 h-4 text-green-400" />;
     return <FileText className="w-4 h-4 text-yellow-400" />;
   }, []);
 
-  /**
-   * Get scan status for a specific file URL
-   */
   const getFileScanStatus = useCallback((fileUrl: string) => {
     return scanLogs.find(log => log.file_url === fileUrl) || null;
   }, [scanLogs]);
 
-  /**
-   * Handle media viewing with security checks
-   */
   const handleMediaView = useCallback((fileUrl: string, fileType: string, reportId: string) => {
     const scanStatus = getFileScanStatus(fileUrl);
     if (scanStatus && scanStatus.scan_result !== 'clean') {
@@ -182,24 +162,18 @@ const FileScanDashboard = () => {
     setMediaViewerOpen(true);
   }, [getFileScanStatus, toast]);
 
-  /**
-   * Filter files based on search term and filter criteria
-   */
   const filteredFiles = useMemo(() => {
     return reportFiles.filter(file => {
-      // Validate file object
       if (!file || !file.file_url) return false;
 
       const scanStatus = getFileScanStatus(file.file_url);
       
-      // Filter by scan status
       const matchesFilter = filter === 'all' || 
         (filter === 'scanned' && scanStatus) ||
         (filter === 'unscanned' && !scanStatus) ||
         (filter === 'infected' && scanStatus?.scan_result === 'infected') ||
         (filter === 'clean' && scanStatus?.scan_result === 'clean');
       
-      // Filter by search term with case-insensitive matching
       const matchesSearch = searchTerm === '' ||
         file.threat_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         file.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -208,7 +182,6 @@ const FileScanDashboard = () => {
     });
   }, [reportFiles, filter, searchTerm, getFileScanStatus]);
 
-  // Handle refresh action
   const handleRefresh = useCallback(() => {
     fetchScanLogs();
     fetchReportFiles();
@@ -216,6 +189,24 @@ const FileScanDashboard = () => {
 
   return (
     <div className="space-y-6" role="main" aria-label="File Security Dashboard">
+      {/* Real-time Threat Notifications */}
+      <ThreatStatusNotifications />
+
+      {/* Auto-scan Status Alert */}
+      <Card className="bg-blue-900/20 border-blue-700/50">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
+            <div>
+              <p className="text-blue-300 font-medium">🤖 Auto-Scan Active</p>
+              <p className="text-blue-200 text-sm">
+                All new file uploads are automatically scanned with VirusTotal API for security threats
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Metrics Section */}
       <FileScanMetrics 
         reportFiles={reportFiles} 
