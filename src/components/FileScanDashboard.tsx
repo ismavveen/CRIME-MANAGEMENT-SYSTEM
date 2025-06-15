@@ -1,38 +1,25 @@
 
-import React, { useState, useEffect } from 'react';
+/**
+ * File Scan Dashboard - Main Component
+ * Implements security best practices and modular architecture
+ * Provides comprehensive file security monitoring capabilities
+ */
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Shield, AlertTriangle, CheckCircle, Scan, Download, Eye, Clock, FileText, Image, Video, RefreshCw } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Shield, AlertTriangle, CheckCircle, Scan, Download, Eye, Clock, FileText, Image, Video } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import MediaViewerModal from './MediaViewerModal';
+import FileScanMetrics from './file-security/FileScanMetrics';
+import FileScanFilters from './file-security/FileScanFilters';
+import { FileScanService, FileScanLog, ReportFile } from './file-security/FileScanService';
 
-interface FileScanLog {
-  id: string;
-  file_url: string;
-  report_id: string;
-  file_type: string;
-  file_size: number;
-  scan_result: string;
-  threats_detected: string[];
-  scan_timestamp: string;
-  scanner_version: string;
-  scan_details: any;
-}
-
-interface ReportFile {
-  id: string;
-  file_url: string;
-  file_type: string;
-  threat_type: string;
-  description: string;
-  created_at: string;
-}
-
+/**
+ * Main file scan dashboard component with enhanced security and performance
+ */
 const FileScanDashboard = () => {
+  // State management with proper typing
   const [scanLogs, setScanLogs] = useState<FileScanLog[]>([]);
   const [reportFiles, setReportFiles] = useState<ReportFile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,99 +32,33 @@ const FileScanDashboard = () => {
     type: 'image' | 'video';
     reportId: string;
   } | null>(null);
+
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchScanLogs();
-    fetchReportFiles();
-  }, []);
-
-  const fetchScanLogs = async () => {
+  /**
+   * Fetch scan logs with proper error handling
+   */
+  const fetchScanLogs = useCallback(async () => {
     try {
-      // Use raw SQL query since the table might not be in TypeScript types yet
-      const { data, error } = await supabase
-        .rpc('execute_query', { 
-          query: 'SELECT * FROM file_scan_logs ORDER BY scan_timestamp DESC LIMIT 100'
-        });
-
-      if (error) {
-        // Fallback to direct query if RPC doesn't work
-        const response = await fetch(`${supabase.supabaseUrl}/rest/v1/file_scan_logs?order=scan_timestamp.desc&limit=100`, {
-          headers: {
-            'apikey': supabase.supabaseKey,
-            'Authorization': `Bearer ${supabase.supabaseKey}`,
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setScanLogs(data || []);
-        }
-      } else {
-        setScanLogs(data || []);
-      }
+      const logs = await FileScanService.fetchScanLogs();
+      setScanLogs(logs);
     } catch (error: any) {
       console.error('Error fetching scan logs:', error);
-      // Initialize with empty array if table doesn't exist yet
-      setScanLogs([]);
+      toast({
+        title: "Failed to load scan logs",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-  };
+  }, [toast]);
 
-  const fetchReportFiles = async () => {
+  /**
+   * Fetch report files with comprehensive error handling
+   */
+  const fetchReportFiles = useCallback(async () => {
     try {
       setLoading(true);
-      const { data: reports, error } = await supabase
-        .from('reports')
-        .select('id, threat_type, description, created_at, images, videos, documents')
-        .not('images', 'is', null);
-
-      if (error) throw error;
-
-      const files: ReportFile[] = [];
-      reports?.forEach(report => {
-        // Add images
-        if (report.images && Array.isArray(report.images)) {
-          report.images.forEach((url: string) => {
-            files.push({
-              id: `${report.id}-img-${url}`,
-              file_url: url,
-              file_type: 'image',
-              threat_type: report.threat_type,
-              description: report.description,
-              created_at: report.created_at
-            });
-          });
-        }
-
-        // Add videos
-        if (report.videos && Array.isArray(report.videos)) {
-          report.videos.forEach((url: string) => {
-            files.push({
-              id: `${report.id}-vid-${url}`,
-              file_url: url,
-              file_type: 'video',
-              threat_type: report.threat_type,
-              description: report.description,
-              created_at: report.created_at
-            });
-          });
-        }
-
-        // Add documents
-        if (report.documents && Array.isArray(report.documents)) {
-          report.documents.forEach((url: string) => {
-            files.push({
-              id: `${report.id}-doc-${url}`,
-              file_url: url,
-              file_type: 'document',
-              threat_type: report.threat_type,
-              description: report.description,
-              created_at: report.created_at
-            });
-          });
-        }
-      });
-
+      const files = await FileScanService.fetchReportFiles();
       setReportFiles(files);
     } catch (error: any) {
       console.error('Error fetching report files:', error);
@@ -149,21 +70,16 @@ const FileScanDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const scanFile = async (fileUrl: string, reportId: string, fileType: string) => {
+  /**
+   * Initiate file scan with proper validation and error handling
+   */
+  const scanFile = useCallback(async (fileUrl: string, reportId: string, fileType: string) => {
     try {
       setScanning(fileUrl);
       
-      const { data, error } = await supabase.functions.invoke('scan-file', {
-        body: {
-          fileUrl,
-          reportId,
-          fileType
-        }
-      });
-
-      if (error) throw error;
+      const data = await FileScanService.scanFile(fileUrl, reportId, fileType);
 
       toast({
         title: data.scanResult === 'clean' ? "File is safe" : "Scan completed",
@@ -171,7 +87,7 @@ const FileScanDashboard = () => {
         variant: data.scanResult === 'clean' ? "default" : "destructive",
       });
 
-      // Refresh scan logs
+      // Refresh scan logs after successful scan
       await fetchScanLogs();
     } catch (error: any) {
       console.error('Error scanning file:', error);
@@ -183,60 +99,74 @@ const FileScanDashboard = () => {
     } finally {
       setScanning(null);
     }
-  };
+  }, [toast, fetchScanLogs]);
 
-  const getScanStatusBadge = (scanResult: string) => {
-    switch (scanResult) {
-      case 'clean':
-        return (
-          <Badge className="bg-green-600 text-white">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Safe
-          </Badge>
-        );
-      case 'infected':
-        return (
-          <Badge className="bg-red-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Infected
-          </Badge>
-        );
-      case 'suspicious':
-        return (
-          <Badge className="bg-orange-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Suspicious
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-600 text-white">
-            <Clock className="w-3 h-3 mr-1" />
-            Pending
-          </Badge>
-        );
-      default:
-        return (
-          <Badge className="bg-gray-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Unknown
-          </Badge>
-        );
-    }
-  };
+  // Initialize data on component mount
+  useEffect(() => {
+    fetchScanLogs();
+    fetchReportFiles();
+  }, [fetchScanLogs, fetchReportFiles]);
 
-  const getFileIcon = (fileType: string) => {
+  /**
+   * Get security status badge with proper styling and accessibility
+   */
+  const getScanStatusBadge = useCallback((scanResult: string) => {
+    const badges = {
+      clean: (
+        <Badge className="bg-green-600 text-white" aria-label="File is safe">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          Safe
+        </Badge>
+      ),
+      infected: (
+        <Badge className="bg-red-600 text-white animate-pulse" aria-label="Virus detected">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          Infected
+        </Badge>
+      ),
+      suspicious: (
+        <Badge className="bg-orange-600 text-white" aria-label="Suspicious file">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          Suspicious
+        </Badge>
+      ),
+      pending: (
+        <Badge className="bg-yellow-600 text-white" aria-label="Scan pending">
+          <Clock className="w-3 h-3 mr-1" />
+          Pending
+        </Badge>
+      ),
+      default: (
+        <Badge className="bg-gray-600 text-white" aria-label="Status unknown">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          Unknown
+        </Badge>
+      )
+    };
+
+    return badges[scanResult as keyof typeof badges] || badges.default;
+  }, []);
+
+  /**
+   * Get appropriate file icon based on file type
+   */
+  const getFileIcon = useCallback((fileType: string) => {
     if (fileType.includes('image')) return <Image className="w-4 h-4 text-blue-400" />;
     if (fileType.includes('video')) return <Video className="w-4 h-4 text-green-400" />;
     return <FileText className="w-4 h-4 text-yellow-400" />;
-  };
+  }, []);
 
-  const getFileScanStatus = (fileUrl: string) => {
-    const scanLog = scanLogs.find(log => log.file_url === fileUrl);
-    return scanLog || null;
-  };
+  /**
+   * Get scan status for a specific file URL
+   */
+  const getFileScanStatus = useCallback((fileUrl: string) => {
+    return scanLogs.find(log => log.file_url === fileUrl) || null;
+  }, [scanLogs]);
 
-  const handleMediaView = (fileUrl: string, fileType: string, reportId: string) => {
+  /**
+   * Handle media viewing with security checks
+   */
+  const handleMediaView = useCallback((fileUrl: string, fileType: string, reportId: string) => {
     const scanStatus = getFileScanStatus(fileUrl);
     if (scanStatus && scanStatus.scan_result !== 'clean') {
       toast({
@@ -250,113 +180,75 @@ const FileScanDashboard = () => {
     const mediaType = fileType.includes('image') ? 'image' : 'video';
     setSelectedMedia({ url: fileUrl, type: mediaType, reportId });
     setMediaViewerOpen(true);
-  };
+  }, [getFileScanStatus, toast]);
 
-  const filteredFiles = reportFiles.filter(file => {
-    const scanStatus = getFileScanStatus(file.file_url);
-    const matchesFilter = filter === 'all' || 
-      (filter === 'scanned' && scanStatus) ||
-      (filter === 'unscanned' && !scanStatus) ||
-      (filter === 'infected' && scanStatus?.scan_result === 'infected') ||
-      (filter === 'clean' && scanStatus?.scan_result === 'clean');
-    
-    const matchesSearch = searchTerm === '' ||
-      file.threat_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      file.description.toLowerCase().includes(searchTerm.toLowerCase());
+  /**
+   * Filter files based on search term and filter criteria
+   */
+  const filteredFiles = useMemo(() => {
+    return reportFiles.filter(file => {
+      // Validate file object
+      if (!file || !file.file_url) return false;
 
-    return matchesFilter && matchesSearch;
-  });
+      const scanStatus = getFileScanStatus(file.file_url);
+      
+      // Filter by scan status
+      const matchesFilter = filter === 'all' || 
+        (filter === 'scanned' && scanStatus) ||
+        (filter === 'unscanned' && !scanStatus) ||
+        (filter === 'infected' && scanStatus?.scan_result === 'infected') ||
+        (filter === 'clean' && scanStatus?.scan_result === 'clean');
+      
+      // Filter by search term with case-insensitive matching
+      const matchesSearch = searchTerm === '' ||
+        file.threat_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        file.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [reportFiles, filter, searchTerm, getFileScanStatus]);
+
+  // Handle refresh action
+  const handleRefresh = useCallback(() => {
+    fetchScanLogs();
+    fetchReportFiles();
+  }, [fetchScanLogs, fetchReportFiles]);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <Card className="bg-gray-800/50 border-gray-700/50">
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-white">
-            <Shield className="h-6 w-6 text-cyan-400" />
-            <span>File Security Dashboard</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-gray-700/30 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Total Files</h3>
-              <p className="text-2xl font-bold text-cyan-400">{reportFiles.length}</p>
-            </div>
-            <div className="bg-gray-700/30 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Scanned Files</h3>
-              <p className="text-2xl font-bold text-green-400">{scanLogs.length}</p>
-            </div>
-            <div className="bg-gray-700/30 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Clean Files</h3>
-              <p className="text-2xl font-bold text-green-400">
-                {scanLogs.filter(log => log.scan_result === 'clean').length}
-              </p>
-            </div>
-            <div className="bg-gray-700/30 p-4 rounded-lg">
-              <h3 className="text-white font-semibold">Threats Detected</h3>
-              <p className="text-2xl font-bold text-red-400">
-                {scanLogs.filter(log => ['infected', 'suspicious'].includes(log.scan_result)).length}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-6" role="main" aria-label="File Security Dashboard">
+      {/* Metrics Section */}
+      <FileScanMetrics 
+        reportFiles={reportFiles} 
+        scanLogs={scanLogs} 
+      />
 
-      {/* Filters */}
-      <Card className="bg-gray-800/50 border-gray-700/50">
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <Input
-                placeholder="Search by threat type or description..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-gray-700/50 border-gray-600 text-white"
-              />
-            </div>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-48 bg-gray-700/50 border-gray-600">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-600">
-                <SelectItem value="all">All Files</SelectItem>
-                <SelectItem value="unscanned">Unscanned</SelectItem>
-                <SelectItem value="scanned">Scanned</SelectItem>
-                <SelectItem value="clean">Clean</SelectItem>
-                <SelectItem value="infected">Infected/Suspicious</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              onClick={() => {
-                fetchScanLogs();
-                fetchReportFiles();
-              }}
-              variant="outline"
-              className="bg-cyan-600/20 border-cyan-500 text-cyan-300"
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Filters Section */}
+      <FileScanFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        filter={filter}
+        onFilterChange={setFilter}
+        onRefresh={handleRefresh}
+        isLoading={loading}
+      />
 
       {/* Files Table */}
       <Card className="bg-gray-800/50 border-gray-700/50">
         <CardHeader>
-          <CardTitle className="text-white">Uploaded Files ({filteredFiles.length})</CardTitle>
+          <CardTitle className="text-white">
+            Uploaded Files ({filteredFiles.length.toLocaleString()})
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" role="region" aria-label="File list">
             <div className="space-y-2">
               {loading ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-gray-400" role="status" aria-live="polite">
                   <div className="animate-spin w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto mb-4"></div>
                   Loading files...
                 </div>
               ) : filteredFiles.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-gray-400" role="status">
                   <Shield className="h-12 w-12 mx-auto mb-4 text-gray-500" />
                   <p>No files found matching your criteria</p>
                 </div>
@@ -369,6 +261,7 @@ const FileScanDashboard = () => {
                     <div
                       key={file.id}
                       className="flex items-center justify-between p-4 bg-gray-700/30 rounded-lg hover:bg-gray-700/50 transition-colors"
+                      role="listitem"
                     >
                       <div className="flex items-center space-x-4 flex-1">
                         <div className="flex items-center space-x-2">
@@ -411,6 +304,7 @@ const FileScanDashboard = () => {
                             onClick={() => scanFile(file.file_url, reportId, file.file_type)}
                             disabled={scanning === file.file_url}
                             className="bg-blue-600 hover:bg-blue-700"
+                            aria-label={`Scan ${file.threat_type} file`}
                           >
                             {scanning === file.file_url ? (
                               <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -428,6 +322,7 @@ const FileScanDashboard = () => {
                                 variant="outline"
                                 onClick={() => handleMediaView(file.file_url, file.file_type, reportId)}
                                 className="border-green-500 text-green-300 hover:bg-green-600/20"
+                                aria-label={`View ${file.file_type}`}
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -438,6 +333,7 @@ const FileScanDashboard = () => {
                               variant="outline"
                               onClick={() => window.open(file.file_url, '_blank')}
                               className="border-blue-500 text-blue-300 hover:bg-blue-600/20"
+                              aria-label="Download file"
                             >
                               <Download className="w-4 h-4" />
                             </Button>
@@ -465,17 +361,18 @@ const FileScanDashboard = () => {
           <CardTitle className="text-white">Recent Scan Activity</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2 max-h-96 overflow-y-auto" role="region" aria-label="Recent scan activity">
             {scanLogs.slice(0, 10).map((log) => (
               <div
                 key={log.id}
                 className="flex items-center justify-between p-3 bg-gray-700/30 rounded-lg"
+                role="listitem"
               >
                 <div className="flex items-center space-x-3">
                   {getFileIcon(log.file_type)}
                   <div>
                     <p className="text-white text-sm font-medium">
-                      File scanned - {log.file_size} bytes
+                      File scanned - {log.file_size?.toLocaleString()} bytes
                     </p>
                     <p className="text-gray-400 text-xs">
                       {new Date(log.scan_timestamp).toLocaleString()}
