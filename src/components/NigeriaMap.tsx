@@ -145,6 +145,13 @@ const NigeriaMap = () => {
     setShowAssignDialog(true);
   };
 
+  // ADD: Handler for assigning a report (even if dummy for now)
+  const handleAssign = async (commanderId: string) => {
+    // You may want to show a toast or perform an action later.
+    // For now, just close the dialog.
+    setShowAssignDialog(false);
+  };
+
   if (loading) {
     return (
       <div className="dhq-card p-6">
@@ -340,6 +347,7 @@ const NigeriaMap = () => {
         reportLocation={selectedIncident?.location}
         reportLatitude={selectedIncident?.coordinates?.lat}
         reportLongitude={selectedIncident?.coordinates?.lng}
+        onAssign={handleAssign} {/* <-- Added required prop */}
       />
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +9,17 @@ interface ResponseUnitCardProps {
   unit: any;
   onStatusUpdate: (id: string, status: string) => void;
   onDelete?: (id: string) => void;
+  isDeleteEnabled?: boolean; // <-- Add this prop
+  isStatusEnabled?: boolean; // <-- Add this prop
 }
 
-const ResponseUnitCard: React.FC<ResponseUnitCardProps> = ({ unit, onStatusUpdate, onDelete }) => {
+const ResponseUnitCard: React.FC<ResponseUnitCardProps> = ({
+  unit,
+  onStatusUpdate,
+  onDelete,
+  isDeleteEnabled,
+  isStatusEnabled,
+}) => {
   return (
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader>
@@ -24,18 +33,22 @@ const ResponseUnitCard: React.FC<ResponseUnitCardProps> = ({ unit, onStatusUpdat
         <p className="text-gray-400">Unit: {unit.unit}</p>
         <p className="text-gray-400">State: {unit.state}</p>
         <div className="flex items-center gap-3 mt-2">
-          <Button
-            size="sm"
-            variant="destructive"
-            className="flex items-center gap-1"
-            onClick={() => onDelete && onDelete(unit.id)}
-          >
-            <Trash2 className="h-4 w-4" />
-            Delete
-          </Button>
+          {isDeleteEnabled && (
+            <Button
+              size="sm"
+              variant="destructive"
+              className="flex items-center gap-1"
+              onClick={() => onDelete && onDelete(unit.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+          )}
+          {/* Place status enable logic if needed for activate/deactivate */}
         </div>
       </CardContent>
     </Card>
   )
 };
 export default ResponseUnitCard;
+
