@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useReports, Report } from '@/hooks/useReports';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
@@ -292,8 +293,8 @@ const RealTimeReports = () => {
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
           <div className="col-span-2">Time</div>
           <div className="col-span-3">Location</div>
-          <div className="col-span-3">Threat Type</div>
-          <div className="col-span-1">Status</div>
+          <div className="col-span-2">Threat Type</div>
+          <div className="col-span-2">Status</div>
           <div className="col-span-1">Evidence</div>
           <div className="col-span-2">Quick Actions</div>
         </div>
@@ -338,13 +339,13 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
                   </div>
                 </div>
                 
-                <div className="col-span-1">
+                <div className="col-span-2">
                   <Badge className={`text-xs px-2 py-1 ${getStatusColor(report.status)} flex items-center space-x-1`}>
                     {getStatusIcon(report.status)}
                     <span className="truncate">{report.status || 'Pending'}</span>
