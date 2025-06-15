@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import IncidentDetailsDialog from './IncidentDetailsDialog';
+import IncidentDetailsDialog from '@/components/IncidentDetailsDialog';
 import AssignmentDialog from './AssignmentDialog';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
@@ -82,6 +82,12 @@ const NigeriaMap: React.FC<NigeriaMapProps> = ({ filterByState }) => {
     }
   };
 
+  const handleAssignFromDialog = (incident: DetailedIncident) => {
+    setSelectedIncident(incident);
+    setShowDetailsDialog(false);
+    setShowAssignDialog(true);
+  };
+
   if (loading) {
     return (
       <div className="dhq-card p-6">
@@ -140,6 +146,7 @@ const NigeriaMap: React.FC<NigeriaMapProps> = ({ filterByState }) => {
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
         incident={selectedIncident}
+        onAssignClick={handleAssignFromDialog}
       />
 
       <AssignmentDialog
