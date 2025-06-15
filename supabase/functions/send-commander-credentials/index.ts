@@ -31,97 +31,80 @@ serve(async (req) => {
     const expirationTime = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
     const resetLink = `${Deno.env.get("SITE_URL") || "http://localhost:5173"}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}&expires=${expirationTime.getTime()}`;
 
-    // --- Compose Email HTML
+    // --- Compose Email HTML w/Branding Logo and Custom Message
     const emailHTML = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Defense Headquarters - Login Credentials</title>
+        <title>Defense Headquarters - Unit Commander Credentials</title>
         <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #002b5c; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background: #f9f9f9; }
-          .credentials { background: #e8f4f8; padding: 15px; border-left: 4px solid #002b5c; margin: 20px 0; }
-          .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
-          .urgent { background: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0; }
-          .button { display: inline-block; background: #002b5c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+          body { font-family: 'Inter', Arial, sans-serif; background: #f5f7fa; line-height: 1.6; color: #222; }
+          .container { background: #fff; max-width: 600px; margin: 24px auto; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 24px 0 rgba(0, 43, 92, .1); }
+          .header { background: #002b5c; color: #fff; padding: 30px 20px 16px 20px; text-align: center; }
+          .header img { max-width: 65px; margin-bottom: 6px; }
+          .header h1 { margin: 0; font-size: 1.5rem; font-weight: bold; letter-spacing: 1px; }
+          .header h2 { margin: 0; font-size: 1rem; font-weight: 400; opacity: 0.92; }
+          .branding-message { margin: 16px 0 8px 0; color: #e0eaff; font-weight: 500; }
+          .content { padding: 28px 24px 28px 24px; }
+          .important { background: #eaf3ff; border-left: 5px solid #002b5c; padding: 14px 16px; margin: 16px 0; border-radius: 3px; }
+          .credentials { margin: 16px 0; background: #fbfcfe; border: 1px solid #ebebeb; padding: 13px 18px; border-radius: 7px; }
+          .reset-link-box { background: #f5f5fc; border-left: 5px solid #0f72e5; padding: 22px 20px; margin: 20px 0 30px 0; border-radius: 6px; }
+          .reset-link-box a { display: block; background: #002b5c; color: #fff !important; text-decoration: none; font-size: 1.13rem; font-weight: 600; margin: 18px 0 13px 0; padding: 13px 20px; border-radius: 6px; letter-spacing: 0.5px;}
+          .reset-link-box .expires { font-size: 0.97rem; color: #d64f31; margin-top: 6px;}
+          .warning, .security-reminders { font-size: 0.99rem; color: #9a5001; background: #fff3cd; border-left: 5px solid #ffbb33; margin: 16px 0; padding: 11px 14px; border-radius: 3px; }
+          .footer { background: #f8fafd; text-align: center; padding: 22px 14px; font-size: 13px; color: #828282; margin-top: 20px; border-top: 1px solid #e3e3e3; }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1>Defense Headquarters</h1>
+            <img src="https://ihcrdzkmjbpfsgipphxa.supabase.co/storage/v1/object/public/protected/lovable-uploads/ba3282a6-18f0-407f-baa2-bbdab0014f65.png" alt="Defense HQ Logo" />
+            <h1>DEFENSE HEADQUARTERS</h1>
             <h2>Crime Reporting & Intelligence Portal</h2>
+            <div class="branding-message">🇳🇬 Welcome to the United Command of National Security</div>
           </div>
-          
           <div class="content">
-            <h3>Welcome ${rank} ${fullName},</h3>
-            
-            <p>Your account has been successfully created for the Defense Headquarters Crime Reporting Portal. You have been assigned as a Unit Commander for <strong>${category}</strong>.</p>
-            
+            <div class="important">
+              <strong>Welcome ${rank} ${fullName},</strong><br/>
+              <span>
+                You have been appointed as a <span style="color:#0f72e5;font-weight:600">${category} Unit Commander</span> for <b>${unit ? `${unit}, ` : ""}${category}</b>.<br/>
+                Your mission is crucial to the safety and response for <b>Nigeria</b>. This system empowers you to coordinate field units, respond to threats, and access intelligence reports anonymously and securely.
+              </span>
+            </div>
             <div class="credentials">
-              <h4>🔐 Your Login Credentials:</h4>
-              <p><strong>Email:</strong> ${email}</p>
-              <p><strong>Service Number:</strong> ${serviceNumber}</p>
-              <p><strong>Temporary Password:</strong> <code>${password}</code></p>
-              <p><strong>Military Branch:</strong> ${category}</p>
-              <p><strong>Rank:</strong> ${rank}</p>
-              ${unit ? `<p><strong>Unit:</strong> ${unit}</p>` : ''}
+              <strong>Login Credentials:</strong><br/>
+              Email: <b>${email}</b><br/>
+              Service Number: <b>${serviceNumber}</b><br/>
+              Military Branch: <b>${category}</b><br/>
+              Rank: <b>${rank}</b><br/>
+              ${unit ? `Unit: <b>${unit}</b><br/>` : ""}
+              Temporary Password: <code style="background:#eee;border-radius:3px;padding:1px 7px">${password}</code><br/>
             </div>
-            
-            <div class="urgent">
-              <h4>⏰ URGENT - TIME SENSITIVE ACTION REQUIRED:</h4>
-              <p>This secure password setup link will <strong>EXPIRE IN 1 HOUR</strong> from the time this email was sent.</p>
-              <p><strong>Email sent at:</strong> ${new Date().toLocaleString()}</p>
-              <p><strong>Link expires at:</strong> ${expirationTime.toLocaleString()}</p>
+            <div class="reset-link-box">
+              <span style="font-size:1.07rem"><b>🔒 Setup or Reset Your Password</b></span><br/>
+              Click the secure link below <b>IMMEDIATELY</b> to set up your password and activate your account.<br/>
+              <a href="${resetLink}">Set Up Password (Expires in 1 Hour)</a>
+              <span class="expires">This link will expire at: <b>${expirationTime.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', hour12: true })}, ${expirationTime.toLocaleDateString()}</b></span>
             </div>
-            
             <div class="warning">
-              <h4>⚠️ Important Security Notice:</h4>
-              <p>For your security, you <strong>MUST</strong> set up a new password before accessing your dashboard. The temporary password above and this secure link will both expire in <strong>1 HOUR</strong>.</p>
+              <b>DO NOT SHARE THIS EMAIL OR PASSWORD WITH ANYONE.</b><br/>
+              For security, the link expires in 1 hour. After that, request a new reset link from Defense Headquarters IT Support.
             </div>
-            
-            <p><strong>Next Steps (Complete within 1 hour):</strong></p>
-            <ol>
-              <li>Click the secure link below to set up your new password <strong>IMMEDIATELY</strong></li>
-              <li>Create a strong password with at least 8 characters</li>
-              <li>Log in to your commander dashboard using your new credentials</li>
-            </ol>
-            
-            <a href="${resetLink}" class="button">🔒 Set Up New Password (Expires in 1 Hour)</a>
-            
-            <p><strong>Login Instructions:</strong></p>
-            <ul>
-              <li>You can log in using either your email address or service number</li>
-              <li>Access the commander portal at: <a href="${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/commander-portal">${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/commander-portal</a></li>
-              <li>Your dashboard will show reports and data specific to your assigned state</li>
-            </ul>
-            
-            <div class="urgent">
-              <p><strong>⚠️ CRITICAL SECURITY REMINDERS:</strong></p>
-              <ul>
-                <li><strong>This link expires in exactly 1 hour</strong> - act immediately</li>
-                <li>Never share your credentials with anyone</li>
-                <li>Log out when finished using the system</li>
-                <li>Report any suspicious activity immediately</li>
-                <li>Delete this email after setting up your password</li>
-                <li>If the link expires, contact DHQ IT Support for a new password reset</li>
-              </ul>
+            <div class="security-reminders">
+              - Access your dashboard for ${unit ? unit + ', ' : ""}${category}-assigned state only.<br/>
+              - Follow operational guidelines and log out after use.<br/>
+              - Delete this email after setting your password.<br/>
             </div>
-            
-            <p>If you have any issues accessing your account or need technical support, please contact the DHQ IT Support team immediately.</p>
-            
-            <p>Thank you for your service to our nation's security.</p>
+            <div style="margin:18px 0 18px 0">
+              For tech support, contact <a href="mailto:support@defencehq.ng" style="color:#002b5c">DHQ IT Support</a>.<br/>
+              Thank you for defending Nigeria.
+            </div>
           </div>
-          
           <div class="footer">
-            <p>Defense Headquarters - Crime Reporting & Intelligence Portal<br>
-            This is an automated message. Please do not reply to this email.<br>
-            <strong>Security Notice:</strong> This email contains time-sensitive security information.<br>
-            © ${new Date().getFullYear()} Federal Republic of Nigeria</p>
+            &copy; ${new Date().getFullYear()} Defense Headquarters &bullet; Federal Republic of Nigeria<br>
+            This is an AUTOMATED security notification.<br>
+            <b>DEFENSE INTELLIGENCE OFFICE</b> &bullet; Do not reply directly to this email.
           </div>
         </div>
       </body>
@@ -133,8 +116,9 @@ serve(async (req) => {
     if (!credsRaw) {
       throw new Error("FIREBASE_SERVICE_ACCOUNT_JSON is not set");
     }
-
     const creds: JWTInput = JSON.parse(credsRaw);
+
+    // Authenticate and get Gmail API access token
     const googleAuth = new GoogleAuth({
       credentials: creds,
       scopes: ["https://www.googleapis.com/auth/gmail.send"],
@@ -147,45 +131,45 @@ serve(async (req) => {
     const message =
       `From: "Defense HQ" <${creds.client_email}>\r\n` +
       `To: ${email}\r\n` +
-      'Subject: URGENT: Defense Headquarters Login Credentials - Action Required (1 Hour Expiry)\r\n' +
+      'Subject: URGENT: Your Unit Commander Portal Credentials (Action Required)\r\n' +
       "MIME-Version: 1.0\r\n" +
       "Content-Type: text/html; charset=UTF-8\r\n" +
       "\r\n" +
       emailHTML;
 
     // Gmail API expects RFC822 message, base64url (not standard base64).
-    // We'll send normal base64 and let Google accept it, since it's widely compatible.
-
     const raw = b64encode(message);
 
     // --- Send email via Gmail API
-    const gmailRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/send`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${accessToken.token}`,
-        "Content-Type": "application/json"
+    const gmailRes = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ raw }),
       },
-      body: JSON.stringify({
-        raw,
-      }),
-    });
+    );
 
     if (!gmailRes.ok) {
       const errMsg = await gmailRes.text();
-      throw new Error(`Failed to send email: ${gmailRes.status} ${errMsg}`);
+      console.error("Gmail API error", gmailRes.status, errMsg);
+      throw new Error(`Failed to send branded DHQ email: ${gmailRes.status} ${errMsg}`);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Credentials sent successfully via Firebase Gmail API with 1-hour expiration link.",
+        message: "Branded credentials sent via Gmail API with 1-hour reset link.",
         resetLink,
         expiresAt: expirationTime.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Error in send-commander-credentials function:", error);
+    console.error("Error in branded send-commander-credentials function:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
