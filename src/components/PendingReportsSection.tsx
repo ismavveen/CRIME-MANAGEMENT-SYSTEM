@@ -6,7 +6,7 @@ import { Clock, MapPin, AlertTriangle, FileText } from 'lucide-react';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import AssignmentDialog from "./AssignmentDialog";
-import { useAuth } from '@/hooks/useAuth'; // Utility to check admin status
+import { useAuth } from '@/contexts/AuthContext'; // Utility to check admin status
 
 const PendingReportsSection: React.FC = () => {
   const { reports, updateReportStatus, refetch } = useReports();
