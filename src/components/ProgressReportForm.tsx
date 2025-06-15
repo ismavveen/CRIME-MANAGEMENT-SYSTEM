@@ -45,6 +45,7 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
     // Step 3: Attachments
     images: [] as File[],
     videos: [] as File[],
+    liveWitnessVideos: [] as Blob[],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -169,6 +170,7 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
       threatType: "",
       images: [] as File[],
       videos: [] as File[],
+      liveWitnessVideos: [] as Blob[],
     });
     setLocationData({
       latitude: null,
@@ -222,6 +224,7 @@ const ProgressReportForm = ({ onSuccess }: ProgressReportFormProps) => {
             data={{
               images: formData.images,
               videos: formData.videos,
+              liveWitnessVideos: formData.liveWitnessVideos,
             }}
             onDataChange={handleInputChange}
             onNext={handleNext}

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ interface ReviewSubmissionStepProps {
     threatType: string;
     images: File[];
     videos: File[];
+    liveWitnessVideos?: Blob[];
   };
   locationData: {
     latitude: number | null;
@@ -57,7 +59,7 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
         locationAccuracy: locationData.accuracy
       };
 
-      // Prepare files for upload
+      // Prepare files for upload including live witness videos
       const files: any[] = [];
       
       // Convert File objects to uploadable format
@@ -79,6 +81,19 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
         });
       }
 
+      // Add live witness videos
+      if (data.liveWitnessVideos && data.liveWitnessVideos.length > 0) {
+        for (let i = 0; i < data.liveWitnessVideos.length; i++) {
+          const blob = data.liveWitnessVideos[i];
+          const arrayBuffer = await blob.arrayBuffer();
+          files.push({
+            name: `live-witness-${i + 1}-${Date.now()}.webm`,
+            type: 'video/webm',
+            data: Array.from(new Uint8Array(arrayBuffer))
+          });
+        }
+      }
+
       console.log('Submitting to secure backend edge function:', { reportData, fileCount: files.length });
 
       // Submit to backend which generates secure reference number
@@ -86,8 +101,14 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
         body: { reportData, files },
       });
 
-      if (error || !result || !result.success) {
-        throw new Error(result?.error || error?.message || 'Failed to submit report');
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || 'Failed to submit report');
+      }
+
+      if (!result || !result.success) {
+        console.error('Submission result error:', result);
+        throw new Error(result?.error || 'Failed to submit report');
       }
       
       // Ensure we have the backend-generated reference number
@@ -120,6 +141,8 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
     high: "text-orange-600 bg-orange-50 border-orange-200",
     critical: "text-red-600 bg-red-50 border-red-200"
   };
+
+  const totalFiles = data.images.length + data.videos.length + (data.liveWitnessVideos?.length || 0);
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -193,76 +216,103 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">State</label>
-                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center">
-                    <MapPin className="h-4 w-4 text-gray-500 mr-2" />
-                    <span className="text-gray-800">{data.state}</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Local Government Area</label>
-                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <span className="text-gray-800">{data.localGovernment}</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Priority Level</label>
-                  <div className={`mt-1 p-3 rounded-lg border font-semibold ${urgencyColors[data.urgency as keyof typeof urgencyColors]}`}>
-                    {data.urgency.charAt(0).toUpperCase() + data.urgency.slice(1)} Priority
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Threat Type</label>
-                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <span className="text-gray-800">{data.threatType}</span>
-                  </div>
-                </div>
-              </div>
-              
+            <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <label className="text-sm font-semibold text-gray-700">Report Title</label>
+                <label className="text-sm font-semibold text-gray-700">State</label>
                 <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                  <span className="text-gray-800 font-semibold">{data.reportTitle}</span>
+                  <span className="text-gray-800">{data.state}</span>
                 </div>
               </div>
               
               <div>
-                <label className="text-sm font-semibold text-gray-700">Detailed Description</label>
-                <div className="mt-1 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">{data.description}</p>
+                <label className="text-sm font-semibold text-gray-700">Local Government</label>
+                <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-gray-800">{data.localGovernment}</span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Threat Type</label>
+                <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-gray-800">{data.threatType}</span>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-semibold text-gray-700">Urgency Level</label>
+                <div className={`mt-1 p-3 rounded-lg border ${urgencyColors[data.urgency as keyof typeof urgencyColors]}`}>
+                  <span className="font-semibold capitalize">{data.urgency}</span>
+                </div>
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="text-sm font-semibold text-gray-700">Description</label>
+                <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                  <span className="text-gray-800">{data.description}</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Location Information */}
-        {locationData.hasPermission && (
+        {/* Evidence Summary */}
+        {totalFiles > 0 && (
           <Card className="border-purple-200 shadow-lg">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
               <CardTitle className="flex items-center space-x-3 text-purple-800">
+                <FileText className="h-6 w-6" />
+                <span>Evidence Summary</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid md:grid-cols-4 gap-4 text-center">
+                <div className="bg-white rounded-lg p-4 border border-green-200">
+                  <div className="text-2xl font-bold text-green-600">{data.images.length}</div>
+                  <div className="text-sm text-green-700 flex items-center justify-center">
+                    <Image className="h-4 w-4 mr-1" />
+                    Photos
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                  <div className="text-2xl font-bold text-blue-600">{data.videos.length}</div>
+                  <div className="text-sm text-blue-700 flex items-center justify-center">
+                    <Video className="h-4 w-4 mr-1" />
+                    Videos
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-purple-200">
+                  <div className="text-2xl font-bold text-purple-600">{data.liveWitnessVideos?.length || 0}</div>
+                  <div className="text-sm text-purple-700 flex items-center justify-center">
+                    <Video className="h-4 w-4 mr-1" />
+                    Live Witness
+                  </div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="text-2xl font-bold text-gray-600">{totalFiles}</div>
+                  <div className="text-sm text-gray-700">Total Files</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Location Information */}
+        {locationData.hasPermission && (
+          <Card className="border-blue-200 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
+              <CardTitle className="flex items-center space-x-3 text-blue-800">
                 <MapPin className="h-6 w-6" />
                 <span>Location Information</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid md:grid-cols-3 gap-4">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="text-sm font-semibold text-gray-700">Latitude</label>
+                  <label className="text-sm font-semibold text-gray-700">Coordinates</label>
                   <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <span className="text-gray-800 font-mono">{locationData.latitude?.toFixed(6)}</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-700">Longitude</label>
-                  <div className="mt-1 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <span className="text-gray-800 font-mono">{locationData.longitude?.toFixed(6)}</span>
+                    <span className="text-gray-800">
+                      {locationData.latitude?.toFixed(6)}, {locationData.longitude?.toFixed(6)}
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -275,62 +325,15 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
             </CardContent>
           </Card>
         )}
-
-        {/* Evidence Summary */}
-        {(data.images.length > 0 || data.videos.length > 0) && (
-          <Card className="border-blue-200 shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-cyan-50">
-              <CardTitle className="flex items-center space-x-3 text-blue-800">
-                <Image className="h-6 w-6" />
-                <span>Evidence Attached</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <Image className="h-5 w-5 text-green-600" />
-                    <span className="font-semibold text-green-800">Photos</span>
-                  </div>
-                  <div className="text-2xl font-bold text-green-700">{data.images.length}</div>
-                  <div className="text-sm text-green-600">images attached</div>
-                </div>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <Video className="h-5 w-5 text-blue-600" />
-                    <span className="font-semibold text-blue-800">Videos</span>
-                  </div>
-                  <div className="text-2xl font-bold text-blue-700">{data.videos.length}</div>
-                  <div className="text-sm text-blue-600">videos attached</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Enhanced Security Notice */}
-        <Card className="border-gray-200 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-center space-x-3 text-gray-600">
-              <Calendar className="h-5 w-5" />
-              <span>Report will be submitted on: {new Date().toLocaleString()}</span>
-            </div>
-            <div className="text-center mt-2 text-sm text-blue-600">
-              <span>A secure reference number will be generated by our system upon submission</span>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex justify-between items-center max-w-4xl mx-auto pt-6">
         <Button
           type="button"
           variant="outline"
           onClick={onBack}
           disabled={isSubmitting}
-          className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gray-50 px-8 py-3"
+          className="flex items-center space-x-2 border-green-300 text-green-700 hover:bg-green-50 px-8 py-3"
         >
           <ArrowLeft className="h-5 w-5" />
           <span>Back to Evidence</span>
@@ -339,12 +342,12 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
         <Button 
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white flex items-center space-x-2 px-12 py-4 text-lg font-bold shadow-lg"
+          className="bg-green-600 hover:bg-green-700 text-white flex items-center space-x-2 px-8 py-3 text-lg font-semibold"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Submitting Report...</span>
+              <span>Submitting...</span>
             </>
           ) : (
             <>
@@ -355,15 +358,11 @@ const ReviewSubmissionStep = ({ data, locationData, onBack, onSuccess }: ReviewS
         </Button>
       </div>
 
-      {/* Enhanced Security Notice */}
+      {/* Security Notice */}
       <div className="text-center mt-8">
         <div className="flex items-center justify-center space-x-2 text-sm text-green-600">
-          <CheckCircle className="h-4 w-4" />
-          <span>Your report will be encrypted and processed securely by Defence Headquarters</span>
-        </div>
-        <div className="flex items-center justify-center space-x-2 text-xs text-blue-600 mt-1">
-          <Shield className="h-3 w-3" />
-          <span>Reference number is generated server-side for maximum security</span>
+          <Shield className="h-4 w-4" />
+          <span>All data is encrypted and secure • Your privacy is protected</span>
         </div>
       </div>
     </div>

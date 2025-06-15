@@ -22,6 +22,7 @@ serve(async (req) => {
     const { reportData, files } = await req.json();
 
     console.log('Received report submission:', reportData);
+    console.log('Files to upload:', files?.length || 0);
 
     // Enhanced secure serial number generation with multiple layers
     const generateSecureSerialNumber = () => {
@@ -46,38 +47,59 @@ serve(async (req) => {
       return `DHQ${year}${month}${day}${timestampComponent}${randomComponent}`;
     };
 
-    // Upload files if any
+    // Upload files if any with proper error handling
     let uploadedImages: string[] = [];
     let uploadedVideos: string[] = [];
     let uploadedDocuments: string[] = [];
 
     if (files && files.length > 0) {
+      console.log('Processing file uploads...');
+      
       for (const file of files) {
-        const fileName = `${Date.now()}-${file.name}`;
-        const { data: fileData, error: fileError } = await supabaseClient.storage
-          .from('report-files')
-          .upload(fileName, file.data, {
-            contentType: file.type,
-          });
+        try {
+          // Convert array back to Uint8Array for proper upload
+          const fileData = new Uint8Array(file.data);
+          const fileName = `${Date.now()}-${file.name}`;
+          
+          console.log(`Uploading file: ${fileName} (${fileData.length} bytes)`);
 
-        if (fileError) {
-          console.error('File upload error:', fileError);
-          continue;
-        }
+          const { data: uploadData, error: fileError } = await supabaseClient.storage
+            .from('report-files')
+            .upload(fileName, fileData, {
+              contentType: file.type,
+              duplex: 'half'
+            });
 
-        const { data: { publicUrl } } = supabaseClient.storage
-          .from('report-files')
-          .getPublicUrl(fileData.path);
+          if (fileError) {
+            console.error('File upload error for', fileName, ':', fileError);
+            continue; // Skip this file but continue with others
+          }
 
-        // Categorize files by type
-        if (file.type.startsWith('image/')) {
-          uploadedImages.push(publicUrl);
-        } else if (file.type.startsWith('video/')) {
-          uploadedVideos.push(publicUrl);
-        } else {
-          uploadedDocuments.push(publicUrl);
+          const { data: { publicUrl } } = supabaseClient.storage
+            .from('report-files')
+            .getPublicUrl(uploadData.path);
+
+          console.log(`File uploaded successfully: ${publicUrl}`);
+
+          // Categorize files by type, including live witness videos
+          if (file.type.startsWith('image/')) {
+            uploadedImages.push(publicUrl);
+          } else if (file.type.startsWith('video/') || file.name.includes('live-witness')) {
+            uploadedVideos.push(publicUrl);
+          } else {
+            uploadedDocuments.push(publicUrl);
+          }
+        } catch (error) {
+          console.error('Error processing file:', file.name, error);
+          // Continue with other files
         }
       }
+      
+      console.log('File upload summary:', {
+        images: uploadedImages.length,
+        videos: uploadedVideos.length,
+        documents: uploadedDocuments.length
+      });
     }
 
     // Generate unique serial number with retry logic for ultimate uniqueness
@@ -141,9 +163,11 @@ serve(async (req) => {
         filesUploaded: {
           images: uploadedImages.length,
           videos: uploadedVideos.length,
-          documents: uploadedDocuments.length
+          documents: uploadedDocuments.length,
+          totalFiles: uploadedImages.length + uploadedVideos.length + uploadedDocuments.length
         },
-        serialNumberGenerated: new Date().toISOString()
+        serialNumberGenerated: new Date().toISOString(),
+        hasLiveWitness: files?.some((f: any) => f.name.includes('live-witness')) || false
       },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
@@ -160,7 +184,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('Report insertion error:', insertError);
-      throw insertError;
+      throw new Error(`Database error: ${insertError.message}`);
     }
 
     console.log('Report inserted successfully with serial number:', insertedReport.serial_number);
@@ -170,7 +194,12 @@ serve(async (req) => {
         success: true,
         reportId: insertedReport.id,
         serialNumber: insertedReport.serial_number,
-        message: 'Report submitted successfully with secure reference number'
+        message: 'Report submitted successfully with secure reference number',
+        filesUploaded: {
+          images: uploadedImages.length,
+          videos: uploadedVideos.length,
+          documents: uploadedDocuments.length
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -183,7 +212,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Failed to submit report'
+        error: error.message || 'Failed to submit report',
+        details: error.stack || 'No additional details available'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
