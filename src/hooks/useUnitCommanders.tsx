@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -288,6 +287,31 @@ export const useUnitCommanders = () => {
     };
   }, []);
 
+  const deleteCommander = async (commanderId: string) => {
+    try {
+      // Delete commander from Supabase
+      const { error } = await supabase
+        .from('unit_commanders')
+        .delete()
+        .eq('id', commanderId);
+      if (error) throw error;
+
+      toast({
+        title: "Commander Deleted",
+        description: "The commander has been deleted from the system.",
+      });
+
+      // Optionally re-fetch the list
+      fetchCommanders();
+    } catch (error: any) {
+      toast({
+        title: "Deletion Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     commanders,
     systemMetrics,
@@ -298,6 +322,7 @@ export const useUnitCommanders = () => {
     refetch: () => {
       fetchCommanders();
       fetchSystemMetrics();
-    }
+    },
+    deleteCommander,
   };
 };

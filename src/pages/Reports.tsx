@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,24 +7,38 @@ import AuditDashboard from '@/pages/AuditDashboard';
 import ReportAnalytics from '@/components/ReportAnalytics';
 import FileScanDashboard from '@/components/FileScanDashboard';
 import { FileText, Activity, BarChart3, Shield, History, Users, Eye } from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState('reports');
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
       {/* Header */}
       <div className="p-6 border-b border-gray-700/50">
         <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center space-x-4 mb-2">
-              <h1 className="text-3xl font-bold text-white dhq-heading">Reports & Intelligence Portal</h1>
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                <span className="text-green-400 text-sm font-semibold uppercase tracking-wide">LIVE MONITORING</span>
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-gray-300 hover:bg-gray-700 mr-4"
+              onClick={() => navigate(-1)}
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <div className="flex items-center space-x-4 mb-2">
+                <h1 className="text-3xl font-bold text-white dhq-heading">Reports & Intelligence Portal</h1>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-green-400 text-sm font-semibold uppercase tracking-wide">LIVE MONITORING</span>
+                </div>
               </div>
+              <p className="text-gray-400">Comprehensive crime reporting and intelligence management system</p>
             </div>
-            <p className="text-gray-400">Comprehensive crime reporting and intelligence management system</p>
           </div>
         </div>
       </div>
@@ -183,5 +196,4 @@ const Reports = () => {
     </div>
   );
 };
-
 export default Reports;

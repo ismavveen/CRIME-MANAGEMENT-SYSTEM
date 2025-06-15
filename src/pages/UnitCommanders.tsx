@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import CommanderRegistration from '../components/CommanderRegistration';
@@ -11,7 +10,7 @@ import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 
 const UnitCommanders = () => {
-  const { commanders, loading, updateCommanderStatus } = useUnitCommanders();
+  const { commanders, loading, updateCommanderStatus, deleteCommander } = useUnitCommanders();
   const { metrics } = useSystemMetrics();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,6 +96,7 @@ const UnitCommanders = () => {
                   key={commander.id} 
                   unit={commander}
                   onStatusUpdate={updateCommanderStatus}
+                  onDelete={deleteCommander}
                 />
               ))}
             </div>
