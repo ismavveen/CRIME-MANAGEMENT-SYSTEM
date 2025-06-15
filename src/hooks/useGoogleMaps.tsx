@@ -47,7 +47,19 @@ export const useGoogleMaps = () => {
           );
           return;
         }
-        setApiKey(data.apiKey);
+
+        // Defensive coding: Trim whitespace and remove accidental quotes from the API key.
+        const cleanedApiKey = data.apiKey.trim().replace(/^"|"$/g, '');
+        
+        if (!cleanedApiKey) {
+             setError(
+                'Google Maps API key is empty after cleanup. ' +
+                'Check your Supabase Edge Function secret: "GOOGLE_MAPS_API_KEY". '
+            );
+            return;
+        }
+        
+        setApiKey(cleanedApiKey);
 
         // Remove any existing Google Maps script
         const prevScript = document.querySelector('script[data-dhq-google="1"]');
@@ -56,7 +68,7 @@ export const useGoogleMaps = () => {
         }
 
         script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=visualization`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${cleanedApiKey}&libraries=visualization`;
         script.async = true;
         script.defer = true;
         script.setAttribute('data-dhq-google', '1');
