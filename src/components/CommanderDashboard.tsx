@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
@@ -5,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import DashboardSidebar from './DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3, ListTodo } from 'lucide-react';
 import GoogleMapsHeatmap from './GoogleMapsHeatmap';
 import RealTimeReports from './RealTimeReports';
