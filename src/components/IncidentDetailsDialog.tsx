@@ -107,7 +107,7 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-3xl">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-xl">
         <DialogHeader>
           <DialogTitle className="text-xl text-white flex items-center gap-2">
             {getStatusIcon(incident.status)}

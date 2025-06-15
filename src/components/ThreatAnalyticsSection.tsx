@@ -83,28 +83,6 @@ const ThreatAnalyticsSection = () => {
     )];
   }, [reports, selectedState]);
 
-  // State-level threat analysis
-  const stateThreatData = useMemo(() => {
-    const stateMap = new Map();
-    
-    filteredReports.forEach(report => {
-      const state = report.state || 'Unknown';
-      if (!stateMap.has(state)) {
-        stateMap.set(state, { state, total: 0, types: {} });
-      }
-      
-      const stateData = stateMap.get(state);
-      stateData.total++;
-      
-      const threatType = report.threat_type || 'Other';
-      stateData.types[threatType] = (stateData.types[threatType] || 0) + 1;
-    });
-
-    return Array.from(stateMap.values())
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10); // Top 10 states
-  }, [filteredReports]);
-
   // LGA-level threat analysis
   const lgaThreatData = useMemo(() => {
     if (selectedState === 'all') return [];
@@ -275,31 +253,8 @@ const ThreatAnalyticsSection = () => {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* State-Level Analysis */}
-        <Card className="bg-gray-800/50 border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-white">
-              <MapPin className="h-5 w-5 text-red-400" />
-              <span>Top 10 States by Threat Volume</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stateThreatData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis type="number" stroke="#9CA3AF" />
-                  <YAxis dataKey="state" type="category" stroke="#9CA3AF" width={60} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="total" fill="#ef4444" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Threat Type Distribution */}
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-gray-800/50 border-gray-700 lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2 text-white">
               <AlertTriangle className="h-5 w-5 text-yellow-400" />

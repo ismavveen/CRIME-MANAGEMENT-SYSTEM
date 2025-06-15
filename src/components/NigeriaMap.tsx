@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
 import AssignmentDialog from './AssignmentDialog';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
+import { useToast } from '@/hooks/use-toast';
 
 interface Incident {
   id: string;
@@ -16,13 +18,15 @@ interface Incident {
 }
 
 const NigeriaMap = () => {
-  const { reports, loading } = useReports();
-  const { assignments } = useAssignments();
+  const { reports, loading, updateReportStatus, refetch: refetchReports } = useReports();
+  const { assignments, createAssignment } = useAssignments();
   const { commanders } = useUnitCommanders();
   const [selectedMapPoint, setSelectedMapPoint] = useState<Incident | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedIncident, setSelectedIncident] = useState<IncidentDetails | null>(null);
+  const { toast } = useToast();
+
 
   // Convert reports to incidents for the map with assignment status
   const incidents: Incident[] = reports
@@ -142,14 +146,47 @@ const NigeriaMap = () => {
 
   const handleAssignReport = () => {
     if (!selectedMapPoint) return;
-    setShowAssignDialog(true);
+    // Find incident details to pass to dialog
+    const detailedIncident = incidentDetails.find(detail => detail.id === selectedMapPoint.id);
+    if (detailedIncident) {
+      setSelectedIncident(detailedIncident);
+      setShowAssignDialog(true);
+    }
   };
 
   // ADD: Handler for assigning a report (even if dummy for now)
   const handleAssign = async (commanderId: string) => {
-    // You may want to show a toast or perform an action later.
-    // For now, just close the dialog.
-    setShowAssignDialog(false);
+    if (!selectedMapPoint) return;
+    
+    try {
+      if (!createAssignment) {
+        throw new Error("Assignment function not available.");
+      }
+
+      await createAssignment({
+        report_id: selectedMapPoint.id,
+        commander_id: commanderId,
+      });
+
+      await updateReportStatus(selectedMapPoint.id, "assigned");
+      
+      toast({
+        title: "Report Assigned",
+        description: `Report ${selectedMapPoint.title} has been assigned successfully.`,
+      });
+
+      refetchReports(); // Refresh reports to update map and lists
+    } catch (error: any) {
+      toast({
+        title: "Assignment Failed",
+        description: error.message || "Could not assign the report.",
+        variant: "destructive",
+      });
+    } finally {
+      setShowAssignDialog(false);
+      setSelectedMapPoint(null); // Close tooltip
+      setSelectedIncident(null);
+    }
   };
 
   if (loading) {
@@ -291,7 +328,7 @@ const NigeriaMap = () => {
                 style={{ backgroundColor: getMarkerColor(selectedMapPoint.type) }}
               ></div>
               <span className="text-sm capitalize text-gray-300">
-                {selectedMapPoint.isAssigned ? '✅ Assigned' : selectedMapPoint.type}
+                {selectedMapPoint.isAssigned ? '✅ Assigned' : selectedMapPoint.type === 'warning' ? '🕒 Pending' : selectedMapPoint.type}
               </span>
             </div>
             
@@ -340,7 +377,6 @@ const NigeriaMap = () => {
       />
 
       {/* Assignment dialog */}
-      {/* Added required prop onAssign below */}
       <AssignmentDialog
         open={showAssignDialog}
         onOpenChange={setShowAssignDialog}
