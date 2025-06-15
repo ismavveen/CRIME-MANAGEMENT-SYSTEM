@@ -162,6 +162,21 @@ const ChartsSection = () => {
     return null;
   };
 
+  const CustomPieLabel = ({ name, percent }: any) => {
+    return (
+      <text 
+        x="0" 
+        y="0" 
+        fill="#D1D5DB" 
+        fontSize="12"
+        textAnchor="middle" 
+        dominantBaseline="central"
+      >
+        {`${name} ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Real-time indicator */}
@@ -255,8 +270,7 @@ const ChartsSection = () => {
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelStyle={{ fontSize: '12px', fill: '#D1D5DB' }}
+                    label={CustomPieLabel}
                   >
                     {incidentTypes.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
