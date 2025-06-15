@@ -11,6 +11,8 @@ export interface Assignment {
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
+  witness_info: string | null;
+  resolution_evidence: any | null;
   response_timestamp: string | null;
   response_timeframe: number | null;
   operation_outcome: string | null;
@@ -49,6 +51,8 @@ export const useAssignments = () => {
         resolved_at: assignment.resolved_at,
         resolved_by: assignment.resolved_by,
         resolution_notes: assignment.resolution_notes,
+        witness_info: (assignment as any).witness_info || null,
+        resolution_evidence: (assignment as any).resolution_evidence || null,
         response_timestamp: (assignment as any).response_timestamp || null,
         response_timeframe: (assignment as any).response_timeframe || null,
         operation_outcome: (assignment as any).operation_outcome || null,
@@ -120,6 +124,11 @@ export const useAssignments = () => {
       civilians_rescued?: number;
       weapons_recovered?: number;
       custom_message?: string;
+    },
+    resolutionData?: {
+        resolution_notes: string;
+        witness_info?: string;
+        resolution_evidence?: any;
     }
   ) => {
     try {
@@ -165,9 +174,16 @@ export const useAssignments = () => {
       
       if (status === 'resolved') {
         updateData.resolved_at = new Date().toISOString();
-        updateData.resolved_by = 'Current User';
-        if (notes) {
+        if (resolutionData) {
+          updateData.resolution_notes = resolutionData.resolution_notes;
+          updateData.witness_info = resolutionData.witness_info;
+          updateData.resolution_evidence = resolutionData.resolution_evidence;
+        } else if (notes) {
           updateData.resolution_notes = notes;
+        }
+        
+        if (assignment) {
+            await supabase.from('reports').update({ status: 'resolved' }).eq('id', assignment.report_id);
         }
       }
 
@@ -178,11 +194,20 @@ export const useAssignments = () => {
 
       if (error) throw error;
       
-      const successMessage = status === 'rejected' ? 'Assignment Rejected' : 'Status Updated';
+      let successTitle = 'Status Updated';
+      let successDescription = `Assignment status updated to ${status.replace('_', ' ')}`;
+
+      if (status === 'rejected') {
+        successTitle = 'Assignment Rejected';
+      }
+      if (status === 'resolved' && resolutionData) {
+        successTitle = 'Resolution Submitted';
+        successDescription = 'Your report has been submitted for verification.';
+      }
 
       toast({
-        title: successMessage,
-        description: `Assignment status updated to ${status.replace('_', ' ')}`,
+        title: successTitle,
+        description: successDescription,
       });
 
       fetchAssignments();

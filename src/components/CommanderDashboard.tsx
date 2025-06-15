@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
@@ -7,12 +6,13 @@ import DashboardSidebar from './DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3, ListTodo } from 'lucide-react';
+import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3, ListTodo, Check } from 'lucide-react';
 import GoogleMapsHeatmap from './GoogleMapsHeatmap';
 import RealTimeReports from './RealTimeReports';
 import ReportDetailsModal from './ReportDetailsModal';
 import ChartsSection from './ChartsSection';
 import RecentAssignmentsList from './commander-dashboard/RecentAssignmentsList';
+import ResolutionSubmissionDialog from './commander-dashboard/ResolutionSubmissionDialog';
 
 interface CommanderDashboardProps {
   commanderId: string;
@@ -29,6 +29,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
   const [commanderAssignments, setCommanderAssignments] = useState<Assignment[]>([]);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [isUpdatingAssignment, setIsUpdatingAssignment] = useState(false);
+  const [resolutionDialogOpen, setResolutionDialogOpen] = useState(false);
+  const [selectedAssignmentForResolution, setSelectedAssignmentForResolution] = useState<Assignment | null>(null);
 
   const loading = reportsLoading || assignmentsLoading;
 
@@ -72,6 +74,15 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
     setIsUpdatingAssignment(false);
   };
 
+  const handleOpenResolutionDialog = (assignment: Assignment) => {
+    setSelectedAssignmentForResolution(assignment);
+    setResolutionDialogOpen(true);
+  };
+  
+  const handleResolutionSubmit = async (assignmentId: string, resolutionData: any) => {
+    await updateAssignmentStatus(assignmentId, 'resolved', undefined, undefined, resolutionData);
+  };
+
   const displayStateName = commanderState.toUpperCase() === 'FCT' ? 'Abuja' : commanderState;
 
   if (loading) {
@@ -84,6 +95,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
       </div>
     );
   }
+
+  const activeAssignments = commanderAssignments.filter(a => a.status === 'accepted' || a.status === 'responded_to');
 
   return (
     <div className="min-h-screen bg-dhq-dark-bg">
@@ -152,7 +165,6 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
                 handleRejectAssignment={handleRejectAssignment}
                 isUpdating={isUpdatingAssignment}
             />
-            {/* Placeholder for accepted/active assignments */}
             <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -164,11 +176,34 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-center py-8">
-                        <p className="text-gray-400">
-                            {commanderAssignments.filter(a => a.status === 'accepted' || a.status === 'responded_to').length} active assignment(s).
-                        </p>
-                    </div>
+                    {activeAssignments.length > 0 ? (
+                        <div className="space-y-4">
+                            {activeAssignments.map(assignment => (
+                                <div key={assignment.id} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                                    <div className="flex-1">
+                                        <p className="text-white font-medium">Assignment #{assignment.id.slice(0, 8)}</p>
+                                        <p className="text-sm text-gray-400">
+                                          Accepted: {new Date(assignment.accepted_at!).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleOpenResolutionDialog(assignment)}
+                                      className="bg-green-600 hover:bg-green-700"
+                                    >
+                                      <Check className="h-4 w-4 mr-2" />
+                                      Submit Resolution
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8">
+                            <p className="text-gray-400">
+                                No active assignments.
+                            </p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
@@ -211,6 +246,15 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
             report={selectedReport} 
             onClose={() => setSelectedReport(null)} 
           />
+        )}
+
+        {selectedAssignmentForResolution && (
+            <ResolutionSubmissionDialog
+                open={resolutionDialogOpen}
+                onOpenChange={setResolutionDialogOpen}
+                assignmentId={selectedAssignmentForResolution.id}
+                onSubmit={handleResolutionSubmit}
+            />
         )}
       </div>
     </div>

@@ -23,6 +23,7 @@ export type Database = {
           operation_outcome: string | null
           rejection_reason: string | null
           report_id: string
+          resolution_evidence: Json | null
           resolution_notes: string | null
           resolved_at: string | null
           resolved_by: string | null
@@ -31,6 +32,7 @@ export type Database = {
           status: string | null
           updated_at: string
           weapons_recovered: number | null
+          witness_info: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -45,6 +47,7 @@ export type Database = {
           operation_outcome?: string | null
           rejection_reason?: string | null
           report_id: string
+          resolution_evidence?: Json | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -53,6 +56,7 @@ export type Database = {
           status?: string | null
           updated_at?: string
           weapons_recovered?: number | null
+          witness_info?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -67,6 +71,7 @@ export type Database = {
           operation_outcome?: string | null
           rejection_reason?: string | null
           report_id?: string
+          resolution_evidence?: Json | null
           resolution_notes?: string | null
           resolved_at?: string | null
           resolved_by?: string | null
@@ -75,6 +80,7 @@ export type Database = {
           status?: string | null
           updated_at?: string
           weapons_recovered?: number | null
+          witness_info?: string | null
         }
         Relationships: [
           {

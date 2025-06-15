@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAssignments } from '@/hooks/useAssignments';
 import { useReports } from '@/hooks/useReports';
@@ -182,14 +181,37 @@ const AssignmentManagement = () => {
             </div>
           )}
 
-          {/* Resolution Notes */}
-          {assignment.resolution_notes && (
-            <div className="bg-green-900/20 border border-green-700/50 p-3 rounded">
-              <p className="text-sm text-green-300">
-                <strong>Resolution Notes:</strong> {assignment.resolution_notes}
-              </p>
+          {/* Resolution Report */}
+          {(assignment.resolution_notes || assignment.witness_info || (assignment.resolution_evidence && Array.isArray(assignment.resolution_evidence))) && (
+            <div className="bg-green-900/20 border border-green-700/50 p-3 rounded mt-2">
+              <p className="text-sm font-semibold text-green-200 mb-2">Resolution Report</p>
+              {assignment.resolution_notes && (
+                <p className="text-sm text-green-300">
+                  <strong>Summary:</strong> {assignment.resolution_notes}
+                </p>
+              )}
+              {assignment.witness_info && (
+                <div className="mt-2">
+                  <p className="text-sm text-green-300 font-medium"><strong>Witness Info:</strong></p>
+                  <p className="text-xs text-gray-300 bg-gray-900/50 p-2 rounded mt-1 whitespace-pre-wrap font-mono">{assignment.witness_info}</p>
+                </div>
+              )}
+              {assignment.resolution_evidence && Array.isArray(assignment.resolution_evidence) && assignment.resolution_evidence.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-sm text-green-300 font-medium"><strong>Evidence Files:</strong></p>
+                  <ul className="list-disc list-inside mt-1 space-y-1 text-xs">
+                    {assignment.resolution_evidence.map((file: any, index: number) => (
+                      <li key={index}>
+                        <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                          {file.name}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {assignment.resolved_by && (
-                <p className="text-xs text-green-400 mt-1">
+                <p className="text-xs text-green-400 mt-2">
                   Resolved by: {assignment.resolved_by}
                 </p>
               )}
