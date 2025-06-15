@@ -10,32 +10,12 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, Calendar, Clock, MapPin, User, Flag, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useReports } from '@/hooks/useReports';
-
-export interface IncidentDetails {
-  id: string;
-  type: string;
-  location: string;
-  status: 'critical' | 'warning' | 'resolved' | 'investigating';
-  timestamp: string;
-  priority: 'high' | 'medium' | 'low';
-  officer: string;
-  description?: string;
-  state?: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-  updates?: {
-    time: string;
-    message: string;
-    author: string;
-  }[];
-}
+import { DetailedIncident } from '@/types/incidents';
 
 interface IncidentDetailsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  incident: IncidentDetails | null;
+  incident: DetailedIncident | null;
 }
 
 const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
