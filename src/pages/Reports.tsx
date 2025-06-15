@@ -16,7 +16,7 @@ const Reports = () => {
   const navigate = useNavigate();
 
   return (
-    <div>
+    <>
       {/* Header */}
       <div className="p-6 border-b border-gray-700/50">
         <div className="flex items-center justify-between">
@@ -111,7 +111,7 @@ const Reports = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </>
   );
 };
 
