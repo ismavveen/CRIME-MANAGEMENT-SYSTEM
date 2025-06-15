@@ -169,10 +169,10 @@ const RealTimeReports = () => {
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
           <div className="col-span-2">Time</div>
-          <div className="col-span-3">Location</div>
-          <div className="col-span-3">Threat Type</div>
+          <div className="col-span-4">Location</div>
+          <div className="col-span-2">Threat Type</div>
           <div className="col-span-2">Status</div>
-          <div className="col-span-2">Quick Actions</div>
+          <div className="col-span-2 text-center">Quick Actions</div>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -191,7 +191,7 @@ const RealTimeReports = () => {
             filteredReports.map((report, index) => (
               <div 
                 key={report.id} 
-                className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-all duration-200 cursor-pointer ${
+                className={`grid grid-cols-12 gap-4 p-4 items-center border-b border-gray-700/30 hover:bg-gray-700/20 transition-all duration-200 cursor-pointer ${
                   selectedReport === report.id ? 'bg-blue-900/20 border-l-4 border-l-blue-400' : ''
                 } ${
                   (report.urgency === 'critical' || report.priority === 'high') ? 'border-l-4 border-l-red-500' : ''
@@ -205,7 +205,7 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-3 text-gray-300 text-xs">
+                <div className="col-span-4 text-gray-300 text-xs">
                   <div className="flex items-center space-x-1 mb-1">
                     <MapPin className="h-3 w-3 text-cyan-400" />
                     <span className="font-medium truncate">{report.state || 'Unknown State'}</span>
@@ -215,7 +215,7 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
                   </div>
@@ -228,7 +228,7 @@ const RealTimeReports = () => {
                   </Badge>
                 </div>
                 
-                <div className="col-span-2 flex space-x-1">
+                <div className="col-span-2 flex space-x-1 justify-center">
                   {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
@@ -261,7 +261,6 @@ const RealTimeReports = () => {
         </div>
       </div>
 
-      {/* Enhanced Report Details */}
       {selectedReport && (
         <div className="mt-6 p-6 bg-gray-800/30 rounded-lg border border-gray-700/50">
           <div className="flex items-center justify-between mb-4">
@@ -394,7 +393,6 @@ const RealTimeReports = () => {
         </div>
       )}
 
-      {/* Enhanced Dispatch Modal */}
       <DispatchModal
         open={dispatchModalOpen}
         onOpenChange={setDispatchModalOpen}
@@ -402,7 +400,6 @@ const RealTimeReports = () => {
         onAssignmentComplete={handleAssignmentComplete}
       />
 
-      {/* Audit Modal */}
       <ReportAuditModal
         open={auditModalOpen}
         onOpenChange={setAuditModalOpen}
