@@ -1,13 +1,21 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface LocationInfoSectionProps {
   report: any;
 }
 
 const LocationInfoSection = ({ report }: LocationInfoSectionProps) => {
+  const openInMaps = () => {
+    if (report.latitude && report.longitude) {
+      const url = `https://www.google.com/maps?q=${report.latitude},${report.longitude}`;
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <Card className="bg-gray-900/50 border-gray-700/50">
       <CardHeader className="pb-3">
@@ -43,11 +51,28 @@ const LocationInfoSection = ({ report }: LocationInfoSectionProps) => {
         )}
 
         {(report.latitude && report.longitude) && (
-          <div>
-            <p className="text-gray-400 text-xs">Coordinates</p>
-            <p className="text-cyan-300 font-mono text-sm">
-              {report.latitude}, {report.longitude}
-            </p>
+          <div className="space-y-2">
+            <div>
+              <p className="text-gray-400 text-xs">Coordinates</p>
+              <p className="text-cyan-300 font-mono text-sm">
+                {report.latitude.toFixed(6)}, {report.longitude.toFixed(6)}
+              </p>
+            </div>
+            {report.location_accuracy && (
+              <div>
+                <p className="text-gray-400 text-xs">GPS Accuracy</p>
+                <p className="text-white">±{report.location_accuracy.toFixed(0)}m</p>
+              </div>
+            )}
+            <Button
+              onClick={openInMaps}
+              variant="outline"
+              size="sm"
+              className="w-full bg-transparent border-cyan-600 text-cyan-400 hover:bg-cyan-900/20 hover:text-cyan-300"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              View on Map
+            </Button>
           </div>
         )}
       </CardContent>
