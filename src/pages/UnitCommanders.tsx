@@ -7,9 +7,10 @@ import UnitCommanderStats from '../components/UnitCommanderStats';
 import UnitCommanderFilters from '../components/UnitCommanderFilters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, UserPlus, Users } from 'lucide-react';
-import { useUnitCommanders } from '@/hooks/useUnitCommanders';
+import { useUnitCommanders, UnitCommander } from '@/hooks/useUnitCommanders';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 import { useAuth } from '@/contexts/AuthContext';
+import ResponseUnitModal from '../components/ResponseUnitModal';
 
 const UnitCommanders = () => {
   const { commanders, loading, updateCommanderStatus, deleteCommander } = useUnitCommanders();
@@ -18,6 +19,7 @@ const UnitCommanders = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedCommander, setSelectedCommander] = useState<UnitCommander | null>(null);
 
   const filteredCommanders = commanders.filter(commander => {
     const matchesSearch = commander.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,6 +30,10 @@ const UnitCommanders = () => {
     const matchesStatus = statusFilter === 'all' || commander.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handleViewProfile = (commander: UnitCommander) => {
+    setSelectedCommander(commander);
+  };
 
   if (loading) {
     return (
@@ -98,6 +104,7 @@ const UnitCommanders = () => {
                   unit={commander}
                   onStatusUpdate={isAdmin ? updateCommanderStatus : undefined}
                   onDelete={isAdmin ? deleteCommander : undefined}
+                  onViewProfile={() => handleViewProfile(commander)}
                   isDeleteEnabled={!!isAdmin}
                   isStatusEnabled={!!isAdmin}
                 />
@@ -123,6 +130,17 @@ const UnitCommanders = () => {
           </TabsContent>
         </Tabs>
       </div>
+      {selectedCommander && (
+        <ResponseUnitModal
+          unit={selectedCommander}
+          open={!!selectedCommander}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedCommander(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

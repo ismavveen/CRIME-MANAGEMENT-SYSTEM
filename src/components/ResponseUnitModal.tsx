@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -24,8 +23,11 @@ const ResponseUnitModal = ({ unit, open, onOpenChange }: ResponseUnitModalProps)
   };
 
   const getInitials = (name: string) => {
+    if (!name) return '';
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
+
+  const generatedAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(unit.full_name)}&background=1e40af&color=fff`;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -33,7 +35,7 @@ const ResponseUnitModal = ({ unit, open, onOpenChange }: ResponseUnitModalProps)
         <DialogHeader>
           <DialogTitle className="text-2xl text-white flex items-center space-x-4">
             <Avatar className="h-16 w-16">
-              <AvatarImage src={`https://ui-avatars.com/api/?name=${encodeURIComponent(unit.full_name)}&background=1e40af&color=fff`} />
+              <AvatarImage src={unit.profile_image || generatedAvatarUrl} alt={unit.full_name} />
               <AvatarFallback className="bg-blue-600 text-white text-lg">
                 {getInitials(unit.full_name)}
               </AvatarFallback>
