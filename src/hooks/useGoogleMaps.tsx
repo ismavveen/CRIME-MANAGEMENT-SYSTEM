@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,19 +15,41 @@ export const useGoogleMaps = () => {
         const { data, error: fetchError } = await supabase.functions.invoke('get-google-maps-key', {
           body: { requestType: 'apiKey' }
         });
+
         if (fetchError) {
-          console.error('Supabase Edge Function error:', fetchError);
-          setError('Could not contact Google Maps API key service.');
+          // Network, CORS, or Supabase Edge Function error
+          if (
+            fetchError.message &&
+            (fetchError.message.includes('Failed to fetch') || fetchError.message.includes('network'))
+          ) {
+            console.error('[GoogleMaps] Network error contacting Supabase Edge Function:', fetchError);
+            setError(
+              'Could not reach Supabase Edge Function. ' +
+              'Possible network problem, function not deployed, or ad-blocking/firewall. ' +
+              'Check your network connection and try again.'
+            );
+            return;
+          }
+
+          // Other edge function errors
+          console.error('[GoogleMaps] Supabase Edge Function error:', fetchError);
+          setError('Could not contact Google Maps API key service (Supabase Edge Function error).');
           return;
         }
+
         if (!data || !data.apiKey) {
-          console.error('No apiKey received in response:', data);
-          setError('Failed to retrieve Google Maps API key.');
+          // Key missing = likely not set
+          console.error('[GoogleMaps] No apiKey received in response from Supabase:', data);
+          setError(
+            'Google Maps API key missing. ' +
+            'Check your Supabase Edge Function secret: "GOOGLE_MAPS_API_KEY". ' +
+            'Contact admin to configure the Google Maps API key in Supabase.'
+          );
           return;
         }
         setApiKey(data.apiKey);
 
-        // Remove any existing Google Maps script to avoid duplicates or conflicts
+        // Remove any existing Google Maps script
         const prevScript = document.querySelector('script[data-dhq-google="1"]');
         if (prevScript && prevScript.parentNode) {
           prevScript.parentNode.removeChild(prevScript);
@@ -46,13 +67,22 @@ export const useGoogleMaps = () => {
           }
         };
         script.onerror = (e) => {
-          console.error('Failed to load Google Maps script', e);
-          setError('Failed to load Google Maps. Check API key and restrictions.');
+          // Google Maps script failed to load (bad key or CORS)
+          console.error('[GoogleMaps] Failed to load Google Maps script', e, script?.src);
+          setError(
+            'Failed to load Google Maps JavaScript. ' +
+            'Check if the API key is valid, and enabled for Maps JavaScript API. ' +
+            'Open browser console for details.'
+          );
         };
         document.head.appendChild(script);
       } catch (err: any) {
-        console.error('Error fetching API key for Google Maps:', err);
-        setError('Error fetching API key or loading Google Maps.');
+        // This may catch JSON/network issues
+        console.error('[GoogleMaps] Exception during API key fetch or script injection:', err);
+        setError(
+          'Exception fetching API key or loading Google Maps. ' +
+          'Check your network connection and Supabase Edge Function. See browser console.'
+        );
       }
     };
     fetchKey();
