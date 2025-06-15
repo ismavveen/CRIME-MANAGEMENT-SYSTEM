@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
 import { useToast } from '@/hooks/use-toast';
-import CommanderDashboardHeader from './commander-dashboard/CommanderDashboardHeader';
+import DashboardSidebar from './DashboardSidebar';
+import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
-import { FileText, CircleCheck, CircleAlert, Target, Activity } from 'lucide-react';
+import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield } from 'lucide-react';
 import GoogleMapsHeatmap from './GoogleMapsHeatmap';
 import RealTimeReports from './RealTimeReports';
 import ReportDetailsModal from './ReportDetailsModal';
@@ -56,21 +56,45 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-8 h-screen bg-dhq-dark-bg">
-        <div className="text-white">Loading dashboard...</div>
+      <div className="min-h-screen bg-dhq-dark-bg">
+        <DashboardSidebar />
+        <div className="ml-64 p-8 flex items-center justify-center h-screen">
+          <div className="text-white">Loading dashboard...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <CommanderDashboardHeader
-        commanderState={commanderState}
-        onLogout={onLogout}
-      />
+    <div className="min-h-screen bg-dhq-dark-bg">
+      <DashboardSidebar />
+      <div className="ml-64 p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-2 flex-shrink-0">
+              <img 
+                src="/lovable-uploads/ba3282a6-18f0-407f-baa2-bbdab0014f65.png" 
+                alt="Defense Headquarters Logo" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">{commanderState.toUpperCase()} Report Crime Central Monitoring Dashboard</h1>
+              <p className="text-gray-400">
+                Live threat analysis and report management for your jurisdiction.
+              </p>
+            </div>
+          </div>
+          {onLogout && (
+            <Button variant="outline" onClick={onLogout} className="bg-gray-800/50 border-gray-700 hover:bg-gray-800">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          )}
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
             title="TOTAL REPORTS"
             value={totalReports.toString()}
             subtitle={`In ${commanderState}`}
@@ -98,36 +122,37 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
             status={avgResponseTime > 60 ? "warning" : "success"}
             icon={<Target size={24} />}
           />
-      </div>
-
-      <div className="mb-8 animate-slide-in-right">
-        <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
-              <Activity className="h-6 w-6 text-cyan-400" />
-              <h2 className="text-2xl font-bold text-white dhq-heading">Live Threat Map for {commanderState}</h2>
-            </div>
         </div>
-        <div className="w-full">
-          <div className="dhq-card p-6 h-[700px]">
-            <GoogleMapsHeatmap 
-              reports={stateReports} 
-              onMarkerClick={handleMarkerClick}
-              className="h-full"
-            />
+
+        <div className="mb-8 animate-slide-in-right">
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <Activity className="h-6 w-6 text-cyan-400" />
+                <h2 className="text-2xl font-bold text-white dhq-heading">Live Threat Map for {commanderState}</h2>
+              </div>
+          </div>
+          <div className="w-full">
+            <div className="dhq-card p-6 h-[500px]">
+              <GoogleMapsHeatmap 
+                reports={stateReports} 
+                onMarkerClick={handleMarkerClick}
+                className="h-full"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="mb-8 animate-fade-in-up">
-        <RealTimeReports reportsData={stateReports} isLoading={reportsLoading} onRefetch={refetchReports} />
-      </div>
+        <div className="mb-8 animate-fade-in-up">
+          <RealTimeReports reportsData={stateReports} isLoading={reportsLoading} onRefetch={refetchReports} />
+        </div>
 
-      {selectedReport && (
-        <ReportDetailsModal 
-          report={selectedReport} 
-          onClose={() => setSelectedReport(null)} 
-        />
-      )}
+        {selectedReport && (
+          <ReportDetailsModal 
+            report={selectedReport} 
+            onClose={() => setSelectedReport(null)} 
+          />
+        )}
+      </div>
     </div>
   );
 };
