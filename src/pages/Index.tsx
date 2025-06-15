@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
 import RealTimeReports from '../components/RealTimeReports';
@@ -28,11 +27,9 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
-      <DashboardSidebar />
-      
+    <>
       {/* Main Content */}
-      <div className="ml-64 p-6 space-y-6">
+      <div className="p-6 space-y-6">
         {/* Enhanced Header with DHQ Logo */}
         <div className="mb-8 animate-fade-in-up">
           <div className="flex items-center justify-between">
@@ -163,7 +160,7 @@ const Index = () => {
         />
       )}
 
-    </div>
+    </>
   );
 };
 

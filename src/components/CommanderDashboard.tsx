@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
 import { useToast } from '@/hooks/use-toast';
-import DashboardSidebar from './DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -87,11 +86,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dhq-dark-bg">
-        <DashboardSidebar />
-        <div className="ml-64 p-8 flex items-center justify-center h-screen">
-          <div className="text-white">Loading dashboard...</div>
-        </div>
+      <div className="p-8 flex items-center justify-center">
+        <div className="text-white">Loading dashboard...</div>
       </div>
     );
   }
@@ -99,9 +95,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
   const activeAssignments = commanderAssignments.filter(a => a.status === 'accepted' || a.status === 'responded_to');
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
-      <DashboardSidebar />
-      <div className="ml-64 p-6 space-y-6">
+    <>
+      <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-white p-2 flex-shrink-0">
@@ -240,7 +235,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
           </div>
           <ChartsSection filterByState={commanderState} />
         </div>
-
+      </div>
         {selectedReport && (
           <ReportDetailsModal 
             report={selectedReport} 
@@ -256,8 +251,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
                 onSubmit={handleResolutionSubmit}
             />
         )}
-      </div>
-    </div>
+    </>
   );
 };
 
