@@ -285,16 +285,16 @@ const RealTimeReports = () => {
         
         <div className="flex items-center space-x-4">
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-48 bg-gray-700/50 border-gray-600">
+            <SelectTrigger className="w-48 bg-gray-700/50 border-gray-600 text-gray-200 focus:ring-cyan-500">
               <SelectValue placeholder="Filter Reports" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
-              <SelectItem value="all">All Reports ({recentReports.length})</SelectItem>
-              <SelectItem value="external">External Portal</SelectItem>
-              <SelectItem value="urgent">Urgent/Critical</SelectItem>
-              <SelectItem value="pending">Pending Action</SelectItem>
-              <SelectItem value="assigned">Assigned</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
+            <SelectContent className="bg-gray-800 border-gray-600 text-gray-200">
+              <SelectItem value="all" className="data-[highlighted]:bg-gray-700">All Reports ({recentReports.length})</SelectItem>
+              <SelectItem value="external" className="text-purple-300 data-[highlighted]:bg-purple-900/40 data-[highlighted]:text-purple-100">External Portal</SelectItem>
+              <SelectItem value="urgent" className="text-red-300 data-[highlighted]:bg-red-900/40 data-[highlighted]:text-red-100">Urgent/Critical</SelectItem>
+              <SelectItem value="pending" className="text-yellow-300 data-[highlighted]:bg-yellow-900/40 data-[highlighted]:text-yellow-100">Pending Action</SelectItem>
+              <SelectItem value="assigned" className="text-blue-300 data-[highlighted]:bg-blue-900/40 data-[highlighted]:text-blue-100">Assigned</SelectItem>
+              <SelectItem value="resolved" className="text-green-300 data-[highlighted]:bg-green-900/40 data-[highlighted]:text-green-100">Resolved</SelectItem>
             </SelectContent>
           </Select>
         </div>
