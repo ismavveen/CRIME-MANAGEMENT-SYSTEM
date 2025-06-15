@@ -27,14 +27,14 @@ const Charts = () => {
           </div>
         </div>
 
-        {/* Real-Time Charts Section */}
-        <div className="animate-fade-in-up">
-          <ChartsSection />
-        </div>
-
         {/* Enhanced Threat Analytics Section */}
         <div className="animate-fade-in-up">
           <ThreatAnalyticsSection />
+        </div>
+
+        {/* Real-Time Charts Section */}
+        <div className="animate-fade-in-up">
+          <ChartsSection />
         </div>
       </div>
     </div>

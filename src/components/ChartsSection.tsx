@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   BarChart,
@@ -50,43 +49,6 @@ const ChartsSection = () => {
       supabase.removeChannel(channel);
     };
   }, []);
-
-  // Generate monthly threat type distribution data
-  const monthlyThreatData = React.useMemo(() => {
-    const monthlyMap = new Map();
-    const threatTypes = ['terrorism', 'kidnapping', 'armed robbery', 'theft', 'vandalism', 'other'];
-    
-    // Initialize last 6 months
-    for (let i = 5; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      
-      const monthData = { month: monthKey };
-      threatTypes.forEach(type => {
-        monthData[type] = 0;
-      });
-      monthlyMap.set(monthKey, monthData);
-    }
-    
-    // Fill with actual data
-    reports.forEach(report => {
-      const reportDate = new Date(report.created_at);
-      const monthKey = reportDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-      const threatType = (report.threat_type || 'other').toLowerCase().replace(/\s+/g, ' ');
-      
-      if (monthlyMap.has(monthKey)) {
-        const monthData = monthlyMap.get(monthKey);
-        if (threatTypes.includes(threatType)) {
-          monthData[threatType]++;
-        } else {
-          monthData['other']++;
-        }
-      }
-    });
-    
-    return Array.from(monthlyMap.values());
-  }, [reports]);
 
   // Generate attack frequency by day of week
   const attackData = React.useMemo(() => {
@@ -193,35 +155,27 @@ const ChartsSection = () => {
         </Badge>
       </div>
 
-      {/* Monthly Threat Distribution */}
+      {/* Overall Incident Types Distribution */}
       <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-white">
             <BarChart3 className="h-5 w-5 text-cyan-400" />
-            <span>Monthly Threat Type Distribution</span>
+            <span>Overall Incident Types Distribution</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyThreatData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+              <BarChart data={incidentTypes}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#D1D5DB" 
-                  fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
+                <XAxis dataKey="name" stroke="#D1D5DB" fontSize={12} angle={-45} textAnchor="end" height={80} />
                 <YAxis stroke="#D1D5DB" fontSize={12} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="terrorism" stackId="a" fill="#ef4444" name="Terrorism" />
-                <Bar dataKey="kidnapping" stackId="a" fill="#f97316" name="Kidnapping" />
-                <Bar dataKey="armed robbery" stackId="a" fill="#eab308" name="Armed Robbery" />
-                <Bar dataKey="theft" stackId="a" fill="#22c55e" name="Theft" />
-                <Bar dataKey="vandalism" stackId="a" fill="#3b82f6" name="Vandalism" />
-                <Bar dataKey="other" stackId="a" fill="#8b5cf6" name="Other" />
+                <Bar dataKey="value" name="Total Reports">
+                  {incidentTypes.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>

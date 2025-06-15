@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,13 +17,13 @@ import {
   Line,
 } from 'recharts';
 import { useReports } from '@/hooks/useReports';
-import { MapPin, Filter, AlertTriangle, TrendingUp } from 'lucide-react';
+import { MapPin, Filter, AlertTriangle, TrendingUp, BarChart as BarChartIcon } from 'lucide-react';
 
 const ThreatAnalyticsSection = () => {
   const { reports } = useReports();
   const [selectedState, setSelectedState] = useState('all');
   const [selectedLGA, setSelectedLGA] = useState('all');
-  const [timeRange, setTimeRange] = useState('6months');
+  const [timeRange, setTimeRange] = useState('1month');
 
   // Nigerian states and sample LGAs
   const nigerianStates = [
@@ -83,38 +82,6 @@ const ThreatAnalyticsSection = () => {
         .map(report => report.local_government)
     )];
   }, [reports, selectedState]);
-
-  // Monthly threat distribution
-  const monthlyThreatData = useMemo(() => {
-    const monthlyMap = new Map();
-    
-    filteredReports.forEach(report => {
-      const month = new Date(report.created_at).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short' 
-      });
-      const threatType = report.threat_type || 'Other';
-      
-      if (!monthlyMap.has(month)) {
-        monthlyMap.set(month, {});
-      }
-      
-      const monthData = monthlyMap.get(month);
-      monthData[threatType] = (monthData[threatType] || 0) + 1;
-    });
-
-    // Convert to array format suitable for recharts
-    const allThreatTypes = [...new Set(filteredReports.map(r => r.threat_type || 'Other'))];
-    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
-    
-    return Array.from(monthlyMap.entries())
-      .map(([month, data]) => ({
-        month,
-        ...data,
-        total: Object.values(data).reduce((sum: number, count: number) => sum + count, 0)
-      }))
-      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-  }, [filteredReports]);
 
   // State-level threat analysis
   const stateThreatData = useMemo(() => {
@@ -273,28 +240,34 @@ const ThreatAnalyticsSection = () => {
         </CardContent>
       </Card>
 
-      {/* Monthly Threat Distribution */}
+      {/* Threat Distribution for Selected Period */}
       <Card className="bg-gray-800/50 border-gray-700">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-white">
-            <TrendingUp className="h-5 w-5 text-cyan-400" />
-            <span>Monthly Threat Distribution by Type</span>
+            <BarChartIcon className="h-5 w-5 text-cyan-400" />
+            <span>Threat Distribution for Selected Period</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyThreatData}>
+              <BarChart data={threatTypeData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="month" stroke="#9CA3AF" />
+                <XAxis dataKey="type" stroke="#9CA3AF" angle={-45} textAnchor="end" height={80} />
                 <YAxis stroke="#9CA3AF" />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="terrorism" stackId="a" fill="#ef4444" name="Terrorism" />
-                <Bar dataKey="kidnapping" stackId="a" fill="#f97316" name="Kidnapping" />
-                <Bar dataKey="armed robbery" stackId="a" fill="#eab308" name="Armed Robbery" />
-                <Bar dataKey="theft" stackId="a" fill="#22c55e" name="Theft" />
-                <Bar dataKey="vandalism" stackId="a" fill="#3b82f6" name="Vandalism" />
-                <Bar dataKey="other" stackId="a" fill="#8b5cf6" name="Other" />
+                <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#1F2937', 
+                      border: '1px solid #374151',
+                      borderRadius: '8px'
+                    }}
+                    cursor={{fill: 'rgba(100,100,100,0.1)'}}
+                />
+                <Bar dataKey="count" name="Reports">
+                  {threatTypeData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
