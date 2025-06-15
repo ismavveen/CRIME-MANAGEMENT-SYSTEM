@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import IncidentDetailsHeader from './incident-details/IncidentDetailsHeader';
 import IncidentMetadata from './incident-details/IncidentMetadata';
 import IncidentUpdates from './incident-details/IncidentUpdates';
 import IncidentDetailsFooter from './incident-details/IncidentDetailsFooter';
+import { useAssignments } from '@/hooks/useAssignments';
+import { useUnitCommanders } from '@/hooks/useUnitCommanders';
+import AssignmentDialog from './AssignmentDialog';
 
 interface IncidentDetailsDialogProps {
   open: boolean;
@@ -25,6 +28,9 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { updateReportStatus } = useReports();
+  const { createAssignment } = useAssignments();
+  const { commanders } = useUnitCommanders();
+  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
 
   if (!incident) return null;
 
@@ -47,31 +53,57 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
   };
 
   const handleAssign = () => {
-    toast({
-      title: "Assignment initiated",
-      description: `Starting assignment process for incident ${incident.id}.`,
-    });
-    // In a real app, this would open the assignment dialog
+    setAssignmentDialogOpen(true);
+  };
+
+  const handleCreateAssignment = async (commanderId: string) => {
+    if (!incident) return;
+    try {
+      await createAssignment({
+        report_id: incident.id,
+        commander_id: commanderId,
+      });
+
+      const commander = commanders.find(c => c.id === commanderId);
+      await updateReportStatus(incident.id, 'assigned', commander?.full_name || commanderId);
+      
+      setAssignmentDialogOpen(false);
+      onOpenChange(false);
+    } catch (error) {
+       console.error("Assignment error:", error);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg">
-        <IncidentDetailsHeader incident={incident} />
-        
-        <div className="mt-4 space-y-6">
-          <IncidentMetadata incident={incident} />
-          <IncidentUpdates incident={incident} />
-        </div>
-        
-        <IncidentDetailsFooter
-          incident={incident}
-          onClose={() => onOpenChange(false)}
-          onAssign={handleAssign}
-          onResolve={handleResolve}
-        />
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg">
+          <IncidentDetailsHeader incident={incident} />
+          
+          <div className="mt-4 space-y-6">
+            <IncidentMetadata incident={incident} />
+            <IncidentUpdates incident={incident} />
+          </div>
+          
+          <IncidentDetailsFooter
+            incident={incident}
+            onClose={() => onOpenChange(false)}
+            onAssign={handleAssign}
+            onResolve={handleResolve}
+          />
+        </DialogContent>
+      </Dialog>
+      <AssignmentDialog
+        open={assignmentDialogOpen}
+        onOpenChange={setAssignmentDialogOpen}
+        reportId={incident.id}
+        onAssign={handleCreateAssignment}
+        reportLocation={incident.location}
+        reportState={incident.state}
+        reportLatitude={incident.latitude}
+        reportLongitude={incident.longitude}
+      />
+    </>
   );
 };
 
