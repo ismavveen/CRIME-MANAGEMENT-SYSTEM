@@ -15,7 +15,13 @@ const CommanderPortal = () => {
   };
 
   if (currentCommander) {
-    return <CommanderDashboard commander={currentCommander} onLogout={handleLogout} />;
+    return (
+      <CommanderDashboard 
+        commanderId={currentCommander.id} 
+        commanderState={currentCommander.state}
+        onLogout={handleLogout} 
+      />
+    );
   }
 
   return <CommanderLoginForm onLoginSuccess={handleLoginSuccess} />;

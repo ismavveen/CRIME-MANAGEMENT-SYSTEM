@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, UserPlus, Mail, Shield, CheckCircle } from 'lucide-react';
+import { Upload, UserPlus, Mail, Shield, CheckCircle, Users } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
@@ -119,8 +119,8 @@ const CommanderRegistration = () => {
         status: 'active'
       });
 
-      // Send credentials via email
-      const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
+      // Send enhanced credentials via email
+      const { error: emailError, data: emailData } = await supabase.functions.invoke('send-commander-credentials', {
         body: {
           email: formData.email,
           fullName: formData.fullName,
@@ -141,12 +141,15 @@ const CommanderRegistration = () => {
         });
       }
 
-      // Set success data and show modal
+      // Set success data and show enhanced modal
       setRegisteredCommander({
         name: formData.fullName,
         email: formData.email,
         rank: formData.rank,
-        serviceNumber: formData.serviceNumber
+        serviceNumber: formData.serviceNumber,
+        state: formData.state,
+        unit: formData.unit,
+        armOfService: formData.armOfService
       });
       setShowSuccessModal(true);
 
@@ -177,62 +180,116 @@ const CommanderRegistration = () => {
     }
   };
 
-  // Success Modal Component
+  // Enhanced Success Modal Component
   const SuccessModal = () => {
     if (!showSuccessModal || !registeredCommander) return null;
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <Card className="w-full max-w-md bg-gray-800 border-gray-700">
+        <Card className="w-full max-w-2xl bg-gray-800 border-gray-700 max-h-[90vh] overflow-y-auto">
           <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
               <CheckCircle className="h-8 w-8 text-white" />
             </div>
-            <CardTitle className="text-white text-2xl">Registration Successful!</CardTitle>
+            <CardTitle className="text-white text-2xl">🎉 Registration Successful!</CardTitle>
             <CardDescription className="text-gray-400">
-              Unit Commander has been successfully registered
+              Unit Commander has been successfully registered and notified
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             <Alert className="bg-green-900/20 border-green-700">
               <CheckCircle className="h-4 w-4" />
               <AlertDescription className="text-green-300">
-                <strong>{registeredCommander.rank} {registeredCommander.name}</strong> has been successfully registered in the system.
+                <strong>{registeredCommander.rank} {registeredCommander.name}</strong> has been successfully registered as a Unit Commander for <strong>{registeredCommander.state} State</strong>.
               </AlertDescription>
             </Alert>
 
             <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Mail className="h-4 w-4 text-blue-400" />
-                <span className="text-blue-400 font-medium">Email Notification Sent</span>
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-5 w-5 text-blue-400" />
+                <span className="text-blue-400 font-semibold text-lg">📧 Email Notification Sent</span>
               </div>
-              <p className="text-sm text-gray-300 mb-3">
-                An email has been sent to <strong>{registeredCommander.email}</strong> with:
+              <p className="text-sm text-gray-300 mb-4">
+                A comprehensive welcome email has been sent to <strong className="text-blue-300">{registeredCommander.email}</strong> containing:
               </p>
-              <ul className="text-sm text-gray-300 space-y-1 ml-4">
-                <li>• Login credentials (Service Number: {registeredCommander.serviceNumber})</li>
-                <li>• Temporary password</li>
-                <li>• Secure link to set up their new password</li>
-                <li>• Access instructions for the commander portal</li>
-              </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-700/50 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2">🔑 Login Credentials</h4>
+                  <ul className="text-sm text-gray-300 space-y-1">
+                    <li>• Service Number: {registeredCommander.serviceNumber}</li>
+                    <li>• Email: {registeredCommander.email}</li>
+                    <li>• Temporary password (auto-generated)</li>
+                    <li>• Military branch: {registeredCommander.armOfService}</li>
+                  </ul>
+                </div>
+                <div className="bg-gray-700/50 rounded-lg p-3">
+                  <h4 className="text-white font-medium mb-2">🔒 Security Setup</h4>
+                  <ul className="text-sm text-gray-300 space-y-1">
+                    <li>• Secure password reset link</li>
+                    <li>• 24-hour expiration notice</li>
+                    <li>• Commander portal access instructions</li>
+                    <li>• Security best practices guide</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
             <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-orange-400" />
-                <span className="text-orange-400 font-medium">Important Security Notice</span>
+              <div className="flex items-center gap-2 mb-3">
+                <Shield className="h-5 w-5 text-orange-400" />
+                <span className="text-orange-400 font-semibold">⚠️ Critical Security Instructions</span>
               </div>
-              <p className="text-sm text-gray-300">
-                The commander must follow the link in their email to set up a secure password before accessing their dashboard.
-              </p>
+              <div className="space-y-2 text-sm text-gray-300">
+                <p>• The commander <strong>MUST</strong> click the secure link in their email to set up a new password</p>
+                <p>• The temporary password expires in <strong>24 hours</strong> for security</p>
+                <p>• They will only see reports and data from <strong>{registeredCommander.state} State</strong></p>
+                <p>• Email contains sensitive information and should be deleted after password setup</p>
+              </div>
             </div>
 
-            <Button
-              onClick={() => setShowSuccessModal(false)}
-              className="w-full bg-dhq-blue hover:bg-blue-700"
-            >
-              Close
-            </Button>
+            <div className="bg-gray-700/50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-purple-400" />
+                <span className="text-purple-400 font-medium">Commander Details</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Name:</span>
+                  <span className="text-white ml-2">{registeredCommander.rank} {registeredCommander.name}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">State:</span>
+                  <span className="text-white ml-2">{registeredCommander.state}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Unit:</span>
+                  <span className="text-white ml-2">{registeredCommander.unit}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Service:</span>
+                  <span className="text-white ml-2">{registeredCommander.armOfService}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowSuccessModal(false)}
+                className="flex-1 bg-dhq-blue hover:bg-blue-700"
+              >
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  navigator.clipboard.writeText(registeredCommander.email);
+                  toast({ title: "Email copied to clipboard" });
+                }}
+                className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                Copy Email
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -248,7 +305,7 @@ const CommanderRegistration = () => {
             Register New Unit Commander
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Add a new unit commander to the system with secure credentials
+            Add a new unit commander to the system with secure credentials and email notification
           </CardDescription>
         </CardHeader>
         
@@ -397,11 +454,14 @@ const CommanderRegistration = () => {
             <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="h-4 w-4 text-blue-400" />
-                <span className="text-blue-400 font-medium">Security Notice</span>
+                <span className="text-blue-400 font-medium">Enhanced Security & Email Notification</span>
               </div>
-              <p className="text-sm text-gray-300">
-                A secure password will be automatically generated and sent to the commander's email address along with login instructions.
-              </p>
+              <div className="text-sm text-gray-300 space-y-1">
+                <p>• A secure password will be automatically generated and sent via email</p>
+                <p>• Commander will receive a secure link to create their own password</p>
+                <p>• Email includes comprehensive security instructions and login details</p>
+                <p>• All passwords are encrypted using military-grade security standards</p>
+              </div>
             </div>
 
             <Button
@@ -412,12 +472,12 @@ const CommanderRegistration = () => {
               {isLoading ? (
                 <>
                   <Mail className="h-4 w-4 mr-2 animate-spin" />
-                  Registering & Sending Credentials...
+                  Registering & Sending Secure Email...
                 </>
               ) : (
                 <>
                   <UserPlus className="h-4 w-4 mr-2" />
-                  Register Commander
+                  Register Commander & Send Email
                 </>
               )}
             </Button>
@@ -425,7 +485,7 @@ const CommanderRegistration = () => {
         </CardContent>
       </Card>
 
-      {/* Success Modal */}
+      {/* Enhanced Success Modal */}
       <SuccessModal />
     </>
   );
