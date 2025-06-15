@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +15,7 @@ interface CommanderDashboardProps {
 }
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, commanderState, onLogout }) => {
-  const { assignments, loading: assignmentsLoading } = useAssignments(commanderId);
+  const { assignments, loading: assignmentsLoading } = useAssignments();
   const { reports, loading: reportsLoading } = useReports();
   const { toast } = useToast();
   

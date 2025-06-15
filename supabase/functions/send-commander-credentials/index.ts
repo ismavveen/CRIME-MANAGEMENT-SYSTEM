@@ -24,11 +24,12 @@ serve(async (req) => {
 
     console.log(`Sending credentials to ${email} for ${fullName}`);
 
-    // Create secure password reset link
+    // Create secure password reset link with 1-hour expiration
     const resetToken = crypto.randomUUID();
-    const resetLink = `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}`;
+    const expirationTime = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+    const resetLink = `${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}&expires=${expirationTime.getTime()}`;
 
-    // Email content with enhanced security notice
+    // Email content with enhanced security notice and 1-hour expiration
     const emailHTML = `
       <!DOCTYPE html>
       <html>
@@ -42,6 +43,7 @@ serve(async (req) => {
           .content { padding: 20px; background: #f9f9f9; }
           .credentials { background: #e8f4f8; padding: 15px; border-left: 4px solid #002b5c; margin: 20px 0; }
           .warning { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin: 20px 0; }
+          .urgent { background: #f8d7da; padding: 15px; border-left: 4px solid #dc3545; margin: 20px 0; }
           .button { display: inline-block; background: #002b5c; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
           .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
         </style>
@@ -68,19 +70,26 @@ serve(async (req) => {
               ${unit ? `<p><strong>Unit:</strong> ${unit}</p>` : ''}
             </div>
             
-            <div class="warning">
-              <h4>⚠️ Important Security Notice:</h4>
-              <p>For your security, you <strong>MUST</strong> set up a new password before accessing your dashboard. The temporary password above will expire in 24 hours.</p>
+            <div class="urgent">
+              <h4>⏰ URGENT - TIME SENSITIVE ACTION REQUIRED:</h4>
+              <p>This secure password setup link will <strong>EXPIRE IN 1 HOUR</strong> from the time this email was sent.</p>
+              <p><strong>Email sent at:</strong> ${new Date().toLocaleString()}</p>
+              <p><strong>Link expires at:</strong> ${expirationTime.toLocaleString()}</p>
             </div>
             
-            <p><strong>Next Steps:</strong></p>
+            <div class="warning">
+              <h4>⚠️ Important Security Notice:</h4>
+              <p>For your security, you <strong>MUST</strong> set up a new password before accessing your dashboard. The temporary password above and this secure link will both expire in <strong>1 HOUR</strong>.</p>
+            </div>
+            
+            <p><strong>Next Steps (Complete within 1 hour):</strong></p>
             <ol>
-              <li>Click the secure link below to set up your new password</li>
+              <li>Click the secure link below to set up your new password <strong>IMMEDIATELY</strong></li>
               <li>Create a strong password with at least 8 characters</li>
               <li>Log in to your commander dashboard using your new credentials</li>
             </ol>
             
-            <a href="${resetLink}" class="button">🔒 Set Up New Password</a>
+            <a href="${resetLink}" class="button">🔒 Set Up New Password (Expires in 1 Hour)</a>
             
             <p><strong>Login Instructions:</strong></p>
             <ul>
@@ -89,13 +98,15 @@ serve(async (req) => {
               <li>Your dashboard will show reports and data specific to your assigned state</li>
             </ul>
             
-            <div class="warning">
-              <p><strong>Security Reminders:</strong></p>
+            <div class="urgent">
+              <p><strong>⚠️ CRITICAL SECURITY REMINDERS:</strong></p>
               <ul>
+                <li><strong>This link expires in exactly 1 hour</strong> - act immediately</li>
                 <li>Never share your credentials with anyone</li>
                 <li>Log out when finished using the system</li>
                 <li>Report any suspicious activity immediately</li>
-                <li>This email contains sensitive information - please delete it after setting up your password</li>
+                <li>Delete this email after setting up your password</li>
+                <li>If the link expires, contact DHQ IT Support for a new password reset</li>
               </ul>
             </div>
             
@@ -107,6 +118,7 @@ serve(async (req) => {
           <div class="footer">
             <p>Defense Headquarters - Crime Reporting & Intelligence Portal<br>
             This is an automated message. Please do not reply to this email.<br>
+            <strong>Security Notice:</strong> This email contains time-sensitive security information.<br>
             © ${new Date().getFullYear()} Federal Republic of Nigeria</p>
           </div>
         </div>
@@ -114,9 +126,10 @@ serve(async (req) => {
       </html>
     `;
 
-    // For demo purposes, we'll log the email content (in production, use a proper email service)
+    // Log the email content and reset link with expiration info
     console.log(`Email HTML content prepared for ${email}`);
     console.log(`Reset link: ${resetLink}`);
+    console.log(`Link expires at: ${expirationTime.toLocaleString()}`);
 
     // Simulate email sending delay
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -132,7 +145,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Defense Headquarters <noreply@defensehq.ng>',
         to: [email],
-        subject: 'Defense Headquarters - Your Login Credentials & Password Setup',
+        subject: 'URGENT: Defense Headquarters Login Credentials - Action Required (1 Hour Expiry)',
         html: emailHTML
       })
     });
@@ -145,8 +158,9 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'Credentials sent successfully',
-        resetLink: resetLink // Include for demo purposes
+        message: 'Credentials sent successfully with 1-hour expiration',
+        resetLink: resetLink, // Include for demo purposes
+        expiresAt: expirationTime.toISOString()
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
