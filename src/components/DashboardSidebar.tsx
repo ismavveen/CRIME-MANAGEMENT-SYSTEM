@@ -71,13 +71,7 @@ const DashboardSidebar = () => {
                     }`}
                   />
                   <span className="font-medium tracking-wide truncate">{item.label}</span>
-                  {item.badge && (
-                    <div className="flex items-center space-x-1 ml-auto">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                      <span className="text-green-400 text-xs font-bold">{item.badge}</span>
-                    </div>
-                  )}
-                  {active && !item.badge && (
+                  {active && (
                     <div className="w-1.5 h-1.5 bg-white rounded-full ml-auto animate-pulse flex-shrink-0"></div>
                   )}
                 </Link>
@@ -111,4 +105,3 @@ const DashboardSidebar = () => {
 };
 
 export default DashboardSidebar;
-

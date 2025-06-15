@@ -9,6 +9,9 @@ export const useGoogleMaps = () => {
   const [apiKey, setApiKey] = useState<string | null>(null);
 
   useEffect(() => {
+    let script: HTMLScriptElement | null = null;
+    let unmounted = false;
+
     // Fetch the Google Maps API key securely via Supabase Edge Function
     const fetchKey = async () => {
       try {
@@ -21,23 +24,30 @@ export const useGoogleMaps = () => {
         }
         setApiKey(data.apiKey);
 
-        // Only load the script after key is available
-        const script = document.createElement('script');
+        // Wait for the key before adding the script
+        script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${data.apiKey}&libraries=visualization`;
         script.async = true;
         script.defer = true;
-        script.onload = () => setIsLoaded(true);
-        script.onerror = () => setError('Failed to load Google Maps');
-        document.head.appendChild(script);
-
-        return () => {
-          if (script.parentNode) script.parentNode.removeChild(script);
+        script.onload = () => {
+          if (!unmounted) setIsLoaded(true);
         };
+        script.onerror = () => {
+          setError('Failed to load Google Maps');
+        };
+        document.head.appendChild(script);
       } catch (err) {
         setError('Error fetching API key or loading Google Maps');
       }
     };
     fetchKey();
+
+    return () => {
+      unmounted = true;
+      if (script && script.parentNode) {
+        script.parentNode.removeChild(script);
+      }
+    };
   }, []);
 
   return { isLoaded, error, apiKey };
