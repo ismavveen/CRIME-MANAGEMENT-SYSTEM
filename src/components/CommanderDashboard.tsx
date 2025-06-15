@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { useAssignments } from '@/hooks/useAssignments';
-import { useReports } from '@/hooks/useReports';
-import { supabase } from '@/integrations/supabase/client';
+import { useAssignments, Assignment } from '@/hooks/useAssignments';
+import { useReports, Report } from '@/hooks/useReports';
 import { useToast } from '@/hooks/use-toast';
 import CommanderDashboardHeader from './commander-dashboard/CommanderDashboardHeader';
-import CommanderStatsGrid from './commander-dashboard/CommanderStatsGrid';
-import RecentAssignmentsList from './commander-dashboard/RecentAssignmentsList';
-import StateReportsList from './commander-dashboard/StateReportsList';
-import NigeriaMap from './NigeriaMap';
+import StatCard from './StatCard';
+import { FileText, CircleCheck, CircleAlert, Target, Activity } from 'lucide-react';
+import GoogleMapsHeatmap from './GoogleMapsHeatmap';
+import RealTimeReports from './RealTimeReports';
+import ReportDetailsModal from './ReportDetailsModal';
 
 interface CommanderDashboardProps {
   commanderId: string;
@@ -17,13 +17,16 @@ interface CommanderDashboardProps {
 }
 
 const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, commanderState, onLogout }) => {
-  const { assignments, loading: assignmentsLoading, refetch: refetchAssignments } = useAssignments();
-  const { reports, loading: reportsLoading } = useReports();
+  const { reports, loading: reportsLoading, refetch: refetchReports } = useReports();
+  const { assignments, loading: assignmentsLoading } = useAssignments();
   const { toast } = useToast();
-  
-  const [stateReports, setStateReports] = useState<any[]>([]);
 
-  // Filter reports for the commander's state
+  const [stateReports, setStateReports] = useState<Report[]>([]);
+  const [commanderAssignments, setCommanderAssignments] = useState<Assignment[]>([]);
+  const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
+  const loading = reportsLoading || assignmentsLoading;
+
   useEffect(() => {
     if (reports && commanderState) {
       const filteredReports = reports.filter(report => report.state === commanderState);
@@ -31,47 +34,29 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
     }
   }, [reports, commanderState]);
 
-  // Get commander stats
-  const pendingAssignments = assignments?.filter(a => a.status === 'pending').length || 0;
-  const resolvedAssignments = assignments?.filter(a => a.status === 'resolved').length || 0;
-
-  // Calculate average response time from assignments
-  const avgResponseTime = assignments && assignments.length > 0
-    ? assignments
-        .filter(a => a.created_at && a.updated_at)
-        .reduce((acc, assignment) => {
-          const created = new Date(assignment.created_at);
-          const updated = new Date(assignment.updated_at);
-          return acc + (updated.getTime() - created.getTime()) / (1000 * 60 * 60); // hours
-        }, 0) / assignments.length
-    : 0;
-
-  const handleAcceptAssignment = async (assignmentId: string) => {
-    try {
-      const { error } = await supabase
-        .from('assignments')
-        .update({ status: 'accepted', updated_at: new Date().toISOString() })
-        .eq('id', assignmentId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Assignment Accepted",
-        description: "You have successfully accepted this assignment",
-      });
-      refetchAssignments();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+  useEffect(() => {
+    if (assignments && commanderId) {
+      const filtered = assignments.filter(a => a.commander_id === commanderId);
+      setCommanderAssignments(filtered);
     }
+  }, [assignments, commanderId]);
+
+  const totalReports = stateReports.length;
+  const resolvedReports = stateReports.filter(r => r.status === 'resolved').length;
+  const pendingReports = stateReports.filter(r => r.status === 'pending' || r.status === 'assigned').length;
+
+  const respondedAssignments = commanderAssignments.filter(a => a.status === 'responded_to' && a.response_timeframe);
+  const avgResponseTime = respondedAssignments.length > 0
+    ? respondedAssignments.reduce((sum, a) => sum + (a.response_timeframe || 0), 0) / respondedAssignments.length
+    : 0;
+  
+  const handleMarkerClick = (report: Report) => {
+    setSelectedReport(report);
   };
 
-  if (assignmentsLoading || reportsLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8 h-screen bg-dhq-dark-bg">
         <div className="text-white">Loading dashboard...</div>
       </div>
     );
@@ -84,31 +69,65 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
         onLogout={onLogout}
       />
 
-      <CommanderStatsGrid
-        totalReports={stateReports.length}
-        pendingAssignments={pendingAssignments}
-        resolvedAssignments={resolvedAssignments}
-        avgResponseTime={avgResponseTime}
-        commanderState={commanderState}
-      />
-
-      <div className="dhq-card p-0 sm:p-0">
-        <h2 className="text-xl font-bold text-white mb-4 p-6">Threat Map for {commanderState}</h2>
-        <NigeriaMap filterByState={commanderState} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+            title="TOTAL REPORTS"
+            value={totalReports.toString()}
+            subtitle={`In ${commanderState}`}
+            icon={<FileText size={24} />}
+            status="neutral"
+          />
+          <StatCard
+            title="RESOLVED"
+            value={resolvedReports.toString()}
+            subtitle="Completed missions"
+            status="success"
+            icon={<CircleCheck size={24} />}
+          />
+          <StatCard
+            title="PENDING"
+            value={pendingReports.toString()}
+            subtitle="Awaiting action"
+            status="warning"
+            icon={<CircleAlert size={24} />}
+          />
+          <StatCard
+            title="AVG RESPONSE"
+            value={`${Math.round(avgResponseTime || 0)} min`}
+            subtitle="Your average"
+            status={avgResponseTime > 60 ? "warning" : "success"}
+            icon={<Target size={24} />}
+          />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentAssignmentsList
-          assignments={assignments || []}
-          commanderState={commanderState}
-          handleAcceptAssignment={handleAcceptAssignment}
-        />
-
-        <StateReportsList
-          reports={stateReports}
-          commanderState={commanderState}
-        />
+      <div className="mb-8 animate-slide-in-right">
+        <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <Activity className="h-6 w-6 text-cyan-400" />
+              <h2 className="text-2xl font-bold text-white dhq-heading">Live Threat Map for {commanderState}</h2>
+            </div>
+        </div>
+        <div className="w-full">
+          <div className="dhq-card p-6 h-[700px]">
+            <GoogleMapsHeatmap 
+              reports={stateReports} 
+              onMarkerClick={handleMarkerClick}
+              className="h-full"
+            />
+          </div>
+        </div>
       </div>
+
+      <div className="mb-8 animate-fade-in-up">
+        <RealTimeReports reportsData={stateReports} isLoading={reportsLoading} onRefetch={refetchReports} />
+      </div>
+
+      {selectedReport && (
+        <ReportDetailsModal 
+          report={selectedReport} 
+          onClose={() => setSelectedReport(null)} 
+        />
+      )}
     </div>
   );
 };

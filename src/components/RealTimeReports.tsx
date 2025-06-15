@@ -8,8 +8,14 @@ import { MapPin, Clock, AlertTriangle, CheckCircle, Send, FileText, History, Shi
 import DispatchModal from './DispatchModal';
 import ReportAuditModal from './ReportAuditModal';
 
-const RealTimeReports = () => {
-  const { reports, loading, refetch } = useReports();
+interface RealTimeReportsProps {
+  reportsData?: Report[];
+  isLoading?: boolean;
+  onRefetch?: () => void;
+}
+
+const RealTimeReports = ({ reportsData, isLoading, onRefetch }: RealTimeReportsProps) => {
+  const { reports: fetchedReports, loading: fetchedLoading, refetch: fetchedRefetch } = useReports();
   const { logReportAccess } = useAuditLogs();
   const [filter, setFilter] = useState('all');
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
@@ -17,6 +23,10 @@ const RealTimeReports = () => {
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [reportToDispatch, setReportToDispatch] = useState<Report | null>(null);
   const [reportForAudit, setReportForAudit] = useState<Report | null>(null);
+
+  const reports = reportsData ?? fetchedReports;
+  const loading = isLoading ?? fetchedLoading;
+  const refetch = onRefetch ?? fetchedRefetch;
 
   // Get the most recent reports
   const recentReports = reports
@@ -108,7 +118,9 @@ const RealTimeReports = () => {
   };
 
   const handleAssignmentComplete = () => {
-    refetch();
+    if (refetch) {
+      refetch();
+    }
   };
 
   const handleReportSelection = async (reportId: string) => {
