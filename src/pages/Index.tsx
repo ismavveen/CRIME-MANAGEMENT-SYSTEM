@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
-import IncidentTable from '../components/IncidentTable';
+import RealTimeReports from '../components/RealTimeReports';
 import NotificationPanel from '../components/NotificationPanel';
 import ReportDetailsModal from '../components/ReportDetailsModal';
 import { useReports, Report } from '@/hooks/useReports';
@@ -150,7 +150,7 @@ const Index = () => {
 
         {/* Real-Time Reports Section */}
         <div className="mb-8 animate-fade-in-up">
-          <IncidentTable reports={reports} onIncidentClick={handleMarkerClick} />
+          <RealTimeReports />
         </div>
       </div>
 
