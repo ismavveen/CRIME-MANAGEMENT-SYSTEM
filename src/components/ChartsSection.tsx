@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   BarChart,
   Bar,
@@ -16,12 +16,79 @@ import {
 } from 'recharts';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity } from 'lucide-react';
 
 const ChartsSection = () => {
   const { reports } = useReports();
   const { assignments } = useAssignments();
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Generate real-time data from actual reports
+  // Set up real-time subscription for updates
+  useEffect(() => {
+    const channel = supabase
+      .channel('charts-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'reports'
+      }, () => {
+        setLastUpdated(new Date());
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'assignments'
+      }, () => {
+        setLastUpdated(new Date());
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Generate monthly threat type distribution data
+  const monthlyThreatData = React.useMemo(() => {
+    const monthlyMap = new Map();
+    const threatTypes = ['terrorism', 'kidnapping', 'armed robbery', 'theft', 'vandalism', 'other'];
+    
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      
+      const monthData = { month: monthKey };
+      threatTypes.forEach(type => {
+        monthData[type] = 0;
+      });
+      monthlyMap.set(monthKey, monthData);
+    }
+    
+    // Fill with actual data
+    reports.forEach(report => {
+      const reportDate = new Date(report.created_at);
+      const monthKey = reportDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const threatType = (report.threat_type || 'other').toLowerCase().replace(/\s+/g, ' ');
+      
+      if (monthlyMap.has(monthKey)) {
+        const monthData = monthlyMap.get(monthKey);
+        if (threatTypes.includes(threatType)) {
+          monthData[threatType]++;
+        } else {
+          monthData['other']++;
+        }
+      }
+    });
+    
+    return Array.from(monthlyMap.values());
+  }, [reports]);
+
+  // Generate attack frequency by day of week
   const attackData = React.useMemo(() => {
     const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const attacksByDay = daysOfWeek.map(day => ({ day, attacks: 0 }));
@@ -35,26 +102,7 @@ const ChartsSection = () => {
     return attacksByDay;
   }, [reports]);
 
-  const trendData = React.useMemo(() => {
-    const last6Months = [];
-    const now = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
-      const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthName = month.toLocaleDateString('en-US', { month: 'short' });
-      
-      const monthReports = reports.filter(report => {
-        const reportDate = new Date(report.created_at);
-        return reportDate.getMonth() === month.getMonth() && 
-               reportDate.getFullYear() === month.getFullYear();
-      }).length;
-      
-      last6Months.push({ month: monthName, incidents: monthReports });
-    }
-    
-    return last6Months;
-  }, [reports]);
-
+  // Generate incident types distribution
   const incidentTypes = React.useMemo(() => {
     const typeCount: { [key: string]: number } = {};
     
@@ -63,7 +111,7 @@ const ChartsSection = () => {
       typeCount[type] = (typeCount[type] || 0) + 1;
     });
     
-    const colors = ['#DC2626', '#F59E0B', '#8B5CF6', '#10B981', '#6B7280'];
+    const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
     
     return Object.entries(typeCount).map(([name, value], index) => ({
       name,
@@ -72,6 +120,7 @@ const ChartsSection = () => {
     }));
   }, [reports]);
 
+  // Generate response time data
   const responseTimeData = React.useMemo(() => {
     const stateResponseTimes: { [key: string]: { total: number; count: number } } = {};
     
@@ -94,14 +143,19 @@ const ChartsSection = () => {
         state,
         time: Math.round(data.total / data.count) || 0
       }))
-      .slice(0, 5); // Top 5 states
+      .slice(0, 8); // Top 8 states
   }, [reports, assignments]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-gray-800 border border-gray-600 rounded-lg p-3 shadow-lg">
-          <p className="text-gray-300">{`${label}: ${payload[0].value}`}</p>
+          <p className="text-gray-300 font-medium mb-1">{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-white text-sm" style={{ color: entry.color }}>
+              {`${entry.dataKey}: ${entry.value}`}
+            </p>
+          ))}
         </div>
       );
     }
@@ -109,92 +163,150 @@ const ChartsSection = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Attack Frequency Bar Chart */}
-      <div className="dhq-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Weekly Attack Frequency</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={attackData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="day" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="attacks" fill="#2563EB" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+    <div className="space-y-6">
+      {/* Real-time indicator */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="text-green-400 font-semibold">LIVE DATA</span>
+          <span className="text-gray-400 text-sm">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </span>
         </div>
+        <Badge className="bg-cyan-600/20 text-cyan-300">
+          {reports.length} Total Reports
+        </Badge>
       </div>
 
-      {/* Incident Trends Line Chart */}
-      <div className="dhq-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Monthly Incident Trends</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="month" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip content={<CustomTooltip />} />
-              <Line 
-                type="monotone" 
-                dataKey="incidents" 
-                stroke="#DC2626" 
-                strokeWidth={3}
-                dot={{ fill: '#DC2626', strokeWidth: 2, r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Monthly Threat Distribution */}
+      <Card className="bg-gray-800/50 border-gray-700">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-white">
+            <BarChart3 className="h-5 w-5 text-cyan-400" />
+            <span>Monthly Threat Type Distribution</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyThreatData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis 
+                  dataKey="month" 
+                  stroke="#D1D5DB" 
+                  fontSize={12}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis stroke="#D1D5DB" fontSize={12} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="terrorism" stackId="a" fill="#ef4444" name="Terrorism" />
+                <Bar dataKey="kidnapping" stackId="a" fill="#f97316" name="Kidnapping" />
+                <Bar dataKey="armed robbery" stackId="a" fill="#eab308" name="Armed Robbery" />
+                <Bar dataKey="theft" stackId="a" fill="#22c55e" name="Theft" />
+                <Bar dataKey="vandalism" stackId="a" fill="#3b82f6" name="Vandalism" />
+                <Bar dataKey="other" stackId="a" fill="#8b5cf6" name="Other" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Incident Types Pie Chart */}
-      <div className="dhq-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Incident Types Distribution</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={incidentTypes}
-                cx="50%"
-                cy="50%"
-                outerRadius={80}
-                dataKey="value"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-              >
-                {incidentTypes.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: '#1F2937',
-                  border: '1px solid #374151',
-                  borderRadius: '8px',
-                  color: '#F3F4F6'
-                }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Weekly Attack Frequency */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-white">
+              <Activity className="h-5 w-5 text-blue-400" />
+              <span>Weekly Attack Frequency</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={attackData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="day" stroke="#D1D5DB" fontSize={12} />
+                  <YAxis stroke="#D1D5DB" fontSize={12} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="attacks" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Response Time Chart */}
-      <div className="dhq-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Average Response Time (Minutes)</h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={responseTimeData.length > 0 ? responseTimeData : [
-              { state: 'No Data', time: 0 }
-            ]}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="state" stroke="#9CA3AF" />
-              <YAxis stroke="#9CA3AF" />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="time" fill="#10B981" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {/* Incident Types Distribution */}
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-white">
+              <PieChartIcon className="h-5 w-5 text-purple-400" />
+              <span>Incident Types Distribution</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={incidentTypes}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelStyle={{ fontSize: '12px', fill: '#D1D5DB' }}
+                  >
+                    {incidentTypes.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: '#1F2937',
+                      border: '1px solid #374151',
+                      borderRadius: '8px',
+                      color: '#F3F4F6'
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Response Time Chart */}
+        {responseTimeData.length > 0 && (
+          <Card className="bg-gray-800/50 border-gray-700 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2 text-white">
+                <TrendingUp className="h-5 w-5 text-green-400" />
+                <span>Average Response Time by State (Minutes)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={responseTimeData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="state" 
+                      stroke="#D1D5DB" 
+                      fontSize={12}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis stroke="#D1D5DB" fontSize={12} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="time" fill="#10B981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

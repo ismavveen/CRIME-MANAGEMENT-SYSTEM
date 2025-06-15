@@ -2,6 +2,7 @@
 import React from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import ThreatAnalyticsSection from '../components/ThreatAnalyticsSection';
+import ChartsSection from '../components/ChartsSection';
 import { BarChart3 } from 'lucide-react';
 
 const Charts = () => {
@@ -17,16 +18,21 @@ const Charts = () => {
             <BarChart3 className="h-8 w-8 text-cyan-400" />
             <div>
               <h1 className="text-4xl font-bold text-white mb-3 dhq-heading tracking-tight">
-                Threat Analytics & Intelligence
+                Real-Time Threat Analytics & Intelligence
               </h1>
               <p className="text-gray-300 text-xl dhq-body font-medium">
-                Geographic and Statistical Threat Analysis
+                Live Geographic and Statistical Threat Analysis
               </p>
             </div>
           </div>
         </div>
 
-        {/* Threat Analytics Section */}
+        {/* Real-Time Charts Section */}
+        <div className="animate-fade-in-up">
+          <ChartsSection />
+        </div>
+
+        {/* Enhanced Threat Analytics Section */}
         <div className="animate-fade-in-up">
           <ThreatAnalyticsSection />
         </div>
