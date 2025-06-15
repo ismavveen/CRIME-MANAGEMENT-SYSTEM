@@ -1,286 +1,238 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, MapPin, FileText, Clock, CheckCircle, AlertTriangle, User, Bell, Shield } from 'lucide-react';
-import { useReports } from '@/hooks/useReports';
+import { Button } from "@/components/ui/button";
+import { Shield, MapPin, Clock, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { useAssignments } from '@/hooks/useAssignments';
-import { useNotifications } from '@/hooks/useNotifications';
-import SimpleMap from './SimpleMap';
-import NotificationPanel from './NotificationPanel';
+import { useReports } from '@/hooks/useReports';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface CommanderDashboardProps {
-  commander: any;
-  onLogout: () => void;
+  commanderId: string;
+  commanderState: string;
 }
 
-const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commander, onLogout }) => {
-  const { reports } = useReports();
-  const { assignments } = useAssignments();
-  const { notifications, unreadCount } = useNotifications();
+const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, commanderState }) => {
+  const { assignments, loading: assignmentsLoading } = useAssignments(commanderId);
+  const { reports, loading: reportsLoading } = useReports();
+  const { toast } = useToast();
+  
+  const [commander, setCommander] = useState<any>(null);
+  const [stateReports, setStateReports] = useState<any[]>([]);
 
-  // Filter reports for commander's state only
-  const stateReports = reports.filter(report => report.state === commander.state);
-  const pendingReports = stateReports.filter(report => report.status === 'pending');
-  const assignedReports = assignments.filter(assignment => assignment.commander_id === commander.id);
-  const resolvedReports = assignedReports.filter(assignment => assignment.status === 'resolved');
-  const inProgressReports = assignedReports.filter(assignment => assignment.status === 'in_progress');
+  // Filter reports for the commander's state
+  useEffect(() => {
+    if (reports && commanderState) {
+      const filteredReports = reports.filter(report => report.state === commanderState);
+      setStateReports(filteredReports);
+    }
+  }, [reports, commanderState]);
 
-  // Calculate response metrics
-  const averageResponseTime = assignedReports.length > 0 
-    ? assignedReports.reduce((sum, assignment) => sum + (assignment.response_time || 0), 0) / assignedReports.length 
+  // Get commander stats
+  const totalAssignments = assignments?.length || 0;
+  const pendingAssignments = assignments?.filter(a => a.status === 'pending').length || 0;
+  const resolvedAssignments = assignments?.filter(a => a.status === 'resolved').length || 0;
+  const acceptedAssignments = assignments?.filter(a => a.status === 'accepted').length || 0;
+
+  // Calculate average response time from assignments
+  const avgResponseTime = assignments && assignments.length > 0
+    ? assignments
+        .filter(a => a.created_at && a.updated_at)
+        .reduce((acc, assignment) => {
+          const created = new Date(assignment.created_at);
+          const updated = new Date(assignment.updated_at);
+          return acc + (updated.getTime() - created.getTime()) / (1000 * 60 * 60); // hours
+        }, 0) / assignments.length
     : 0;
 
-  const getInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
+  const handleAcceptAssignment = async (assignmentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('assignments')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', assignmentId);
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-500/20 text-red-400 border-red-500';
-      case 'medium': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500';
-      case 'low': return 'bg-green-500/20 text-green-400 border-green-500';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500';
+      if (error) throw error;
+
+      toast({
+        title: "Assignment Accepted",
+        description: "You have successfully accepted this assignment",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'resolved': return 'bg-green-500/20 text-green-400 border-green-500';
-      case 'in_progress': return 'bg-blue-500/20 text-blue-400 border-blue-500';
-      case 'assigned': return 'bg-orange-500/20 text-orange-400 border-orange-500';
-      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500';
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500';
-    }
-  };
+  if (assignmentsLoading || reportsLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-white">Loading dashboard...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
-      {/* Enhanced Header with Security Badge */}
-      <div className="bg-gray-800/50 border-b border-gray-700 p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-12 w-12 ring-2 ring-dhq-blue">
-              <AvatarImage src={commander.profile_image} />
-              <AvatarFallback className="bg-dhq-blue text-white">
-                {getInitials(commander.full_name)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-white">{commander.rank} {commander.full_name}</h1>
-                <Shield className="h-4 w-4 text-green-400" title="Secure Session" />
-              </div>
-              <p className="text-gray-400">{commander.unit} • {commander.state} State Command</p>
-              <p className="text-xs text-gray-500">Service #: {commander.service_number}</p>
+    <div className="space-y-6">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-dhq-blue to-blue-700 rounded-lg p-6 text-white">
+        <div className="flex items-center space-x-3">
+          <Shield className="h-8 w-8" />
+          <div>
+            <h1 className="text-2xl font-bold">Commander Dashboard</h1>
+            <p className="text-blue-100">State: {commanderState}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">Total Reports</CardTitle>
+            <MapPin className="h-4 w-4 text-dhq-blue" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{stateReports.length}</div>
+            <p className="text-xs text-gray-400">In {commanderState} state</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">Open Cases</CardTitle>
+            <AlertCircle className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{pendingAssignments}</div>
+            <p className="text-xs text-gray-400">Pending assignments</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">Closed Cases</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{resolvedAssignments}</div>
+            <p className="text-xs text-gray-400">Successfully resolved</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-gray-300">Avg Response</CardTitle>
+            <Clock className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-white">{Math.round(avgResponseTime)}h</div>
+            <p className="text-xs text-gray-400">Average response time</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Assignments */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Users className="h-5 w-5 text-dhq-blue" />
+            Recent Assignments
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Latest assignments for {commanderState} state
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {assignments && assignments.length > 0 ? (
+            <div className="space-y-4">
+              {assignments.slice(0, 5).map((assignment) => (
+                <div key={assignment.id} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-white font-medium">Assignment #{assignment.id.slice(0, 8)}</p>
+                    <p className="text-sm text-gray-400">
+                      Created: {new Date(assignment.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={assignment.status === 'pending' ? 'destructive' : 
+                              assignment.status === 'accepted' ? 'default' : 'secondary'}
+                    >
+                      {assignment.status}
+                    </Badge>
+                    {assignment.status === 'pending' && (
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleAcceptAssignment(assignment.id)}
+                        className="bg-dhq-blue hover:bg-blue-700"
+                      >
+                        Accept
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <NotificationPanel />
-            <Badge variant="outline" className="text-green-400 border-green-400">
-              Active
-            </Badge>
-            <Button variant="outline" onClick={onLogout} className="text-white hover:bg-gray-700">
-              <LogOut className="h-4 w-4 mr-2" />
-              Secure Logout
-            </Button>
-          </div>
-        </div>
-      </div>
+          ) : (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No assignments yet</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="p-6 space-y-6">
-        {/* Enhanced KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">State Reports</CardTitle>
-              <FileText className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{stateReports.length}</div>
-              <p className="text-xs text-gray-400">Total for {commander.state}</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Pending Action</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-400">{pendingReports.length}</div>
-              <p className="text-xs text-gray-400">Awaiting response</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">In Progress</CardTitle>
-              <AlertTriangle className="h-4 w-4 text-blue-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-blue-400">{inProgressReports.length}</div>
-              <p className="text-xs text-gray-400">Active operations</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Resolved</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-400">{resolvedReports.length}</div>
-              <p className="text-xs text-gray-400">Successfully completed</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Avg Response</CardTitle>
-              <Clock className="h-4 w-4 text-purple-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-purple-400">{Math.round(averageResponseTime)}h</div>
-              <p className="text-xs text-gray-400">Response time</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-4">
-          <TabsList className="bg-gray-800/50 border border-gray-700">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-dhq-blue">
-              Dashboard Overview
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-dhq-blue">
-              State Reports
-            </TabsTrigger>
-            <TabsTrigger value="map" className="data-[state=active]:bg-dhq-blue">
-              Threat Map
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-4">
-            {/* Recent High Priority Reports */}
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-red-400" />
-                  High Priority Reports - {commander.state} State
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {stateReports
-                    .filter(report => report.priority === 'high')
-                    .slice(0, 5)
-                    .map((report) => (
-                      <div key={report.id} className="flex items-center justify-between p-3 bg-red-900/10 border border-red-700/30 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge className="bg-red-500/20 text-red-400 border-red-500 text-xs">
-                              HIGH PRIORITY
-                            </Badge>
-                            <span className="text-white font-medium">{report.threat_type}</span>
-                          </div>
-                          <p className="text-gray-300 text-sm">{report.location || report.manual_location}</p>
-                          <p className="text-gray-400 text-xs">
-                            {new Date(report.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                        <Badge className={getStatusColor(report.status)}>
-                          {report.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  {stateReports.filter(report => report.priority === 'high').length === 0 && (
-                    <p className="text-gray-400 text-center py-4">No high priority reports</p>
-                  )}
+      {/* State Reports */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-dhq-blue" />
+            Reports in {commanderState}
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            All reports submitted from {commanderState} state
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stateReports.length > 0 ? (
+            <div className="space-y-4">
+              {stateReports.slice(0, 10).map((report) => (
+                <div key={report.id} className="flex items-center justify-between p-4 bg-gray-700 rounded-lg">
+                  <div className="flex-1">
+                    <p className="text-white font-medium">{report.threat_type}</p>
+                    <p className="text-sm text-gray-400">{report.location}</p>
+                    <p className="text-xs text-gray-500">
+                      {new Date(report.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Badge 
+                      variant={report.status === 'pending' ? 'destructive' : 
+                              report.status === 'resolved' ? 'default' : 'secondary'}
+                    >
+                      {report.status}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {report.priority}
+                    </Badge>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-4">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-dhq-blue" />
-                  All Reports - {commander.state} State
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-gray-700">
-                        <th className="text-left py-3 px-4 text-gray-300">ID</th>
-                        <th className="text-left py-3 px-4 text-gray-300">Type</th>
-                        <th className="text-left py-3 px-4 text-gray-300">Location</th>
-                        <th className="text-left py-3 px-4 text-gray-300">Priority</th>
-                        <th className="text-left py-3 px-4 text-gray-300">Status</th>
-                        <th className="text-left py-3 px-4 text-gray-300">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stateReports.map((report) => (
-                        <tr key={report.id} className="border-b border-gray-700/50 hover:bg-gray-700/30">
-                          <td className="py-3 px-4 text-white font-mono text-xs">
-                            {report.serial_number || report.id.slice(0, 8)}
-                          </td>
-                          <td className="py-3 px-4 text-white">{report.threat_type}</td>
-                          <td className="py-3 px-4 text-gray-300">{report.location || report.manual_location}</td>
-                          <td className="py-3 px-4">
-                            <Badge className={getPriorityColor(report.priority)}>
-                              {report.priority}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge className={getStatusColor(report.status)}>
-                              {report.status}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4 text-gray-300">
-                            {new Date(report.created_at).toLocaleDateString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
-                  {stateReports.length === 0 && (
-                    <div className="text-center py-8">
-                      <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-400">No reports found for {commander.state} state</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="map" className="space-y-4">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-dhq-blue" />
-                  {commander.state} State Threat Map
-                  <Badge variant="outline" className="text-xs">
-                    {stateReports.length} Reports
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <SimpleMap commanderState={commander.state} showAllReports={false} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-400">No reports from {commanderState} yet</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

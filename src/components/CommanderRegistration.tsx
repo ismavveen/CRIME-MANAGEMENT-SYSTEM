@@ -1,11 +1,11 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, UserPlus, Mail, Shield } from 'lucide-react';
+import { Upload, UserPlus, Mail, Shield, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { supabase } from '@/integrations/supabase/client';
@@ -37,6 +37,8 @@ const CommanderRegistration = () => {
   });
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [registeredCommander, setRegisteredCommander] = useState<any>(null);
   const { toast } = useToast();
   const { createCommander } = useUnitCommanders();
 
@@ -101,7 +103,7 @@ const CommanderRegistration = () => {
       }
 
       // Create commander record
-      await createCommander({
+      const newCommander = await createCommander({
         full_name: formData.fullName,
         rank: formData.rank,
         unit: formData.unit,
@@ -139,6 +141,15 @@ const CommanderRegistration = () => {
         });
       }
 
+      // Set success data and show modal
+      setRegisteredCommander({
+        name: formData.fullName,
+        email: formData.email,
+        rank: formData.rank,
+        serviceNumber: formData.serviceNumber
+      });
+      setShowSuccessModal(true);
+
       // Reset form
       setFormData({
         fullName: '',
@@ -154,11 +165,6 @@ const CommanderRegistration = () => {
       });
       setProfileImage(null);
 
-      toast({
-        title: "Commander Registered Successfully",
-        description: `${formData.fullName} has been registered and notified via email`,
-      });
-
     } catch (error: any) {
       console.error('Registration error:', error);
       toast({
@@ -171,189 +177,257 @@ const CommanderRegistration = () => {
     }
   };
 
+  // Success Modal Component
+  const SuccessModal = () => {
+    if (!showSuccessModal || !registeredCommander) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <Card className="w-full max-w-md bg-gray-800 border-gray-700">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-white" />
+            </div>
+            <CardTitle className="text-white text-2xl">Registration Successful!</CardTitle>
+            <CardDescription className="text-gray-400">
+              Unit Commander has been successfully registered
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert className="bg-green-900/20 border-green-700">
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription className="text-green-300">
+                <strong>{registeredCommander.rank} {registeredCommander.name}</strong> has been successfully registered in the system.
+              </AlertDescription>
+            </Alert>
+
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="h-4 w-4 text-blue-400" />
+                <span className="text-blue-400 font-medium">Email Notification Sent</span>
+              </div>
+              <p className="text-sm text-gray-300 mb-3">
+                An email has been sent to <strong>{registeredCommander.email}</strong> with:
+              </p>
+              <ul className="text-sm text-gray-300 space-y-1 ml-4">
+                <li>• Login credentials (Service Number: {registeredCommander.serviceNumber})</li>
+                <li>• Temporary password</li>
+                <li>• Secure link to set up their new password</li>
+                <li>• Access instructions for the commander portal</li>
+              </ul>
+            </div>
+
+            <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-orange-400" />
+                <span className="text-orange-400 font-medium">Important Security Notice</span>
+              </div>
+              <p className="text-sm text-gray-300">
+                The commander must follow the link in their email to set up a secure password before accessing their dashboard.
+              </p>
+            </div>
+
+            <Button
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full bg-dhq-blue hover:bg-blue-700"
+            >
+              Close
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   return (
-    <Card className="bg-gray-800/50 border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-dhq-blue" />
-          Register New Unit Commander
-        </CardTitle>
-        <CardDescription className="text-gray-400">
-          Add a new unit commander to the system with secure credentials
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="fullName" className="text-gray-300">Full Name *</Label>
-              <Input
-                id="fullName"
-                value={formData.fullName}
-                onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
+    <>
+      <Card className="bg-gray-800/50 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-dhq-blue" />
+            Register New Unit Commander
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Add a new unit commander to the system with secure credentials
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fullName" className="text-gray-300">Full Name *</Label>
+                <Input
+                  id="fullName"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rank" className="text-gray-300">Rank *</Label>
+                <Select value={formData.rank} onValueChange={(value) => setFormData(prev => ({ ...prev, rank: value }))}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Select rank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MILITARY_RANKS.map((rank) => (
+                      <SelectItem key={rank} value={rank}>{rank}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="serviceNumber" className="text-gray-300">Service Number *</Label>
+                <Input
+                  id="serviceNumber"
+                  value={formData.serviceNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, serviceNumber: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="armOfService" className="text-gray-300">Arm of Service *</Label>
+                <Select value={formData.armOfService} onValueChange={(value) => setFormData(prev => ({ ...prev, armOfService: value }))}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Select service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Army">Nigerian Army</SelectItem>
+                    <SelectItem value="Navy">Nigerian Navy</SelectItem>
+                    <SelectItem value="Air Force">Nigerian Air Force</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="unit" className="text-gray-300">Unit/Division *</Label>
+                <Input
+                  id="unit"
+                  value={formData.unit}
+                  onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="state" className="text-gray-300">Assigned State *</Label>
+                <Select value={formData.state} onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {NIGERIAN_STATES.map((state) => (
+                      <SelectItem key={state} value={state}>{state}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="email" className="text-gray-300">Email Address *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="contactInfo" className="text-gray-300">Phone Number</Label>
+                <Input
+                  id="contactInfo"
+                  value={formData.contactInfo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, contactInfo: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="specialization" className="text-gray-300">Specialization</Label>
+                <Input
+                  id="specialization"
+                  value={formData.specialization}
+                  onChange={(e) => setFormData(prev => ({ ...prev, specialization: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  placeholder="e.g., Counter-terrorism, Intelligence"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="location" className="text-gray-300">Current Location</Label>
+                <Input
+                  id="location"
+                  value={formData.location}
+                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                  className="bg-gray-700 border-gray-600 text-white"
+                  placeholder="Base/Station location"
+                />
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="rank" className="text-gray-300">Rank *</Label>
-              <Select value={formData.rank} onValueChange={(value) => setFormData(prev => ({ ...prev, rank: value }))}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select rank" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MILITARY_RANKS.map((rank) => (
-                    <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="profileImage" className="text-gray-300">Profile Image</Label>
+              <div className="mt-2">
+                <Input
+                  id="profileImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="bg-gray-700 border-gray-600 text-white file:bg-dhq-blue file:text-white file:border-0"
+                />
+                {profileImage && (
+                  <p className="text-sm text-green-400 mt-1">
+                    Selected: {profileImage.name}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="serviceNumber" className="text-gray-300">Service Number *</Label>
-              <Input
-                id="serviceNumber"
-                value={formData.serviceNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, serviceNumber: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
+            <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Shield className="h-4 w-4 text-blue-400" />
+                <span className="text-blue-400 font-medium">Security Notice</span>
+              </div>
+              <p className="text-sm text-gray-300">
+                A secure password will be automatically generated and sent to the commander's email address along with login instructions.
+              </p>
             </div>
 
-            <div>
-              <Label htmlFor="armOfService" className="text-gray-300">Arm of Service *</Label>
-              <Select value={formData.armOfService} onValueChange={(value) => setFormData(prev => ({ ...prev, armOfService: value }))}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select service" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Army">Nigerian Army</SelectItem>
-                  <SelectItem value="Navy">Nigerian Navy</SelectItem>
-                  <SelectItem value="Air Force">Nigerian Air Force</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="unit" className="text-gray-300">Unit/Division *</Label>
-              <Input
-                id="unit"
-                value={formData.unit}
-                onChange={(e) => setFormData(prev => ({ ...prev, unit: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="state" className="text-gray-300">Assigned State *</Label>
-              <Select value={formData.state} onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}>
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select state" />
-                </SelectTrigger>
-                <SelectContent>
-                  {NIGERIAN_STATES.map((state) => (
-                    <SelectItem key={state} value={state}>{state}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="text-gray-300">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="contactInfo" className="text-gray-300">Phone Number</Label>
-              <Input
-                id="contactInfo"
-                value={formData.contactInfo}
-                onChange={(e) => setFormData(prev => ({ ...prev, contactInfo: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="specialization" className="text-gray-300">Specialization</Label>
-              <Input
-                id="specialization"
-                value={formData.specialization}
-                onChange={(e) => setFormData(prev => ({ ...prev, specialization: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="e.g., Counter-terrorism, Intelligence"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="location" className="text-gray-300">Current Location</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="bg-gray-700 border-gray-600 text-white"
-                placeholder="Base/Station location"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="profileImage" className="text-gray-300">Profile Image</Label>
-            <div className="mt-2">
-              <Input
-                id="profileImage"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="bg-gray-700 border-gray-600 text-white file:bg-dhq-blue file:text-white file:border-0"
-              />
-              {profileImage && (
-                <p className="text-sm text-green-400 mt-1">
-                  Selected: {profileImage.name}
-                </p>
+            <Button
+              type="submit"
+              className="w-full bg-dhq-blue hover:bg-blue-700"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Mail className="h-4 w-4 mr-2 animate-spin" />
+                  Registering & Sending Credentials...
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Register Commander
+                </>
               )}
-            </div>
-          </div>
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
-          <div className="bg-blue-900/20 border border-blue-700 rounded-lg p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Shield className="h-4 w-4 text-blue-400" />
-              <span className="text-blue-400 font-medium">Security Notice</span>
-            </div>
-            <p className="text-sm text-gray-300">
-              A secure password will be automatically generated and sent to the commander's email address along with login instructions.
-            </p>
-          </div>
-
-          <Button
-            type="submit"
-            className="w-full bg-dhq-blue hover:bg-blue-700"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Mail className="h-4 w-4 mr-2 animate-spin" />
-                Registering & Sending Credentials...
-              </>
-            ) : (
-              <>
-                <UserPlus className="h-4 w-4 mr-2" />
-                Register Commander
-              </>
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      {/* Success Modal */}
+      <SuccessModal />
+    </>
   );
 };
 
