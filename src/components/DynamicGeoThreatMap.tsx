@@ -166,7 +166,7 @@ const DynamicGeoThreatMap = () => {
   };
 
   const handleClusterClick = (cluster: ThreatCluster, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
     setTooltip({
       cluster,
       x: event.clientX - rect.left,
