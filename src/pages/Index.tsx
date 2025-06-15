@@ -46,7 +46,7 @@ const Index = () => {
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold text-white mb-2 dhq-heading tracking-tight">
-                  Crime Reporting & Monitoring Portal
+                  Defence Headquarters Central Threat Intelligence and Monitoring System (STIMS)
                 </h1>
                 <p className="text-gray-300 text-lg dhq-body font-medium">
                   Real-Time Crime Intelligence & Response System

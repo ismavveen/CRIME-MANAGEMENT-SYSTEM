@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAssignments, Assignment } from '@/hooks/useAssignments';
 import { useReports, Report } from '@/hooks/useReports';
@@ -55,6 +56,8 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
     setSelectedReport(report);
   };
 
+  const displayStateName = commanderState.toUpperCase() === 'FCT' ? 'Abuja' : commanderState;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-dhq-dark-bg">
@@ -80,7 +83,7 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
               />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white mb-2">{commanderState.toUpperCase()} Report Crime Central Monitoring Dashboard</h1>
+              <h1 className="text-3xl font-bold text-white mb-2">{`${displayStateName} Threat Intelligence and Monitoring System (STIMS)`}</h1>
               <p className="text-gray-400">
                 Live threat analysis and report management for your jurisdiction.
               </p>
