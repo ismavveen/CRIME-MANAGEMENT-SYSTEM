@@ -755,7 +755,8 @@ const Settings = () => {
                     </button>
                   </div>
                 </div>
-              </TabsContent>
+              </div>
+            </TabsContent>
               
               {/* API Settings */}
               <TabsContent value="api">
@@ -878,8 +879,8 @@ const Settings = () => {
                   </div>
                 </div>
               </TabsContent>
-            </Tabs>
-        </div>
+        </Tabs>
+      </div>
     </div>
   );
 };
