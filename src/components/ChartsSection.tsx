@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -20,12 +20,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, BarChart3, PieChart as PieChartIcon, Activity } from 'lucide-react';
 
-const ChartsSection = () => {
-  const { reports } = useReports();
-  const { assignments } = useAssignments();
+interface ChartsSectionProps {
+  filterByState?: string;
+}
+
+const ChartsSection: React.FC<ChartsSectionProps> = ({ filterByState }) => {
+  const { reports: allReports } = useReports();
+  const { assignments: allAssignments } = useAssignments();
   const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  // Set up real-time subscription for updates
+  const reports = useMemo(() => {
+    return filterByState 
+      ? allReports.filter(report => report.state === filterByState) 
+      : allReports;
+  }, [allReports, filterByState]);
+
+  const assignments = useMemo(() => {
+    if (!filterByState) return allAssignments;
+    const stateReportIds = new Set(reports.map(r => r.id));
+    return allAssignments.filter(assignment => stateReportIds.has(assignment.report_id));
+  }, [allAssignments, reports, filterByState]);
+
   useEffect(() => {
     const channel = supabase
       .channel('charts-realtime')
@@ -84,29 +99,46 @@ const ChartsSection = () => {
 
   // Generate response time data
   const responseTimeData = React.useMemo(() => {
-    const stateResponseTimes: { [key: string]: { total: number; count: number } } = {};
-    
-    assignments.forEach(assignment => {
-      const report = reports.find(r => r.id === assignment.report_id);
-      if (report && report.state && assignment.resolved_at) {
-        const responseTime = new Date(assignment.resolved_at).getTime() - new Date(assignment.assigned_at).getTime();
-        const responseMinutes = Math.round(responseTime / (1000 * 60));
-        
-        if (!stateResponseTimes[report.state]) {
-          stateResponseTimes[report.state] = { total: 0, count: 0 };
+    if (filterByState) {
+      // By LGA within the state
+      const lgaResponseTimes: { [key: string]: { total: number; count: number } } = {};
+      assignments.forEach(assignment => {
+        const report = reports.find(r => r.id === assignment.report_id);
+        if (report && report.local_government && assignment.resolved_at && assignment.assigned_at) {
+          const responseTime = new Date(assignment.resolved_at).getTime() - new Date(assignment.assigned_at).getTime();
+          const responseMinutes = Math.round(responseTime / (1000 * 60));
+          if (!lgaResponseTimes[report.local_government]) {
+            lgaResponseTimes[report.local_government] = { total: 0, count: 0 };
+          }
+          lgaResponseTimes[report.local_government].total += responseMinutes;
+          lgaResponseTimes[report.local_government].count++;
         }
-        stateResponseTimes[report.state].total += responseMinutes;
-        stateResponseTimes[report.state].count++;
-      }
-    });
-    
-    return Object.entries(stateResponseTimes)
-      .map(([state, data]) => ({
-        state,
+      });
+      return Object.entries(lgaResponseTimes).map(([key, data]) => ({
+        name: key,
         time: Math.round(data.total / data.count) || 0
-      }))
-      .slice(0, 8); // Top 8 states
-  }, [reports, assignments]);
+      })).slice(0, 8);
+    } else {
+      // By State for global view
+      const stateResponseTimes: { [key: string]: { total: number; count: number } } = {};
+      allAssignments.forEach(assignment => {
+        const report = allReports.find(r => r.id === assignment.report_id);
+        if (report && report.state && assignment.resolved_at && assignment.assigned_at) {
+          const responseTime = new Date(assignment.resolved_at).getTime() - new Date(assignment.assigned_at).getTime();
+          const responseMinutes = Math.round(responseTime / (1000 * 60));
+          if (!stateResponseTimes[report.state]) {
+            stateResponseTimes[report.state] = { total: 0, count: 0 };
+          }
+          stateResponseTimes[report.state].total += responseMinutes;
+          stateResponseTimes[report.state].count++;
+        }
+      });
+      return Object.entries(stateResponseTimes).map(([key, data]) => ({
+        name: key,
+        time: Math.round(data.total / data.count) || 0
+      })).slice(0, 8);
+    }
+  }, [reports, assignments, filterByState, allReports, allAssignments]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -151,7 +183,7 @@ const ChartsSection = () => {
           </span>
         </div>
         <Badge className="bg-cyan-600/20 text-cyan-300">
-          {reports.length} Total Reports
+          {reports.length} Total Reports {filterByState ? `in ${filterByState}` : ''}
         </Badge>
       </div>
 
@@ -250,7 +282,9 @@ const ChartsSection = () => {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2 text-white">
                 <TrendingUp className="h-5 w-5 text-green-400" />
-                <span>Average Response Time by State (Minutes)</span>
+                <span>
+                  Average Response Time (Minutes) by {filterByState ? 'LGA' : 'State'}
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -259,7 +293,7 @@ const ChartsSection = () => {
                   <BarChart data={responseTimeData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                     <XAxis 
-                      dataKey="state" 
+                      dataKey="name" 
                       stroke="#D1D5DB" 
                       fontSize={12}
                       angle={-45}

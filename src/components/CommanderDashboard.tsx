@@ -5,10 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 import DashboardSidebar from './DashboardSidebar';
 import { Button } from '@/components/ui/button';
 import StatCard from './StatCard';
-import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield } from 'lucide-react';
+import { FileText, CircleCheck, CircleAlert, Target, Activity, LogOut, Shield, BarChart3 } from 'lucide-react';
 import GoogleMapsHeatmap from './GoogleMapsHeatmap';
 import RealTimeReports from './RealTimeReports';
 import ReportDetailsModal from './ReportDetailsModal';
+import ChartsSection from './ChartsSection';
 
 interface CommanderDashboardProps {
   commanderId: string;
@@ -144,6 +145,16 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
 
         <div className="mb-8 animate-fade-in-up">
           <RealTimeReports reportsData={stateReports} isLoading={reportsLoading} onRefetch={refetchReports} />
+        </div>
+        
+        <div className="mb-8 animate-fade-in-up">
+          <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-4">
+                <BarChart3 className="h-6 w-6 text-cyan-400" />
+                <h2 className="text-2xl font-bold text-white dhq-heading">Threat Analytics for {commanderState}</h2>
+              </div>
+          </div>
+          <ChartsSection filterByState={commanderState} />
         </div>
 
         {selectedReport && (
