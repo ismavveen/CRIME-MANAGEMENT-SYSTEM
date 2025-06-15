@@ -33,7 +33,7 @@ const MediaViewerModal = ({
   const [rotation, setRotation] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [scanStatus, setScanStatus] = useState<'scanning' | 'clean' | 'infected' | 'error'>('scanning');
+  const [scanStatus, setScanStatus] = useState<'scanning' | 'clean' | 'infected' | 'suspicious' | 'error'>('scanning');
   const [scanDetails, setScanDetails] = useState<any>(null);
 
   useEffect(() => {
