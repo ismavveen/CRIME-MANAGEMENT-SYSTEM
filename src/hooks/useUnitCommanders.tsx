@@ -32,6 +32,8 @@ export interface SystemMetrics {
   total_reports: number;
   resolved_reports: number;
   pending_reports: number;
+  responded_reports: number;
+  average_response_time: number;
 }
 
 export const useUnitCommanders = () => {
@@ -40,7 +42,9 @@ export const useUnitCommanders = () => {
     active_operations: 0,
     total_reports: 0,
     resolved_reports: 0,
-    pending_reports: 0
+    pending_reports: 0,
+    responded_reports: 0,
+    average_response_time: 0
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -74,25 +78,50 @@ export const useUnitCommanders = () => {
     }
   };
 
-  
   const fetchSystemMetrics = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch from system_metrics table
+      const { data: metricsData, error: metricsError } = await supabase
         .from('system_metrics')
         .select('*');
 
-      if (error) throw error;
+      if (metricsError) throw metricsError;
       
-      const metrics = (data || []).reduce((acc, metric) => {
+      const metrics = (metricsData || []).reduce((acc, metric) => {
         acc[metric.metric_name as keyof SystemMetrics] = metric.metric_value;
         return acc;
       }, {} as SystemMetrics);
+
+      // Calculate additional metrics from reports
+      const { data: reportsData, error: reportsError } = await supabase
+        .from('reports')
+        .select('status, created_at, acknowledged_at');
+
+      if (!reportsError && reportsData) {
+        const resolvedReports = reportsData.filter(r => r.status === 'resolved');
+        const totalResponseTimes = resolvedReports
+          .filter(r => r.acknowledged_at)
+          .map(r => {
+            const created = new Date(r.created_at);
+            const acknowledged = new Date(r.acknowledged_at!);
+            return (acknowledged.getTime() - created.getTime()) / (1000 * 60 * 60); // hours
+          });
+
+        const avgResponseTime = totalResponseTimes.length > 0
+          ? totalResponseTimes.reduce((sum, time) => sum + time, 0) / totalResponseTimes.length
+          : 0;
+
+        metrics.average_response_time = Math.round(avgResponseTime * 10) / 10;
+        metrics.responded_reports = resolvedReports.length;
+      }
       
       setSystemMetrics({
         active_operations: metrics.active_operations || 0,
         total_reports: metrics.total_reports || 0,
         resolved_reports: metrics.resolved_reports || 0,
-        pending_reports: metrics.pending_reports || 0
+        pending_reports: metrics.pending_reports || 0,
+        responded_reports: metrics.responded_reports || 0,
+        average_response_time: metrics.average_response_time || 0
       });
     } catch (error: any) {
       console.error('Error fetching system metrics:', error);
@@ -115,6 +144,17 @@ export const useUnitCommanders = () => {
     status?: 'active' | 'suspended' | 'inactive' | 'available';
   }) => {
     try {
+      // Check if email or service number already exists
+      const { data: existingCommander } = await supabase
+        .from('unit_commanders')
+        .select('id, email, service_number')
+        .or(`email.eq.${commanderData.email},service_number.eq.${commanderData.service_number}`)
+        .limit(1);
+
+      if (existingCommander && existingCommander.length > 0) {
+        throw new Error('A commander with this email or service number already exists');
+      }
+
       const { data, error } = await supabase
         .from('unit_commanders')
         .insert([{
@@ -128,6 +168,19 @@ export const useUnitCommanders = () => {
         .select();
 
       if (error) throw error;
+
+      // Log the registration action for audit
+      await supabase.functions.invoke('log-user-activity', {
+        body: {
+          user_id: data[0].id,
+          activity_type: 'commander_registration',
+          metadata: {
+            registered_by: 'admin',
+            state: commanderData.state,
+            rank: commanderData.rank
+          }
+        }
+      });
 
       toast({
         title: "Commander Registered",
@@ -154,10 +207,25 @@ export const useUnitCommanders = () => {
     try {
       const { error } = await supabase
         .from('unit_commanders')
-        .update({ status })
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', commanderId);
 
       if (error) throw error;
+
+      // Log the status change for audit
+      await supabase.functions.invoke('log-user-activity', {
+        body: {
+          user_id: commanderId,
+          activity_type: 'status_change',
+          metadata: {
+            new_status: status,
+            changed_by: 'admin'
+          }
+        }
+      });
 
       toast({
         title: "Status Updated",
@@ -175,6 +243,10 @@ export const useUnitCommanders = () => {
     }
   };
 
+  const getCommandersByState = (state: string) => {
+    return commanders.filter(commander => commander.state === state && commander.status === 'active');
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
@@ -187,6 +259,7 @@ export const useUnitCommanders = () => {
 
     loadData();
 
+    // Set up real-time subscriptions
     const commandersChannel = supabase
       .channel('commanders-changes')
       .on('postgres_changes', {
@@ -221,6 +294,7 @@ export const useUnitCommanders = () => {
     loading,
     createCommander,
     updateCommanderStatus,
+    getCommandersByState,
     refetch: () => {
       fetchCommanders();
       fetchSystemMetrics();
