@@ -3,11 +3,10 @@ import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import CommanderRegistration from '../components/CommanderRegistration';
 import ResponseUnitCard from '../components/ResponseUnitCard';
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import UnitCommanderStats from '../components/UnitCommanderStats';
+import UnitCommanderFilters from '../components/UnitCommanderFilters';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, UserPlus, Search, Filter, Users, Award, Clock, TrendingUp } from 'lucide-react';
+import { Shield, UserPlus, Users } from 'lucide-react';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
 
@@ -66,59 +65,7 @@ const UnitCommanders = () => {
         </div>
 
         {/* System Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Total Response Units</CardTitle>
-              <Users className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{commanders.length}</div>
-              <p className="text-xs text-gray-400">
-                {commanders.filter(c => c.status === 'active').length} active
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Active Operations</CardTitle>
-              <Shield className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{metrics.active_operations}</div>
-              <p className="text-xs text-gray-400">
-                Currently in progress
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Average Response Time</CardTitle>
-              <Clock className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{metrics.average_response_time}</div>
-              <p className="text-xs text-gray-400">
-                minutes average
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-gray-800/50 border-gray-700">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-gray-300">Responded Reports</CardTitle>
-              <Award className="h-4 w-4 text-gray-400" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-white">{metrics.responded_reports}</div>
-              <p className="text-xs text-gray-400">
-                Units responded
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <UnitCommanderStats commanders={commanders} metrics={metrics} />
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="units" className="space-y-4">
@@ -135,30 +82,13 @@ const UnitCommanders = () => {
 
           <TabsContent value="units" className="space-y-4">
             {/* Search and Filter */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search response units by name, unit, rank, state, or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-800 border-gray-700 text-white"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48 bg-gray-800 border-gray-700 text-white">
-                  <Filter className="h-4 w-4 mr-2" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status ({commanders.length})</SelectItem>
-                  <SelectItem value="active">Active ({commanders.filter(c => c.status === 'active').length})</SelectItem>
-                  <SelectItem value="available">Available ({commanders.filter(c => c.status === 'available').length})</SelectItem>
-                  <SelectItem value="suspended">Suspended ({commanders.filter(c => c.status === 'suspended').length})</SelectItem>
-                  <SelectItem value="inactive">Inactive ({commanders.filter(c => c.status === 'inactive').length})</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <UnitCommanderFilters
+              searchTerm={searchTerm}
+              setSearchTerm={setSearchTerm}
+              statusFilter={statusFilter}
+              setStatusFilter={setStatusFilter}
+              commanders={commanders}
+            />
 
             {/* Response Units Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">

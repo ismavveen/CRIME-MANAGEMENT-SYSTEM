@@ -3,7 +3,6 @@ import React from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import ThreatAnalyticsSection from '../components/ThreatAnalyticsSection';
 import ChartsSection from '../components/ChartsSection';
-import DynamicGeoThreatMap from '../components/DynamicGeoThreatMap';
 import { BarChart3 } from 'lucide-react';
 
 const Charts = () => {
@@ -22,15 +21,10 @@ const Charts = () => {
                 Real-Time Threat Analytics & Intelligence
               </h1>
               <p className="text-gray-300 text-xl dhq-body font-medium">
-                Live Geographic and Statistical Threat Analysis
+                Statistical Threat Analysis Dashboard
               </p>
             </div>
           </div>
-        </div>
-
-        {/* Dynamic Geo-Spatial Threat Map */}
-        <div className="animate-fade-in-up">
-          <DynamicGeoThreatMap />
         </div>
 
         {/* Real-Time Charts Section */}
