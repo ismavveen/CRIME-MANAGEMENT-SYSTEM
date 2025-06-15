@@ -19,9 +19,14 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    const virusTotalApiKey = Deno.env.get('VIRUSTOTAL_API_KEY');
+    if (!virusTotalApiKey) {
+      throw new Error('VirusTotal API key not configured');
+    }
+
     const { fileUrl, reportId, fileType } = await req.json();
 
-    console.log('Scanning file:', fileUrl);
+    console.log('Scanning file with VirusTotal:', fileUrl);
 
     // Fetch the file for scanning
     const fileResponse = await fetch(fileUrl);
@@ -48,11 +53,10 @@ serve(async (req) => {
       );
     }
 
-    // Simulate virus scanning (in production, integrate with actual antivirus service)
-    // This is a mock implementation - replace with real virus scanning service
-    const scanResult = await performVirusScan(fileBuffer, fileType);
+    // Perform VirusTotal scanning
+    const scanResult = await performVirusTotalScan(fileBuffer, fileType, virusTotalApiKey);
 
-    // Log the scan result
+    // Create scan log entry
     const { error: logError } = await supabaseClient
       .from('file_scan_logs')
       .insert({
@@ -63,7 +67,8 @@ serve(async (req) => {
         scan_result: scanResult.status,
         threats_detected: scanResult.threats,
         scan_timestamp: new Date().toISOString(),
-        scanner_version: '1.0.0'
+        scanner_version: 'VirusTotal v3',
+        scan_details: scanResult.details
       });
 
     if (logError) {
@@ -76,6 +81,7 @@ serve(async (req) => {
         scanResult: scanResult.status,
         threats: scanResult.threats,
         fileSize: fileSize,
+        scanDetails: scanResult.details,
         message: scanResult.status === 'clean' ? 'File is safe to access' : 'Threats detected in file'
       }),
       {
@@ -100,53 +106,132 @@ serve(async (req) => {
   }
 });
 
-// Mock virus scanning function - replace with real antivirus integration
-async function performVirusScan(fileBuffer: ArrayBuffer, fileType: string) {
-  // Simulate scanning delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
+// VirusTotal file scanning function
+async function performVirusTotalScan(fileBuffer: ArrayBuffer, fileType: string, apiKey: string) {
+  try {
+    // Create form data for file upload
+    const formData = new FormData();
+    const fileBlob = new Blob([fileBuffer], { type: fileType });
+    formData.append('file', fileBlob);
 
-  // Basic file type validation
-  const allowedTypes = [
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'video/mp4', 'video/webm', 'video/quicktime',
-    'application/pdf', 'text/plain'
-  ];
+    console.log('Uploading file to VirusTotal for analysis...');
 
-  if (!allowedTypes.includes(fileType)) {
-    return {
-      status: 'suspicious',
-      threats: ['Unsupported file type']
-    };
-  }
+    // Upload file to VirusTotal
+    const uploadResponse = await fetch('https://www.virustotal.com/vtapi/v2/file/scan', {
+      method: 'POST',
+      headers: {
+        'apikey': apiKey,
+      },
+      body: formData
+    });
 
-  // Check for suspicious file signatures or patterns
-  const uint8Array = new Uint8Array(fileBuffer);
-  const header = Array.from(uint8Array.slice(0, 10)).map(b => b.toString(16).padStart(2, '0')).join('');
+    if (!uploadResponse.ok) {
+      throw new Error(`VirusTotal upload failed: ${uploadResponse.status}`);
+    }
 
-  // Basic signature checks (this is very simplified - real implementation would be much more comprehensive)
-  const suspiciousPatterns = [
-    '4d5a', // PE executable
-    '7f454c46', // ELF executable
-    'cafebabe', // Java class file
-  ];
+    const uploadResult = await uploadResponse.json();
+    console.log('VirusTotal upload result:', uploadResult);
 
-  for (const pattern of suspiciousPatterns) {
-    if (header.toLowerCase().includes(pattern)) {
+    if (!uploadResult.resource) {
+      throw new Error('Failed to get scan resource from VirusTotal');
+    }
+
+    // Wait a moment for initial scan
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    // Get scan report
+    const reportResponse = await fetch(`https://www.virustotal.com/vtapi/v2/file/report?apikey=${apiKey}&resource=${uploadResult.resource}`);
+    
+    if (!reportResponse.ok) {
+      throw new Error(`VirusTotal report failed: ${reportResponse.status}`);
+    }
+
+    const reportResult = await reportResponse.json();
+    console.log('VirusTotal scan report:', reportResult);
+
+    // Parse results
+    if (reportResult.response_code === 1) {
+      const positives = reportResult.positives || 0;
+      const total = reportResult.total || 0;
+      
+      if (positives > 0) {
+        const threats = [];
+        if (reportResult.scans) {
+          for (const [engine, result] of Object.entries(reportResult.scans)) {
+            if (result.detected) {
+              threats.push(`${engine}: ${result.result}`);
+            }
+          }
+        }
+        
+        return {
+          status: 'infected',
+          threats: threats.length > 0 ? threats : [`${positives} of ${total} engines detected threats`],
+          details: {
+            positives,
+            total,
+            scan_date: reportResult.scan_date,
+            permalink: reportResult.permalink
+          }
+        };
+      } else {
+        return {
+          status: 'clean',
+          threats: [],
+          details: {
+            positives: 0,
+            total,
+            scan_date: reportResult.scan_date,
+            permalink: reportResult.permalink
+          }
+        };
+      }
+    } else if (reportResult.response_code === 0) {
+      // File not found in database, but upload was successful
       return {
-        status: 'infected',
-        threats: ['Potentially malicious executable detected']
+        status: 'pending',
+        threats: [],
+        details: {
+          message: 'File queued for analysis',
+          resource: uploadResult.resource
+        }
+      };
+    } else if (reportResult.response_code === -2) {
+      // Still queued for analysis
+      return {
+        status: 'pending',
+        threats: [],
+        details: {
+          message: 'File still being analyzed',
+          resource: uploadResult.resource
+        }
+      };
+    } else {
+      throw new Error('Invalid response from VirusTotal');
+    }
+
+  } catch (error) {
+    console.error('VirusTotal scanning error:', error);
+    
+    // Fallback to basic file type validation if VirusTotal fails
+    const allowedTypes = [
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'video/mp4', 'video/webm', 'video/quicktime',
+      'application/pdf', 'text/plain'
+    ];
+
+    if (!allowedTypes.includes(fileType)) {
+      return {
+        status: 'suspicious',
+        threats: ['Unsupported file type'],
+        details: { error: error.message, fallback: true }
       };
     }
+
+    return {
+      status: 'error',
+      threats: [`Scan failed: ${error.message}`],
+      details: { error: error.message, fallback: true }
+    };
   }
-
-  // In a real implementation, you would:
-  // 1. Use a proper antivirus API (ClamAV, VirusTotal, etc.)
-  // 2. Check against known malware signatures
-  // 3. Perform behavioral analysis
-  // 4. Check file reputation databases
-
-  return {
-    status: 'clean',
-    threats: []
-  };
 }
