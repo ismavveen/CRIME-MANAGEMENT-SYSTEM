@@ -1,24 +1,15 @@
 
 import React, { useState } from 'react';
-import { Calendar, Clock } from 'lucide-react';
-import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
-
-interface Incident {
-  id: string;
-  type: string;
-  location: string;
-  status: 'critical' | 'warning' | 'resolved' | 'investigating';
-  timestamp: string;
-  priority: 'high' | 'medium' | 'low';
-  officer: string;
-}
+import { Clock } from 'lucide-react';
+import IncidentDetailsDialog from './IncidentDetailsDialog';
+import { DetailedIncident } from '@/types/incidents';
 
 const IncidentTable = () => {
-  const [selectedIncident, setSelectedIncident] = useState<IncidentDetails | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<DetailedIncident | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Sample incident data with enhanced details
-  const incidents: IncidentDetails[] = [
+  const incidents: DetailedIncident[] = [
     {
       id: 'INC-001',
       type: 'Armed Robbery',
@@ -123,7 +114,7 @@ const IncidentTable = () => {
     }
   };
 
-  const handleIncidentClick = (incident: IncidentDetails) => {
+  const handleIncidentClick = (incident: DetailedIncident) => {
     setSelectedIncident(incident);
     setIsDialogOpen(true);
   };
