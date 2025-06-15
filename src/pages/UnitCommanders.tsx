@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import CommanderRegistration from '../components/CommanderRegistration';
@@ -8,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, UserPlus, Users } from 'lucide-react';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UnitCommanders = () => {
   const { commanders, loading, updateCommanderStatus, deleteCommander } = useUnitCommanders();
