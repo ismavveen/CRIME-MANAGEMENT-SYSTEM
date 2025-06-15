@@ -310,11 +310,11 @@ const RealTimeReports = () => {
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
           <div className="col-span-2">Time</div>
           <div className="col-span-2">Location</div>
-          <div className="col-span-3">Threat Type</div>
+          <div className="col-span-2">Threat Type</div>
           <div className="col-span-1">Source</div>
           <div className="col-span-1">Status</div>
           <div className="col-span-1">Evidence</div>
-          <div className="col-span-2">Quick Actions</div>
+          <div className="col-span-3">Quick Actions</div>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -357,7 +357,7 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
                   </div>
@@ -378,7 +378,7 @@ const RealTimeReports = () => {
                   {getMediaCount(report)}
                 </div>
                 
-                <div className="col-span-2 flex space-x-1">
+                <div className="col-span-3 flex space-x-1">
                   {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
