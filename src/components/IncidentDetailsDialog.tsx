@@ -100,8 +100,8 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
         onAssign={handleCreateAssignment}
         reportLocation={incident.location}
         reportState={incident.state}
-        reportLatitude={incident.latitude}
-        reportLongitude={incident.longitude}
+        reportLatitude={incident.coordinates?.lat}
+        reportLongitude={incident.coordinates?.lng}
       />
     </>
   );
