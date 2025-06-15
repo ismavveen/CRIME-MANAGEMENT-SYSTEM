@@ -200,21 +200,21 @@ const CommanderRegistration = () => {
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-700/50 rounded-lg p-3">
-                  <h4 className="text-white font-medium mb-2">🔑 Login Credentials</h4>
+                  <h4 className="text-white font-medium mb-2">🔑 Account Details</h4>
                   <ul className="text-sm text-gray-300 space-y-1">
                     <li>• Service Number: {registeredCommander.serviceNumber}</li>
                     <li>• Email: {registeredCommander.email}</li>
-                    <li>• Temporary password (auto-generated)</li>
+                    <li>• Login: via secure setup link in email</li>
                     <li>• Military branch: {registeredCommander.armOfService}</li>
                   </ul>
                 </div>
                 <div className="bg-gray-700/50 rounded-lg p-3">
-                  <h4 className="text-white font-medium mb-2">🔒 Security Setup</h4>
+                  <h4 className="text-white font-medium mb-2">🔒 Password Setup</h4>
                   <ul className="text-sm text-gray-300 space-y-1">
-                    <li>• Secure password reset link</li>
-                    <li>• 24-hour expiration notice</li>
-                    <li>• Commander portal access instructions</li>
-                    <li>• Security best practices guide</li>
+                    <li>• Secure password setup link sent</li>
+                    <li>• Link expires in 1 hour</li>
+                    <li>• Commander must set their own password</li>
+                    <li>• Includes portal access instructions</li>
                   </ul>
                 </div>
               </div>
@@ -223,13 +223,13 @@ const CommanderRegistration = () => {
             <div className="bg-orange-900/20 border border-orange-700 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Shield className="h-5 w-5 text-orange-400" />
-                <span className="text-orange-400 font-semibold">⚠️ Critical Security Instructions</span>
+                <span className="text-orange-400 font-semibold">⚠️ Action Required by Commander</span>
               </div>
               <div className="space-y-2 text-sm text-gray-300">
-                <p>• The commander <strong>MUST</strong> click the secure link in their email to set up a new password</p>
-                <p>• The temporary password expires in <strong>24 hours</strong> for security</p>
-                <p>• They will only see reports and data from <strong>{registeredCommander.state} State</strong></p>
-                <p>• Email contains sensitive information and should be deleted after password setup</p>
+                <p>• The commander <strong>MUST</strong> click the secure link in their email to set up a new password.</p>
+                <p>• The password setup link expires in <strong>1 hour</strong> for security.</p>
+                <p>• They will only see reports and data from <strong>{registeredCommander.state} State</strong>.</p>
+                <p>• The welcome email does not contain a password and is safe to keep.</p>
               </div>
             </div>
 
@@ -443,10 +443,9 @@ const CommanderRegistration = () => {
                 <span className="text-blue-400 font-medium">Enhanced Security & Email Notification</span>
               </div>
               <div className="text-sm text-gray-300 space-y-1">
-                <p>• A secure password will be automatically generated and sent via email</p>
-                <p>• Commander will receive a secure link to create their own password</p>
-                <p>• Email includes comprehensive security instructions and login details</p>
-                <p>• All passwords are encrypted using military-grade security standards</p>
+                <p>• No password is created. Instead, a secure setup link is emailed to the commander.</p>
+                <p>• Commander will receive a secure link to create their own password.</p>
+                <p>• Email includes comprehensive security instructions and login details.</p>
               </div>
             </div>
 

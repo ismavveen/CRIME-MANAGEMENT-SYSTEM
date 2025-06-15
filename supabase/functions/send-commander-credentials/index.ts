@@ -1,6 +1,7 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64url.ts";
 import { GoogleAuth, JWTInput } from "https://esm.sh/google-auth-library@9.0.0";
 
 // --- CORS Headers
