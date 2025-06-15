@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ interface AssignmentDialogProps {
   reportId: string | null;
   onAssign: (commanderId: string) => void; // <-- new
   reportLocation?: string;
+  reportState?: string;
   reportLatitude?: number;
   reportLongitude?: number;
 }
@@ -24,6 +26,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   reportId,
   onAssign,
   reportLocation,
+  reportState,
   reportLatitude,
   reportLongitude
 }) => {
@@ -36,7 +39,8 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const availableCommanders = commanders.filter(c => 
-    c.status === 'active' || c.status === 'available'
+    (c.status === 'active' || c.status === 'available') &&
+    (!reportState || c.state === reportState)
   );
 
   const handleAssign = async () => {
@@ -74,11 +78,17 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
                 <SelectValue placeholder="Choose a commander..." />
               </SelectTrigger>
               <SelectContent>
-                {availableCommanders.map((commander) => (
-                  <SelectItem key={commander.id} value={commander.id}>
-                    {commander.full_name} - {commander.unit}
+                {availableCommanders.length > 0 ? (
+                  availableCommanders.map((commander) => (
+                    <SelectItem key={commander.id} value={commander.id}>
+                      {commander.full_name} - {commander.unit} ({commander.state})
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="none" disabled>
+                    No commanders available for {reportState || 'this state'}.
                   </SelectItem>
-                ))}
+                )}
               </SelectContent>
             </Select>
           </div>

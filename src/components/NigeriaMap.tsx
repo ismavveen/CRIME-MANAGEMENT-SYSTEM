@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import IncidentDetailsDialog, { IncidentDetails } from './IncidentDetailsDialog';
 import AssignmentDialog from './AssignmentDialog';
@@ -17,7 +16,11 @@ interface Incident {
   isAssigned: boolean;
 }
 
-const NigeriaMap = () => {
+interface NigeriaMapProps {
+  filterByState?: string;
+}
+
+const NigeriaMap: React.FC<NigeriaMapProps> = ({ filterByState }) => {
   const { reports, loading, updateReportStatus, refetch: refetchReports } = useReports();
   const { assignments, createAssignment } = useAssignments();
   const { commanders } = useUnitCommanders();
@@ -31,6 +34,7 @@ const NigeriaMap = () => {
   // Convert reports to incidents for the map with assignment status
   const incidents: Incident[] = reports
     .filter(report => report.latitude && report.longitude)
+    .filter(report => !filterByState || report.state === filterByState)
     .map(report => {
       const assignment = assignments.find(a => a.report_id === report.id);
       let type: 'critical' | 'warning' | 'resolved' | 'assigned' = 'warning';
@@ -57,6 +61,7 @@ const NigeriaMap = () => {
   // Convert reports to detailed incident data
   const incidentDetails: IncidentDetails[] = reports
     .filter(report => report.latitude && report.longitude)
+    .filter(report => !filterByState || report.state === filterByState)
     .map(report => {
       const assignment = assignments.find(a => a.report_id === report.id);
       const commander = assignment ? commanders.find(c => c.id === assignment.commander_id) : null;
@@ -86,6 +91,7 @@ const NigeriaMap = () => {
         priority: mappedPriority,
         officer: commander?.full_name || 'Unassigned',
         description: report.description || 'No description provided',
+        state: report.state,
         coordinates: { lat: report.latitude!, lng: report.longitude! },
         updates: [
           {
@@ -380,8 +386,9 @@ const NigeriaMap = () => {
       <AssignmentDialog
         open={showAssignDialog}
         onOpenChange={setShowAssignDialog}
-        reportId={selectedMapPoint?.id || null}
+        reportId={selectedIncident?.id || null}
         reportLocation={selectedIncident?.location}
+        reportState={selectedIncident?.state}
         reportLatitude={selectedIncident?.coordinates?.lat}
         reportLongitude={selectedIncident?.coordinates?.lng}
         onAssign={handleAssign}

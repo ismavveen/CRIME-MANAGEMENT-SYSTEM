@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Dialog,
@@ -10,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Calendar, Clock, MapPin, User, Flag, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useReports } from '@/hooks/useReports';
 
 export interface IncidentDetails {
   id: string;
@@ -20,6 +20,7 @@ export interface IncidentDetails {
   priority: 'high' | 'medium' | 'low';
   officer: string;
   description?: string;
+  state?: string;
   coordinates?: {
     lat: number;
     lng: number;
@@ -43,6 +44,7 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
   incident
 }) => {
   const { toast } = useToast();
+  const { updateReportStatus } = useReports();
 
   if (!incident) return null;
 
@@ -89,12 +91,22 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
     }
   };
 
-  const handleResolve = () => {
-    toast({
-      title: "Incident resolved",
-      description: `Incident ${incident.id} has been marked as resolved.`,
-    });
-    onOpenChange(false);
+  const handleResolve = async () => {
+    if (!incident) return;
+    try {
+      await updateReportStatus(incident.id, 'resolved');
+      toast({
+        title: "Incident resolved",
+        description: `Incident ${incident.id} has been marked as resolved.`,
+      });
+      onOpenChange(false);
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Failed to resolve incident.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleAssign = () => {
@@ -107,7 +119,7 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-xl">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-xl text-white flex items-center gap-2">
             {getStatusIcon(incident.status)}

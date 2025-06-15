@@ -105,8 +105,8 @@ const PendingReportsSection: React.FC = () => {
           open={assignDialogOpen}
           onOpenChange={setAssignDialogOpen}
           reportId={selectedReport?.id || null}
-          // ... you can pass more props if desired
-          onAssign={handleAssignment} // Additional prop, may need to update AssignmentDialog
+          reportState={selectedReport?.state}
+          onAssign={handleAssignment}
         />
       </CardContent>
     </Card>

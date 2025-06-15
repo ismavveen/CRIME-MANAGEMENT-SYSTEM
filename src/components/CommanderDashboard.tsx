@@ -8,6 +8,7 @@ import CommanderDashboardHeader from './commander-dashboard/CommanderDashboardHe
 import CommanderStatsGrid from './commander-dashboard/CommanderStatsGrid';
 import RecentAssignmentsList from './commander-dashboard/RecentAssignmentsList';
 import StateReportsList from './commander-dashboard/StateReportsList';
+import NigeriaMap from './NigeriaMap';
 
 interface CommanderDashboardProps {
   commanderId: string;
@@ -91,16 +92,23 @@ const CommanderDashboard: React.FC<CommanderDashboardProps> = ({ commanderId, co
         commanderState={commanderState}
       />
 
-      <RecentAssignmentsList
-        assignments={assignments || []}
-        commanderState={commanderState}
-        handleAcceptAssignment={handleAcceptAssignment}
-      />
+      <div className="dhq-card p-0 sm:p-0">
+        <h2 className="text-xl font-bold text-white mb-4 p-6">Threat Map for {commanderState}</h2>
+        <NigeriaMap filterByState={commanderState} />
+      </div>
 
-      <StateReportsList
-        reports={stateReports}
-        commanderState={commanderState}
-      />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentAssignmentsList
+          assignments={assignments || []}
+          commanderState={commanderState}
+          handleAcceptAssignment={handleAcceptAssignment}
+        />
+
+        <StateReportsList
+          reports={stateReports}
+          commanderState={commanderState}
+        />
+      </div>
     </div>
   );
 };
