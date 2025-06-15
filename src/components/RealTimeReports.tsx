@@ -5,7 +5,7 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History, Users, Zap } from 'lucide-react';
 import DispatchModal from './DispatchModal';
 import ReportAuditModal from './ReportAuditModal';
 
@@ -27,6 +27,7 @@ const RealTimeReports = () => {
   const filteredReports = recentReports.filter(report => {
     if (filter === 'all') return true;
     if (filter === 'external') return report.submission_source === 'external_portal';
+    if (filter === 'urgent') return report.urgency === 'critical' || report.priority === 'high';
     return report.status?.toLowerCase() === filter.toLowerCase();
   });
 
@@ -72,6 +73,19 @@ const RealTimeReports = () => {
     }
   };
 
+  const getUrgencyColor = (urgency: string, priority: string) => {
+    const level = urgency || priority;
+    switch (level?.toLowerCase()) {
+      case 'critical':
+      case 'high':
+        return 'bg-red-900/30 text-red-300 border-red-700/50 animate-pulse';
+      case 'medium':
+        return 'bg-orange-900/30 text-orange-300 border-orange-700/50';
+      default:
+        return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
+    }
+  };
+
   const getSubmissionSourceBadge = (source: string) => {
     if (source === 'external_portal') {
       return (
@@ -81,7 +95,11 @@ const RealTimeReports = () => {
         </Badge>
       );
     }
-    return null;
+    return (
+      <Badge className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 border-blue-700/50">
+        Internal
+      </Badge>
+    );
   };
 
   const getMediaCount = (report: any) => {
@@ -124,7 +142,16 @@ const RealTimeReports = () => {
     });
   };
 
-  const handleDispatchClick = (report: any) => {
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const handleQuickDispatch = (report: any) => {
     setReportToDispatch(report);
     setDispatchModalOpen(true);
   };
@@ -160,23 +187,27 @@ const RealTimeReports = () => {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-3">
             <AlertTriangle className="h-6 w-6 text-cyan-400" />
-            <h2 className="text-2xl font-bold text-white dhq-heading">Real-Time Reports</h2>
+            <h2 className="text-2xl font-bold text-white dhq-heading">Live Crime Reports</h2>
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-green-400 rounded-full live-indicator"></div>
               <span className="text-green-400 text-sm font-semibold dhq-caption uppercase">LIVE</span>
             </div>
           </div>
+          <Badge className="bg-blue-900/30 text-blue-300 border-blue-700/50 px-3 py-1">
+            {filteredReports.length} Active Reports
+          </Badge>
         </div>
         
         <div className="flex items-center space-x-4">
           <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-40 bg-gray-700/50 border-gray-600">
-              <SelectValue placeholder="Filter" />
+            <SelectTrigger className="w-48 bg-gray-700/50 border-gray-600">
+              <SelectValue placeholder="Filter Reports" />
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600">
-              <SelectItem value="all">All Reports</SelectItem>
+              <SelectItem value="all">All Reports ({recentReports.length})</SelectItem>
               <SelectItem value="external">External Portal</SelectItem>
-              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="urgent">Urgent/Critical</SelectItem>
+              <SelectItem value="pending">Pending Action</SelectItem>
               <SelectItem value="assigned">Assigned</SelectItem>
               <SelectItem value="resolved">Resolved</SelectItem>
             </SelectContent>
@@ -184,18 +215,18 @@ const RealTimeReports = () => {
         </div>
       </div>
 
-      {/* Reports Table */}
+      {/* Enhanced Reports Grid */}
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
-          <div className="col-span-1">Serial</div>
+          <div className="col-span-1">ID</div>
           <div className="col-span-1">Time</div>
           <div className="col-span-2">Location</div>
-          <div className="col-span-2">Threat</div>
+          <div className="col-span-2">Threat Type</div>
           <div className="col-span-1">Source</div>
           <div className="col-span-1">Status</div>
           <div className="col-span-1">Priority</div>
-          <div className="col-span-1">Media</div>
-          <div className="col-span-2">Action</div>
+          <div className="col-span-1">Evidence</div>
+          <div className="col-span-2">Quick Actions</div>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -206,32 +237,54 @@ const RealTimeReports = () => {
             </div>
           ) : filteredReports.length === 0 ? (
             <div className="p-8 text-center text-gray-400">
-              No reports found matching the current filter.
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-gray-500" />
+              <p className="text-lg font-medium">No reports found</p>
+              <p className="text-sm">Try adjusting your filter or check back later</p>
             </div>
           ) : (
             filteredReports.map((report, index) => (
               <div 
                 key={report.id} 
-                className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors cursor-pointer ${
-                  selectedReport === report.id ? 'bg-blue-900/20' : ''
-                } ${report.submission_source === 'external_portal' ? 'border-l-4 border-l-purple-500' : ''}`}
+                className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-all duration-200 cursor-pointer ${
+                  selectedReport === report.id ? 'bg-blue-900/20 border-l-4 border-l-blue-400' : ''
+                } ${report.submission_source === 'external_portal' ? 'border-l-4 border-l-purple-500' : ''} ${
+                  (report.urgency === 'critical' || report.priority === 'high') ? 'border-l-4 border-l-red-500' : ''
+                }`}
                 onClick={() => handleReportSelection(report.id)}
               >
                 <div className="col-span-1 text-white font-mono text-xs">
-                  {report.serial_number || `CRP-${report.id.slice(0, 3)}`}
+                  <div className="font-semibold">
+                    {report.serial_number || `CRP-${report.id.slice(0, 3)}`}
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    {formatDate(report.created_at)}
+                  </div>
                 </div>
                 
                 <div className="col-span-1 text-gray-300 text-xs">
-                  {formatTime(report.created_at)}
+                  <div className="font-medium">{formatTime(report.created_at)}</div>
+                  <div className="text-gray-400">
+                    {Math.floor((Date.now() - new Date(report.created_at).getTime()) / 60000)}m ago
+                  </div>
                 </div>
                 
-                <div className="col-span-2 text-gray-300 text-xs flex items-center">
-                  <MapPin className="h-3 w-3 mr-1 text-cyan-400" />
-                  <span className="truncate">{report.state || report.location || 'Unknown'}</span>
+                <div className="col-span-2 text-gray-300 text-xs">
+                  <div className="flex items-center space-x-1 mb-1">
+                    <MapPin className="h-3 w-3 text-cyan-400" />
+                    <span className="font-medium truncate">{report.state || 'Unknown State'}</span>
+                  </div>
+                  <div className="text-gray-400 truncate">
+                    {report.local_government || report.location || 'Location pending'}
+                  </div>
                 </div>
                 
-                <div className={`col-span-2 text-xs font-medium ${getThreatColor(report.threat_type)} truncate`}>
-                  {report.threat_type || 'Security Incident'}
+                <div className="col-span-2">
+                  <div className={`text-xs font-medium ${getThreatColor(report.threat_type)} mb-1`}>
+                    {report.threat_type || 'Security Incident'}
+                  </div>
+                  <div className="text-gray-400 text-xs truncate">
+                    {report.description?.slice(0, 40)}...
+                  </div>
                 </div>
                 
                 <div className="col-span-1">
@@ -246,11 +299,10 @@ const RealTimeReports = () => {
                 </div>
                 
                 <div className="col-span-1">
-                  <Badge className={`text-xs px-2 py-1 ${
-                    report.priority === 'high' || report.urgency === 'critical'
-                      ? 'bg-red-900/30 text-red-300 border-red-700/50'
-                      : 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
-                  }`}>
+                  <Badge className={`text-xs px-2 py-1 ${getUrgencyColor(report.urgency, report.priority)}`}>
+                    {(report.urgency === 'critical' || report.priority === 'high') && (
+                      <Zap className="h-3 w-3 mr-1" />
+                    )}
                     {report.priority || report.urgency || 'Medium'}
                   </Badge>
                 </div>
@@ -264,19 +316,20 @@ const RealTimeReports = () => {
                     <Button 
                       size="sm" 
                       variant="outline"
-                      className="h-6 px-2 text-xs bg-blue-600/20 border-blue-500 text-blue-300 hover:bg-blue-600/30"
+                      className="h-7 px-3 text-xs bg-blue-600/20 border-blue-500 text-blue-300 hover:bg-blue-600/30 flex items-center space-x-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDispatchClick(report);
+                        handleQuickDispatch(report);
                       }}
                     >
-                      Dispatch
+                      <Send className="h-3 w-3" />
+                      <span>Dispatch</span>
                     </Button>
                   )}
                   <Button 
                     size="sm" 
                     variant="outline"
-                    className="h-6 px-2 text-xs bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30"
+                    className="h-7 px-2 text-xs bg-purple-600/20 border-purple-500 text-purple-300 hover:bg-purple-600/30"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleAuditClick(report);
@@ -293,65 +346,166 @@ const RealTimeReports = () => {
 
       {/* Enhanced Report Details */}
       {selectedReport && (
-        <div className="mt-6 p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-white font-semibold">
-              Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number || 'Not assigned'}
+        <div className="mt-6 p-6 bg-gray-800/30 rounded-lg border border-gray-700/50">
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-white font-semibold text-lg flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-cyan-400" />
+              <span>Report Details - Serial: {reports.find(r => r.id === selectedReport)?.serial_number || 'Not assigned'}</span>
             </h4>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
+            <div className="flex space-x-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const report = reports.find(r => r.id === selectedReport);
+                  if (report) handleAuditClick(report);
+                }}
+                className="border-purple-500 text-purple-300 hover:bg-purple-600/20"
+              >
+                <History className="h-4 w-4 mr-2" />
+                View Audit Trail
+              </Button>
+              {(() => {
                 const report = reports.find(r => r.id === selectedReport);
-                if (report) handleAuditClick(report);
-              }}
-              className="border-purple-500 text-purple-300 hover:bg-purple-600/20"
-            >
-              <History className="h-4 w-4 mr-2" />
-              View Audit Trail
-            </Button>
+                return report && report.status !== 'resolved' && report.status !== 'assigned' ? (
+                  <Button
+                    size="sm"
+                    onClick={() => handleQuickDispatch(report)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Quick Dispatch
+                  </Button>
+                ) : null;
+              })()}
+            </div>
           </div>
           {(() => {
             const report = reports.find(r => r.id === selectedReport);
             return report ? (
-              <div className="text-gray-300 text-sm space-y-2">
-                <p><strong>Description:</strong> {report.description}</p>
-                <p><strong>Location:</strong> {report.full_address || report.location || report.manual_location}</p>
-                <div className="grid grid-cols-2 gap-4">
-                  <p><strong>State:</strong> {report.state}</p>
-                  <p><strong>LGA:</strong> {report.local_government}</p>
-                  <p><strong>Urgency:</strong> {report.urgency || report.priority}</p>
-                  <p><strong>Source:</strong> {report.submission_source || 'Internal'}</p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-gray-400 text-sm font-medium">Incident Description</label>
+                    <p className="text-gray-300 bg-gray-700/30 p-3 rounded mt-1">{report.description}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Threat Type</label>
+                      <p className={`font-semibold mt-1 ${getThreatColor(report.threat_type)}`}>
+                        {report.threat_type}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Priority Level</label>
+                      <Badge className={`mt-1 ${getUrgencyColor(report.urgency, report.priority)}`}>
+                        {report.priority || report.urgency}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-gray-400 text-sm font-medium">Location Details</label>
+                    <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-1">
+                      <p className="text-gray-300"><strong>Address:</strong> {report.full_address || report.location || report.manual_location}</p>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <p className="text-gray-300"><strong>State:</strong> {report.state}</p>
+                        <p className="text-gray-300"><strong>LGA:</strong> {report.local_government}</p>
+                      </div>
+                      {report.landmark && (
+                        <p className="text-gray-300"><strong>Landmark:</strong> {report.landmark}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p><strong>Reported:</strong> {new Date(report.created_at).toLocaleString()}</p>
-                {!report.is_anonymous && report.reporter_name && (
-                  <p><strong>Reporter:</strong> {report.reporter_name}</p>
-                )}
-                {(report.images?.length || report.videos?.length || report.documents?.length) && (
-                  <p><strong>Evidence:</strong> 
-                    {report.images?.length || 0} image(s), 
-                    {report.videos?.length || 0} video(s), 
-                    {report.documents?.length || 0} document(s)
-                  </p>
-                )}
-                {report.validation_status && (
-                  <p><strong>Validation Status:</strong> 
-                    <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                      report.validation_status === 'validated' ? 'bg-green-900/30 text-green-300' :
-                      report.validation_status === 'rejected' ? 'bg-red-900/30 text-red-300' :
-                      'bg-yellow-900/30 text-yellow-300'
-                    }`}>
-                      {report.validation_status}
-                    </span>
-                  </p>
-                )}
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-gray-400 text-sm font-medium">Report Timeline</label>
+                    <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-2">
+                      <p className="text-gray-300 text-sm">
+                        <strong>Submitted:</strong> {new Date(report.created_at).toLocaleString()}
+                      </p>
+                      <p className="text-gray-300 text-sm">
+                        <strong>Source:</strong> {report.submission_source === 'external_portal' ? 'External Portal' : 'Internal System'}
+                      </p>
+                      <p className="text-gray-300 text-sm">
+                        <strong>Status:</strong> 
+                        <Badge className={`ml-2 ${getStatusColor(report.status)}`}>
+                          {report.status}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+
+                  {!report.is_anonymous && (
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Reporter Information</label>
+                      <div className="bg-gray-700/30 p-3 rounded mt-1 space-y-1">
+                        {report.reporter_name && (
+                          <p className="text-gray-300 text-sm"><strong>Name:</strong> {report.reporter_name}</p>
+                        )}
+                        {report.reporter_phone && (
+                          <p className="text-gray-300 text-sm"><strong>Phone:</strong> {report.reporter_phone}</p>
+                        )}
+                        {report.reporter_email && (
+                          <p className="text-gray-300 text-sm"><strong>Email:</strong> {report.reporter_email}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {(report.images?.length || report.videos?.length || report.documents?.length) && (
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Evidence Attached</label>
+                      <div className="bg-gray-700/30 p-3 rounded mt-1">
+                        <div className="flex items-center space-x-4 text-sm">
+                          {report.images?.length > 0 && (
+                            <div className="flex items-center space-x-1 text-blue-300">
+                              <Image className="h-4 w-4" />
+                              <span>{report.images.length} Image(s)</span>
+                            </div>
+                          )}
+                          {report.videos?.length > 0 && (
+                            <div className="flex items-center space-x-1 text-green-300">
+                              <Video className="h-4 w-4" />
+                              <span>{report.videos.length} Video(s)</span>
+                            </div>
+                          )}
+                          {report.documents?.length > 0 && (
+                            <div className="flex items-center space-x-1 text-yellow-300">
+                              <FileText className="h-4 w-4" />
+                              <span>{report.documents.length} Document(s)</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {report.validation_status && (
+                    <div>
+                      <label className="text-gray-400 text-sm font-medium">Validation Status</label>
+                      <div className="mt-1">
+                        <Badge className={`${
+                          report.validation_status === 'validated' ? 'bg-green-900/30 text-green-300 border-green-700/50' :
+                          report.validation_status === 'rejected' ? 'bg-red-900/30 text-red-300 border-red-700/50' :
+                          'bg-yellow-900/30 text-yellow-300 border-yellow-700/50'
+                        }`}>
+                          {report.validation_status.charAt(0).toUpperCase() + report.validation_status.slice(1)}
+                        </Badge>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : null;
           })()}
         </div>
       )}
 
-      {/* Dispatch Modal */}
+      {/* Enhanced Dispatch Modal */}
       <DispatchModal
         open={dispatchModalOpen}
         onOpenChange={setDispatchModalOpen}
