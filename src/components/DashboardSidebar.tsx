@@ -24,7 +24,7 @@ const DashboardSidebar = () => {
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Home },
     { path: '/reports', label: 'Reports & Intel', icon: FileText },
-    { path: '/audit', label: 'Audit & Logs', icon: Activity, badge: 'LIVE' },
+    // Audit & Logs nav removed
     { path: '/charts', label: 'Analytics & Charts', icon: BarChart3 },
     { path: '/unit-commanders', label: 'Unit Commanders', icon: Shield },
     { path: '/users', label: 'Users', icon: Users },
@@ -111,3 +111,4 @@ const DashboardSidebar = () => {
 };
 
 export default DashboardSidebar;
+

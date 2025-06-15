@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,7 +47,7 @@ const Reports = () => {
       {/* Navigation Tabs */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 mb-6">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50 mb-6">
             <TabsTrigger 
               value="reports" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
@@ -56,14 +55,7 @@ const Reports = () => {
               <FileText className="h-4 w-4" />
               <span>Live Reports</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="audit" 
-              className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
-            >
-              <Activity className="h-4 w-4" />
-              <span>Audit & Logs</span>
-              <Badge className="bg-green-600 text-white text-xs ml-1 animate-pulse">LIVE</Badge>
-            </TabsTrigger>
+            {/* Removed Audit & Logs Tab */}
             <TabsTrigger 
               value="security" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
@@ -93,68 +85,7 @@ const Reports = () => {
             <RealTimeReports />
           </TabsContent>
 
-          {/* Audit & Logs Tab */}
-          <TabsContent value="audit" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-900/30 rounded-lg">
-                      <FileText className="h-5 w-5 text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Report Submissions</p>
-                      <p className="text-white text-xl font-bold">247</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-green-900/30 rounded-lg">
-                      <History className="h-5 w-5 text-green-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Status Updates</p>
-                      <p className="text-white text-xl font-bold">89</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-purple-900/30 rounded-lg">
-                      <Eye className="h-5 w-5 text-purple-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Access Events</p>
-                      <p className="text-white text-xl font-bold">156</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gray-800/50 border-gray-700/50">
-                <CardContent className="p-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-orange-900/30 rounded-lg">
-                      <Users className="h-5 w-5 text-orange-400" />
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm">Personnel Activity</p>
-                      <p className="text-white text-xl font-bold">42</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <AuditDashboard />
-          </TabsContent>
+          {/* Audit & Logs Tab Removed */}
 
           {/* File Security Tab */}
           <TabsContent value="security" className="space-y-6">
