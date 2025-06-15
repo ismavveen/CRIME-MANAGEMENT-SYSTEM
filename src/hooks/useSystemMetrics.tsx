@@ -33,16 +33,16 @@ export const useSystemMetrics = () => {
 
   useEffect(() => {
     const calculateMetrics = () => {
-      // Real-time calculations based on actual data
+      // Calculations based on reports and assignments data
       const totalReports = reports.length;
-      const resolvedAssignments = assignments.filter(a => a.status === 'resolved').length;
+      const resolvedReports = reports.filter(r => r.status === 'resolved').length;
+      const pendingReports = reports.filter(r => r.status === 'pending').length;
+      
       const acceptedAssignments = assignments.filter(a => a.status === 'accepted').length;
       const respondedAssignments = assignments.filter(a => a.status === 'responded_to').length;
-      const pendingAssignments = assignments.filter(a => a.status === 'pending').length;
       
-      // Calculate pending reports (reports without assignments)
-      const assignedReportIds = assignments.map(a => a.report_id);
-      const unassignedReports = reports.filter(r => !assignedReportIds.includes(r.id)).length;
+      // Active operations are based on assignments that are not resolved
+      const activeOperations = assignments.filter(a => a.status !== 'resolved').length;
       
       // Calculate critical and high priority reports
       const criticalReports = reports.filter(r => 
@@ -56,14 +56,12 @@ export const useSystemMetrics = () => {
       const avgResponseTime = respondedAssignmentsWithTime.length > 0 
         ? respondedAssignmentsWithTime.reduce((sum, a) => sum + (a.response_timeframe || 0), 0) / respondedAssignmentsWithTime.length
         : 0;
-      
-      const activeOperations = pendingAssignments + acceptedAssignments + respondedAssignments;
 
       const newMetrics: SystemMetrics = {
         active_operations: activeOperations,
         total_reports: totalReports,
-        resolved_reports: resolvedAssignments,
-        pending_reports: unassignedReports,
+        resolved_reports: resolvedReports,
+        pending_reports: pendingReports,
         accepted_reports: acceptedAssignments,
         responded_reports: respondedAssignments,
         critical_reports: criticalReports,
