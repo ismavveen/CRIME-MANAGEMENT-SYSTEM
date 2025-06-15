@@ -310,10 +310,9 @@ const RealTimeReports = () => {
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
           <div className="col-span-2">Time</div>
           <div className="col-span-2">Location</div>
-          <div className="col-span-2">Threat Type</div>
+          <div className="col-span-3">Threat Type</div>
           <div className="col-span-1">Source</div>
           <div className="col-span-1">Status</div>
-          <div className="col-span-1">Priority</div>
           <div className="col-span-1">Evidence</div>
           <div className="col-span-2">Quick Actions</div>
         </div>
@@ -358,7 +357,7 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
                   </div>
@@ -372,15 +371,6 @@ const RealTimeReports = () => {
                   <Badge className={`text-xs px-2 py-1 ${getStatusColor(report.status)} flex items-center space-x-1`}>
                     {getStatusIcon(report.status)}
                     <span className="truncate">{report.status || 'Pending'}</span>
-                  </Badge>
-                </div>
-                
-                <div className="col-span-1">
-                  <Badge className={`text-xs px-2 py-1 ${getUrgencyColor(report.urgency, report.priority)}`}>
-                    {(report.urgency === 'critical' || report.priority === 'high') && (
-                      <Zap className="h-3 w-3 mr-1" />
-                    )}
-                    {report.priority || report.urgency || 'Medium'}
                   </Badge>
                 </div>
                 
