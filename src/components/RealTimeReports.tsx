@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useReports } from '@/hooks/useReports';
+import { useReports, Report } from '@/hooks/useReports';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,14 +16,19 @@ const RealTimeReports = () => {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [dispatchModalOpen, setDispatchModalOpen] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
-  const [reportToDispatch, setReportToDispatch] = useState<any>(null);
-  const [reportForAudit, setReportForAudit] = useState<any>(null);
+  const [reportToDispatch, setReportToDispatch] = useState<Report | null>(null);
+  const [reportForAudit, setReportForAudit] = useState<Report | null>(null);
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{
     url: string;
     type: 'image' | 'video';
     reportId: string;
-    reportDetails?: any;
+    reportDetails?: {
+      threat_type: string;
+      location: string;
+      created_at: string;
+      description: string;
+    };
   } | null>(null);
 
   // Get the most recent reports
@@ -109,7 +114,7 @@ const RealTimeReports = () => {
     );
   };
 
-  const getMediaCount = (report: any) => {
+  const getMediaCount = (report: Report) => {
     const images = report.images?.length || 0;
     const videos = report.videos?.length || 0;
     const documents = report.documents?.length || 0;
@@ -125,7 +130,7 @@ const RealTimeReports = () => {
             className="h-6 px-2 text-xs hover:bg-blue-600/20"
             onClick={(e) => {
               e.stopPropagation();
-              handleMediaView(report.images[0], 'image', report);
+              handleMediaView(report.images![0], 'image', report);
             }}
           >
             <Image className="w-3 h-3 mr-1" />
@@ -139,7 +144,7 @@ const RealTimeReports = () => {
             className="h-6 px-2 text-xs hover:bg-green-600/20"
             onClick={(e) => {
               e.stopPropagation();
-              handleMediaView(report.videos[0], 'video', report);
+              handleMediaView(report.videos![0], 'video', report);
             }}
           >
             <Video className="w-3 h-3 mr-1" />
@@ -153,7 +158,7 @@ const RealTimeReports = () => {
             className="h-6 px-2 text-xs hover:bg-yellow-600/20"
             onClick={(e) => {
               e.stopPropagation();
-              handleDocumentDownload(report.documents[0], report);
+              handleDocumentDownload(report.documents![0], report);
             }}
           >
             <FileText className="w-3 h-3 mr-1" />
@@ -164,7 +169,7 @@ const RealTimeReports = () => {
     );
   };
 
-  const handleMediaView = async (mediaUrl: string, mediaType: 'image' | 'video', report: any) => {
+  const handleMediaView = async (mediaUrl: string, mediaType: 'image' | 'video', report: Report) => {
     // Log media access
     await logReportAccess(
       report.id,
@@ -184,7 +189,7 @@ const RealTimeReports = () => {
       reportId: report.id,
       reportDetails: {
         threat_type: report.threat_type,
-        location: report.location || report.full_address,
+        location: report.location || report.full_address || '',
         created_at: report.created_at,
         description: report.description
       }
@@ -192,7 +197,7 @@ const RealTimeReports = () => {
     setMediaViewerOpen(true);
   };
 
-  const handleDocumentDownload = async (documentUrl: string, report: any) => {
+  const handleDocumentDownload = async (documentUrl: string, report: Report) => {
     try {
       // Log document access
       await logReportAccess(
@@ -236,7 +241,7 @@ const RealTimeReports = () => {
     });
   };
 
-  const handleQuickDispatch = (report: any) => {
+  const handleQuickDispatch = (report: Report) => {
     setReportToDispatch(report);
     setDispatchModalOpen(true);
   };
@@ -261,7 +266,7 @@ const RealTimeReports = () => {
     }
   };
 
-  const handleAuditClick = (report: any) => {
+  const handleAuditClick = (report: Report) => {
     setReportForAudit(report);
     setAuditModalOpen(true);
   };
