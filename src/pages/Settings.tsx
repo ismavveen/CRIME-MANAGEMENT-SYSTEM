@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,11 +38,11 @@ const Settings = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dhq-dark-bg">
+    <div className="min-h-screen bg-dhq-dark-bg flex">
       <DashboardSidebar />
       
       {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div className="flex-1 p-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -238,7 +239,8 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
-            </TabsContent>
+            </div>
+          </TabsContent>
             
             {/* General Settings */}
             <TabsContent value="general">
@@ -877,8 +879,8 @@ const Settings = () => {
                 </div>
               </TabsContent>
             </Tabs>
-          </div>
         </div>
+    </div>
   );
 };
 
