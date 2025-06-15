@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -6,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import AuditLogViewer from '@/components/AuditLogViewer';
+import DetailedAuditView from '@/components/DetailedAuditView';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Activity, Eye, Users, Download, BarChart3, AlertTriangle, Clock } from 'lucide-react';
+import { Shield, Activity, Eye, Users, Download, BarChart3, AlertTriangle, Clock, FileText, History } from 'lucide-react';
 
 const AuditDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('7d');
@@ -355,6 +355,7 @@ const AuditDashboard = () => {
         <Tabs value={activeView} onValueChange={setActiveView}>
           <TabsList className="bg-gray-800 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="detailed">Detailed Logs</TabsTrigger>
             <TabsTrigger value="reports">Report Audits</TabsTrigger>
             <TabsTrigger value="access">Access Logs</TabsTrigger>
             <TabsTrigger value="users">User Activity</TabsTrigger>
@@ -362,6 +363,7 @@ const AuditDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview">
+            {/* Overview Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="bg-gray-800/50 border-gray-700/50">
                 <CardHeader>
@@ -432,6 +434,10 @@ const AuditDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="detailed">
+            <DetailedAuditView />
           </TabsContent>
 
           <TabsContent value="reports">
