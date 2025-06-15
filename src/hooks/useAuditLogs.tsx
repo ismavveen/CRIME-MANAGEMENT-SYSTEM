@@ -89,24 +89,33 @@ export const useAuditLogs = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching audit logs:', error);
+        throw error;
+      }
       
-      // Type assertion to handle the IP address type conversion
-      const typedData = (data || []).map(log => ({
+      // Safe type conversion with null checks
+      const processedData = (data || []).map(log => ({
         ...log,
-        ip_address: log.ip_address as string | null,
-        user_agent: log.user_agent as string | null,
-        access_method: log.access_method as string | null
+        ip_address: log.ip_address || null,
+        user_agent: log.user_agent || null,
+        access_method: log.access_method || null,
+        actor_id: log.actor_id || undefined,
+        old_values: log.old_values || undefined,
+        new_values: log.new_values || undefined,
+        metadata: log.metadata || undefined,
+        session_id: log.session_id || undefined,
       })) as AuditLog[];
       
-      setAuditLogs(typedData);
+      setAuditLogs(processedData);
     } catch (error: any) {
       console.error('Error fetching audit logs:', error);
       toast({
         title: "Failed to load audit logs",
-        description: error.message,
+        description: error.message || "An unknown error occurred",
         variant: "destructive",
       });
+      setAuditLogs([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -123,25 +132,28 @@ export const useAuditLogs = () => {
         .eq('report_id', reportId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching report audit trail:', error);
+        throw error;
+      }
       
-      // Type assertion for nested audit_log data
-      const typedData = (data || []).map(trail => ({
+      // Safe type conversion with null checks
+      const processedData = (data || []).map(trail => ({
         ...trail,
         audit_log: trail.audit_log ? {
           ...trail.audit_log,
-          ip_address: trail.audit_log.ip_address as string | null,
-          user_agent: trail.audit_log.user_agent as string | null,
-          access_method: trail.audit_log.access_method as string | null
+          ip_address: trail.audit_log.ip_address || null,
+          user_agent: trail.audit_log.user_agent || null,
+          access_method: trail.audit_log.access_method || null,
         } : undefined
       })) as ReportAuditTrail[];
       
-      return typedData;
+      return processedData;
     } catch (error: any) {
       console.error('Error fetching report audit trail:', error);
       toast({
         title: "Failed to load audit trail",
-        description: error.message,
+        description: error.message || "An unknown error occurred",
         variant: "destructive",
       });
       return [];
@@ -159,25 +171,28 @@ export const useAuditLogs = () => {
         .eq('report_id', reportId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching access logs:', error);
+        throw error;
+      }
       
-      // Type assertion for nested audit_log data
-      const typedData = (data || []).map(accessLog => ({
+      // Safe type conversion with null checks
+      const processedData = (data || []).map(accessLog => ({
         ...accessLog,
         audit_log: accessLog.audit_log ? {
           ...accessLog.audit_log,
-          ip_address: accessLog.audit_log.ip_address as string | null,
-          user_agent: accessLog.audit_log.user_agent as string | null,
-          access_method: accessLog.audit_log.access_method as string | null
+          ip_address: accessLog.audit_log.ip_address || null,
+          user_agent: accessLog.audit_log.user_agent || null,
+          access_method: accessLog.audit_log.access_method || null,
         } : undefined
       })) as ReportAccessLog[];
       
-      return typedData;
+      return processedData;
     } catch (error: any) {
       console.error('Error fetching access logs:', error);
       toast({
         title: "Failed to load access logs",
-        description: error.message,
+        description: error.message || "An unknown error occurred",
         variant: "destructive",
       });
       return [];
@@ -201,11 +216,15 @@ export const useAuditLogs = () => {
           p_purpose: purpose
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error logging report access:', error);
+        throw error;
+      }
       return data;
     } catch (error: any) {
       console.error('Error logging report access:', error);
       // Don't show toast for logging errors to avoid disrupting user experience
+      return null;
     }
   };
 

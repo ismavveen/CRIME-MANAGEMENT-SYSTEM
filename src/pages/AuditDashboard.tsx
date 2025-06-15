@@ -20,11 +20,22 @@ const AuditDashboard = () => {
     active_users: 0,
     recent_activities: []
   });
+  const [error, setError] = useState<string | null>(null);
   const { auditLogs, loading, fetchAuditLogs } = useAuditLogs();
 
   // Real-time subscription for audit logs
   useEffect(() => {
-    fetchAuditLogs({ limit: 100 });
+    const initializeDashboard = async () => {
+      try {
+        await fetchAuditLogs({ limit: 100 });
+        await updateLiveStats();
+      } catch (err) {
+        console.error('Failed to initialize dashboard:', err);
+        setError('Failed to load dashboard data');
+      }
+    };
+
+    initializeDashboard();
     
     // Subscribe to real-time audit log updates
     const channel = supabase
@@ -77,27 +88,45 @@ const AuditDashboard = () => {
   // Update live statistics
   const updateLiveStats = async () => {
     try {
-      // Get total audit entries
-      const { count: totalEntries } = await supabase
+      setError(null); // Clear any previous errors
+      
+      // Get total audit entries with proper error handling
+      const { count: totalEntries, error: totalError } = await supabase
         .from('audit_logs')
         .select('*', { count: 'exact', head: true });
 
-      // Get report changes count
-      const { count: reportChanges } = await supabase
+      if (totalError) {
+        console.error('Error fetching total entries:', totalError);
+      }
+
+      // Get report changes count with proper error handling
+      const { count: reportChanges, error: changesError } = await supabase
         .from('report_audit_trail')
         .select('*', { count: 'exact', head: true });
 
-      // Get access events count
-      const { count: accessEvents } = await supabase
+      if (changesError) {
+        console.error('Error fetching report changes:', changesError);
+      }
+
+      // Get access events count with proper error handling
+      const { count: accessEvents, error: accessError } = await supabase
         .from('report_access_logs')
         .select('*', { count: 'exact', head: true });
 
-      // Get recent activities (last 10)
-      const { data: recentActivities } = await supabase
+      if (accessError) {
+        console.error('Error fetching access events:', accessError);
+      }
+
+      // Get recent activities (last 10) with proper error handling
+      const { data: recentActivities, error: activitiesError } = await supabase
         .from('audit_logs')
         .select('*')
         .order('timestamp', { ascending: false })
         .limit(10);
+
+      if (activitiesError) {
+        console.error('Error fetching recent activities:', activitiesError);
+      }
 
       setLiveStats({
         total_entries: totalEntries || 0,
@@ -106,14 +135,14 @@ const AuditDashboard = () => {
         active_users: Math.floor(Math.random() * 50) + 20, // Simulated for now
         recent_activities: recentActivities || []
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating live stats:', error);
+      setError('Failed to update statistics');
     }
   };
 
   // Update stats every 30 seconds
   useEffect(() => {
-    updateLiveStats();
     const interval = setInterval(updateLiveStats, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -195,46 +224,69 @@ const AuditDashboard = () => {
     });
   };
 
-  return (
-    <div className="min-h-screen bg-dhq-dark-bg p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center space-x-4 mb-2">
-                <h1 className="text-3xl font-bold text-white">Audit & Logs Dashboard</h1>
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-green-400 text-sm font-semibold uppercase tracking-wide">LIVE MONITORING</span>
-                </div>
-              </div>
-              <p className="text-gray-400">Real-time system audit and compliance monitoring</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-600">
-                  <SelectItem value="24h">Last 24h</SelectItem>
-                  <SelectItem value="7d">Last 7 days</SelectItem>
-                  <SelectItem value="30d">Last 30 days</SelectItem>
-                  <SelectItem value="90d">Last 90 days</SelectItem>
-                </SelectContent>
-              </Select>
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-dhq-dark-bg p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card className="bg-red-900/20 border-red-700/50">
+            <CardContent className="p-6 text-center">
+              <AlertTriangle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-red-300 mb-2">Dashboard Error</h2>
+              <p className="text-red-200 mb-4">{error}</p>
               <Button 
-                onClick={generateComplianceReport}
-                className="bg-green-600 hover:bg-green-700"
+                onClick={() => window.location.reload()} 
+                className="bg-red-600 hover:bg-red-700"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Compliance Report
+                Reload Dashboard
               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-dhq-dark-bg">
+      {/* Header */}
+      <div className="p-6 border-b border-gray-700/50">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center space-x-4 mb-2">
+              <h1 className="text-3xl font-bold text-white dhq-heading">Audit & Logs Dashboard</h1>
+              <div className="flex items-center space-x-2">
+                <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 text-sm font-semibold uppercase tracking-wide">LIVE MONITORING</span>
+              </div>
             </div>
+            <p className="text-gray-400">Real-time system audit and compliance monitoring</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-600">
+                <SelectItem value="24h">Last 24h</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button 
+              onClick={generateComplianceReport}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Compliance Report
+            </Button>
           </div>
         </div>
+      </div>
 
-        {/* Live Stats Cards */}
+      {/* Live Stats Cards */}
+      <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {auditStats.map((stat) => {
             const Icon = stat.icon;
@@ -274,36 +326,43 @@ const AuditDashboard = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 max-h-80 overflow-y-auto">
-                  {liveStats.recent_activities.map((activity: any, index) => (
-                    <div key={activity.id || index} className="flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg">
-                      <div className={`p-2 rounded-full ${
-                        activity.action_type === 'create' ? 'bg-green-900/30' :
-                        activity.action_type === 'update' ? 'bg-blue-900/30' :
-                        activity.action_type === 'access' ? 'bg-purple-900/30' :
-                        'bg-gray-900/30'
-                      }`}>
-                        {activity.action_type === 'create' ? <Shield className="h-4 w-4 text-green-400" /> :
-                         activity.action_type === 'update' ? <Activity className="h-4 w-4 text-blue-400" /> :
-                         activity.action_type === 'access' ? <Eye className="h-4 w-4 text-purple-400" /> :
-                         <Clock className="h-4 w-4 text-gray-400" />}
+                {liveStats.recent_activities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">No recent activity to display</p>
+                    <p className="text-gray-500 text-sm mt-2">Activity will appear here when audit events occur</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-80 overflow-y-auto">
+                    {liveStats.recent_activities.map((activity: any, index) => (
+                      <div key={activity.id || index} className="flex items-center space-x-3 p-3 bg-gray-700/30 rounded-lg">
+                        <div className={`p-2 rounded-full ${
+                          activity.action_type === 'create' ? 'bg-green-900/30' :
+                          activity.action_type === 'update' ? 'bg-blue-900/30' :
+                          activity.action_type === 'access' ? 'bg-purple-900/30' :
+                          'bg-gray-900/30'
+                        }`}>
+                          {activity.action_type === 'create' ? <Shield className="h-4 w-4 text-green-400" /> :
+                           activity.action_type === 'update' ? <Activity className="h-4 w-4 text-blue-400" /> :
+                           activity.action_type === 'access' ? <Eye className="h-4 w-4 text-purple-400" /> :
+                           <Clock className="h-4 w-4 text-gray-400" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-white text-sm font-medium">
+                            {activity.action_type?.toUpperCase()} {activity.entity_type}
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            {activity.actor_id ? `User ${activity.actor_id.slice(0, 8)}` : 'System'} • {formatTime(activity.timestamp)}
+                          </p>
+                        </div>
+                        {activity.is_sensitive && (
+                          <Badge className="bg-red-900/30 text-red-300 border-red-700/50">
+                            Sensitive
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-white text-sm font-medium">
-                          {activity.action_type?.toUpperCase()} {activity.entity_type}
-                        </p>
-                        <p className="text-gray-400 text-xs">
-                          {activity.actor_id ? `User ${activity.actor_id.slice(0, 8)}` : 'System'} • {formatTime(activity.timestamp)}
-                        </p>
-                      </div>
-                      {activity.is_sensitive && (
-                        <Badge className="bg-red-900/30 text-red-300 border-red-700/50">
-                          Sensitive
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
