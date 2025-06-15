@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus } from 'lucide-react';
+import { UserPlus, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { supabase } from '@/integrations/supabase/client';
 import CommanderRegistrationForm from './CommanderRegistrationForm';
-import CommanderRegistrationSuccessModal from './CommanderRegistrationSuccessModal';
+import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const CommanderRegistration = () => {
   const [formData, setFormData] = useState({
@@ -23,10 +24,29 @@ const CommanderRegistration = () => {
   });
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [registeredCommander, setRegisteredCommander] = useState<any>(null);
   const { toast } = useToast();
   const { createCommander } = useUnitCommanders();
+  const navigate = useNavigate();
+
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const validatePassword = (pwd: string) => {
+    const requirements = {
+      length: pwd.length >= 8,
+      uppercase: /[A-Z]/.test(pwd),
+      lowercase: /[a-z]/.test(pwd),
+      number: /\d/.test(pwd),
+      special: /[!@#$%^&*(),.?":{}|<>]/.test(pwd)
+    };
+    return {
+      isValid: Object.values(requirements).every(req => req),
+      requirements
+    };
+  };
+
+  const passwordValidation = validatePassword(password);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -45,10 +65,30 @@ const CommanderRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+
+    if (!passwordValidation.isValid) {
+      setError('Password does not meet the security requirements.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      let profileImageUrl = null;
+      const { data: hashData, error: hashError } = await supabase.functions.invoke('set-commander-password', {
+        body: { email: formData.email, password }
+      });
+
+      if (hashError) {
+        throw new Error('Failed to secure password. Please try again.');
+      }
+
+      let profileImageUrl: string | null = null;
       if (profileImage) {
         const fileExt = profileImage.name.split('.').pop();
         const fileName = `${formData.serviceNumber}_${Date.now()}.${fileExt}`;
@@ -75,17 +115,15 @@ const CommanderRegistration = () => {
         specialization: formData.specialization,
         location: formData.location,
         contact_info: formData.contactInfo,
-        password_hash: null,
+        password_hash: hashData.hash,
         profile_image: profileImageUrl,
         status: 'active'
       });
 
-      const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
+      const { error: emailError } = await supabase.functions.invoke('send-registration-complete-email', {
         body: {
           email: formData.email,
           fullName: formData.fullName,
-          password: null, 
-          serviceNumber: formData.serviceNumber,
           rank: formData.rank,
           unit: formData.unit,
           category: formData.armOfService
@@ -95,80 +133,62 @@ const CommanderRegistration = () => {
       if (emailError) {
         console.error('Email sending failed:', emailError);
         toast({
-          title: "Warning",
-          description: "Commander registered but email notification failed. Please contact them manually.",
+          title: "Warning: Email Failed",
+          description: "Commander registered, but email notification failed. Please notify them manually.",
           variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration Successful!",
+          description: `${formData.fullName} has been registered and notified.`,
         });
       }
 
-      setRegisteredCommander({
-        full_name: formData.fullName,
-        email: formData.email,
-        rank: formData.rank,
-        service_number: formData.serviceNumber,
-        state: formData.state,
-        unit: formData.unit,
-        arm_of_service: formData.armOfService
-      });
-      setShowSuccessModal(true);
-
-      setFormData({
-        fullName: '',
-        rank: '',
-        unit: '',
-        state: '',
-        email: '',
-        serviceNumber: '',
-        armOfService: '',
-        specialization: '',
-        location: '',
-        contactInfo: ''
-      });
-      setProfileImage(null);
+      navigate('/commander-portal');
 
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Failed to register commander",
-        variant: "destructive",
-      });
+      setError(error.message || "Failed to register commander. The service number or email may already exist.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <>
-      <Card className="bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <UserPlus className="h-5 w-5 text-dhq-blue" />
-            Register New Unit Commander
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Add a new unit commander to the system with secure credentials and email notification
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <CommanderRegistrationForm
-            formData={formData}
-            setFormData={setFormData}
-            profileImage={profileImage}
-            handleImageUpload={handleImageUpload}
-            handleSubmit={handleSubmit}
-            isLoading={isLoading}
-          />
-        </CardContent>
-      </Card>
-
-      <CommanderRegistrationSuccessModal
-        show={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        commander={registeredCommander}
-      />
-    </>
+    <Card className="bg-gray-800/50 border-gray-700">
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <UserPlus className="h-5 w-5 text-dhq-blue" />
+          Register New Unit Commander
+        </CardTitle>
+        <CardDescription className="text-gray-400">
+          Add a new unit commander to the system and provide them with immediate portal access.
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-4 bg-red-900/20 border-red-700 text-red-300">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Registration Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        <CommanderRegistrationForm
+          formData={formData}
+          setFormData={setFormData}
+          profileImage={profileImage}
+          handleImageUpload={handleImageUpload}
+          handleSubmit={handleSubmit}
+          isLoading={isLoading}
+          password={password}
+          setPassword={setPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          passwordValidation={passwordValidation}
+        />
+      </CardContent>
+    </Card>
   );
 };
 
