@@ -34,7 +34,7 @@ const DashboardSidebar = () => {
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 dhq-sidebar z-40 flex flex-col">
+    <aside className="w-64 h-screen flex-shrink-0 dhq-sidebar flex flex-col sticky top-0">
       {/* Enhanced Logo/Header */}
       <div className="p-6 border-b border-gray-700/50 flex-shrink-0">
         <div className="flex items-center space-x-3">
@@ -100,7 +100,7 @@ const DashboardSidebar = () => {
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   );
 };
 
