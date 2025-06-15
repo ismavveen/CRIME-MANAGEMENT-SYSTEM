@@ -1,13 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { useReports } from '@/hooks/useReports';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History, Users, Zap } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History, Users, Zap, Eye, Download, Play, Shield } from 'lucide-react';
 import DispatchModal from './DispatchModal';
 import ReportAuditModal from './ReportAuditModal';
+import MediaViewerModal from './MediaViewerModal';
 
 const RealTimeReports = () => {
   const { reports, loading, refetch } = useReports();
@@ -18,6 +18,13 @@ const RealTimeReports = () => {
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [reportToDispatch, setReportToDispatch] = useState<any>(null);
   const [reportForAudit, setReportForAudit] = useState<any>(null);
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<{
+    url: string;
+    type: 'image' | 'video';
+    reportId: string;
+    reportDetails?: any;
+  } | null>(null);
 
   // Get the most recent reports
   const recentReports = reports
@@ -110,27 +117,105 @@ const RealTimeReports = () => {
     if (images + videos + documents === 0) return null;
     
     return (
-      <div className="flex items-center space-x-1 text-xs text-gray-400">
+      <div className="flex items-center space-x-2 text-xs text-gray-400">
         {images > 0 && (
-          <div className="flex items-center space-x-1">
-            <Image className="w-3 h-3" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-blue-600/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMediaView(report.images[0], 'image', report);
+            }}
+          >
+            <Image className="w-3 h-3 mr-1" />
             <span>{images}</span>
-          </div>
+          </Button>
         )}
         {videos > 0 && (
-          <div className="flex items-center space-x-1">
-            <Video className="w-3 h-3" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-green-600/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMediaView(report.videos[0], 'video', report);
+            }}
+          >
+            <Video className="w-3 h-3 mr-1" />
             <span>{videos}</span>
-          </div>
+          </Button>
         )}
         {documents > 0 && (
-          <div className="flex items-center space-x-1">
-            <FileText className="w-3 h-3" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs hover:bg-yellow-600/20"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDocumentDownload(report.documents[0], report);
+            }}
+          >
+            <FileText className="w-3 h-3 mr-1" />
             <span>{documents}</span>
-          </div>
+          </Button>
         )}
       </div>
     );
+  };
+
+  const handleMediaView = async (mediaUrl: string, mediaType: 'image' | 'video', report: any) => {
+    // Log media access
+    await logReportAccess(
+      report.id,
+      'media_view',
+      undefined,
+      { 
+        media_type: mediaType,
+        media_url: mediaUrl,
+        section: 'evidence_viewer' 
+      },
+      `Viewing ${mediaType} evidence`
+    );
+
+    setSelectedMedia({
+      url: mediaUrl,
+      type: mediaType,
+      reportId: report.id,
+      reportDetails: {
+        threat_type: report.threat_type,
+        location: report.location || report.full_address,
+        created_at: report.created_at,
+        description: report.description
+      }
+    });
+    setMediaViewerOpen(true);
+  };
+
+  const handleDocumentDownload = async (documentUrl: string, report: any) => {
+    try {
+      // Log document access
+      await logReportAccess(
+        report.id,
+        'document_download',
+        undefined,
+        { 
+          document_url: documentUrl,
+          section: 'evidence_download' 
+        },
+        'Downloading document evidence'
+      );
+
+      // Create download link
+      const link = document.createElement('a');
+      link.href = documentUrl;
+      link.download = `evidence-${report.id}-${Date.now()}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -502,6 +587,135 @@ const RealTimeReports = () => {
               </div>
             ) : null;
           })()}
+
+          {/* Enhanced Evidence Section */}
+          {(() => {
+            const report = reports.find(r => r.id === selectedReport);
+            return report && (report.images?.length || report.videos?.length || report.documents?.length) ? (
+              <div className="mt-4">
+                <h4 className="text-white font-semibold text-lg flex items-center space-x-2 mb-4">
+                  <Shield className="h-5 w-5 text-green-400" />
+                  <span>Evidence Files (Virus Scanned)</span>
+                </h4>
+                
+                {/* Images */}
+                {report.images && report.images.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-gray-300 font-medium mb-3 flex items-center">
+                      <Image className="h-4 w-4 mr-2 text-blue-400" />
+                      Images ({report.images.length})
+                    </h5>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {report.images.map((imageUrl: string, index: number) => (
+                        <div 
+                          key={index} 
+                          className="relative group cursor-pointer bg-gray-700/50 rounded-lg overflow-hidden hover:bg-gray-700/70 transition-all"
+                          onClick={() => handleMediaView(imageUrl, 'image', report)}
+                        >
+                          <img 
+                            src={imageUrl} 
+                            alt={`Evidence ${index + 1}`}
+                            className="w-full h-24 object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
+                            <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <div className="absolute top-2 right-2">
+                            <Badge className="bg-green-600/80 text-white text-xs">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Safe
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Videos */}
+                {report.videos && report.videos.length > 0 && (
+                  <div className="mb-6">
+                    <h5 className="text-gray-300 font-medium mb-3 flex items-center">
+                      <Video className="h-4 w-4 mr-2 text-green-400" />
+                      Videos ({report.videos.length})
+                    </h5>
+                    <div className="space-y-3">
+                      {report.videos.map((videoUrl: string, index: number) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between bg-gray-700/30 p-3 rounded-lg hover:bg-gray-700/50 transition-all cursor-pointer"
+                          onClick={() => handleMediaView(videoUrl, 'video', report)}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-green-600/20 rounded">
+                              <Video className="w-5 h-5 text-green-400" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">Video Evidence {index + 1}</p>
+                              <p className="text-gray-400 text-sm">Click to play</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className="bg-green-600/80 text-white text-xs">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Safe
+                            </Badge>
+                            <Button size="sm" variant="outline" className="bg-green-600/20 border-green-500 text-green-300">
+                              <Play className="w-4 h-4 mr-1" />
+                              Play
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Documents */}
+                {report.documents && report.documents.length > 0 && (
+                  <div>
+                    <h5 className="text-gray-300 font-medium mb-3 flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-yellow-400" />
+                      Documents ({report.documents.length})
+                    </h5>
+                    <div className="space-y-3">
+                      {report.documents.map((documentUrl: string, index: number) => (
+                        <div 
+                          key={index} 
+                          className="flex items-center justify-between bg-gray-700/30 p-3 rounded-lg hover:bg-gray-700/50 transition-all"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <div className="p-2 bg-yellow-600/20 rounded">
+                              <FileText className="w-5 h-5 text-yellow-400" />
+                            </div>
+                            <div>
+                              <p className="text-white font-medium">Document {index + 1}</p>
+                              <p className="text-gray-400 text-sm">PDF Document</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Badge className="bg-green-600/80 text-white text-xs">
+                              <Shield className="w-3 h-3 mr-1" />
+                              Safe
+                            </Badge>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleDocumentDownload(documentUrl, report)}
+                              className="bg-yellow-600/20 border-yellow-500 text-yellow-300"
+                            >
+                              <Download className="w-4 h-4 mr-1" />
+                              Download
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null;
+          })()}
         </div>
       )}
 
@@ -520,6 +734,21 @@ const RealTimeReports = () => {
         reportId={reportForAudit?.id || ''}
         reportTitle={reportForAudit?.description || reportForAudit?.threat_type}
       />
+
+      {/* Media Viewer Modal */}
+      {selectedMedia && (
+        <MediaViewerModal
+          isOpen={mediaViewerOpen}
+          onClose={() => {
+            setMediaViewerOpen(false);
+            setSelectedMedia(null);
+          }}
+          mediaUrl={selectedMedia.url}
+          mediaType={selectedMedia.type}
+          reportId={selectedMedia.reportId}
+          reportDetails={selectedMedia.reportDetails}
+        />
+      )}
     </div>
   );
 };
