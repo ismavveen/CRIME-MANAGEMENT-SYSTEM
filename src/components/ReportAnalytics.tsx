@@ -166,12 +166,6 @@ const ReportAnalytics = ({ onFilterChange, selectedFilter = 'all' }: ReportAnaly
     };
   }, [timeframe]);
 
-  const handleCardClick = (filter: string) => {
-    if (onFilterChange) {
-      onFilterChange(filter);
-    }
-  };
-
   const handleRadioChange = (value: string) => {
     if (onFilterChange) {
       onFilterChange(value);
@@ -183,9 +177,9 @@ const ReportAnalytics = ({ onFilterChange, selectedFilter = 'all' }: ReportAnaly
       <div className="space-y-6">
         <div className="animate-pulse">
           <div className="h-8 bg-gray-700 rounded w-48 mb-4"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-700 rounded"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-80 bg-gray-700 rounded"></div>
             ))}
           </div>
         </div>
@@ -238,61 +232,6 @@ const ReportAnalytics = ({ onFilterChange, selectedFilter = 'all' }: ReportAnaly
             <Label htmlFor="resolved" className="text-gray-300 cursor-pointer">Resolved ({analytics.resolvedReports})</Label>
           </div>
         </RadioGroup>
-      </div>
-
-      {/* Summary Cards - Now Clickable */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'all' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => handleCardClick('all')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Total Reports</p>
-              <p className="text-2xl font-bold text-white">{analytics.totalReports}</p>
-            </div>
-            <FileText className="h-8 w-8 text-blue-400" />
-          </div>
-        </Card>
-
-        <Card 
-          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'pending' ? 'ring-2 ring-yellow-500' : ''}`}
-          onClick={() => handleCardClick('pending')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Pending</p>
-              <p className="text-2xl font-bold text-yellow-400">{analytics.pendingReports}</p>
-            </div>
-            <Clock className="h-8 w-8 text-yellow-400" />
-          </div>
-        </Card>
-
-        <Card 
-          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'assigned' ? 'ring-2 ring-orange-500' : ''}`}
-          onClick={() => handleCardClick('assigned')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Assigned</p>
-              <p className="text-2xl font-bold text-orange-400">{analytics.assignedReports}</p>
-            </div>
-            <AlertCircle className="h-8 w-8 text-orange-400" />
-          </div>
-        </Card>
-
-        <Card 
-          className={`bg-gray-800/50 border-gray-700 p-4 cursor-pointer transition-all hover:bg-gray-700/50 ${selectedFilter === 'resolved' ? 'ring-2 ring-green-500' : ''}`}
-          onClick={() => handleCardClick('resolved')}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Resolved</p>
-              <p className="text-2xl font-bold text-green-400">{analytics.resolvedReports}</p>
-            </div>
-            <CheckCircle className="h-8 w-8 text-green-400" />
-          </div>
-        </Card>
       </div>
 
       {/* Charts */}
