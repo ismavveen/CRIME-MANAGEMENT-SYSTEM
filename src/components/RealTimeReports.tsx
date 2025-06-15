@@ -4,7 +4,7 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MapPin, Clock, AlertTriangle, CheckCircle, Send, ExternalLink, FileText, Image, Video, History, Users, Zap, Eye, Download, Play, Shield } from 'lucide-react';
+import { MapPin, Clock, AlertTriangle, CheckCircle, Send, FileText, Image, Video, History, Eye, Download, Play, Shield } from 'lucide-react';
 import DispatchModal from './DispatchModal';
 import ReportAuditModal from './ReportAuditModal';
 import MediaViewerModal from './MediaViewerModal';
@@ -38,7 +38,6 @@ const RealTimeReports = () => {
 
   const filteredReports = recentReports.filter(report => {
     if (filter === 'all') return true;
-    if (filter === 'external') return report.submission_source === 'external_portal';
     if (filter === 'urgent') return report.urgency === 'critical' || report.priority === 'high';
     return report.status?.toLowerCase() === filter.toLowerCase();
   });
@@ -96,22 +95,6 @@ const RealTimeReports = () => {
       default:
         return 'bg-yellow-900/30 text-yellow-300 border-yellow-700/50';
     }
-  };
-
-  const getSubmissionSourceBadge = (source: string) => {
-    if (source === 'external_portal') {
-      return (
-        <Badge className="text-xs px-2 py-1 bg-purple-900/30 text-purple-300 border-purple-700/50 flex items-center space-x-1">
-          <ExternalLink className="w-3 h-3" />
-          <span>External</span>
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="text-xs px-2 py-1 bg-blue-900/30 text-blue-300 border-blue-700/50">
-        Internal
-      </Badge>
-    );
   };
 
   const getMediaCount = (report: Report) => {
@@ -295,7 +278,6 @@ const RealTimeReports = () => {
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-600 text-gray-200">
               <SelectItem value="all" className="data-[highlighted]:bg-gray-700">All Reports ({recentReports.length})</SelectItem>
-              <SelectItem value="external" className="text-purple-300 data-[highlighted]:bg-purple-900/40 data-[highlighted]:text-purple-100">External Portal</SelectItem>
               <SelectItem value="urgent" className="text-red-300 data-[highlighted]:bg-red-900/40 data-[highlighted]:text-red-100">Urgent/Critical</SelectItem>
               <SelectItem value="pending" className="text-yellow-300 data-[highlighted]:bg-yellow-900/40 data-[highlighted]:text-yellow-100">Pending Action</SelectItem>
               <SelectItem value="assigned" className="text-blue-300 data-[highlighted]:bg-blue-900/40 data-[highlighted]:text-blue-100">Assigned</SelectItem>
@@ -309,12 +291,11 @@ const RealTimeReports = () => {
       <div className="bg-gray-800/30 rounded-lg border border-gray-700/50 overflow-hidden">
         <div className="grid grid-cols-12 gap-4 p-4 bg-gray-800/50 border-b border-gray-700/50 text-gray-300 font-semibold dhq-caption uppercase tracking-wider">
           <div className="col-span-2">Time</div>
-          <div className="col-span-2">Location</div>
-          <div className="col-span-2">Threat Type</div>
-          <div className="col-span-1">Source</div>
+          <div className="col-span-3">Location</div>
+          <div className="col-span-3">Threat Type</div>
           <div className="col-span-1">Status</div>
           <div className="col-span-1">Evidence</div>
-          <div className="col-span-3">Quick Actions</div>
+          <div className="col-span-2">Quick Actions</div>
         </div>
 
         <div className="max-h-96 overflow-y-auto">
@@ -335,7 +316,7 @@ const RealTimeReports = () => {
                 key={report.id} 
                 className={`grid grid-cols-12 gap-4 p-4 border-b border-gray-700/30 hover:bg-gray-700/20 transition-all duration-200 cursor-pointer ${
                   selectedReport === report.id ? 'bg-blue-900/20 border-l-4 border-l-blue-400' : ''
-                } ${report.submission_source === 'external_portal' ? 'border-l-4 border-l-purple-500' : ''} ${
+                } ${
                   (report.urgency === 'critical' || report.priority === 'high') ? 'border-l-4 border-l-red-500' : ''
                 }`}
                 onClick={() => handleReportSelection(report.id)}
@@ -347,7 +328,7 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-2 text-gray-300 text-xs">
+                <div className="col-span-3 text-gray-300 text-xs">
                   <div className="flex items-center space-x-1 mb-1">
                     <MapPin className="h-3 w-3 text-cyan-400" />
                     <span className="font-medium truncate">{report.state || 'Unknown State'}</span>
@@ -357,14 +338,10 @@ const RealTimeReports = () => {
                   </div>
                 </div>
                 
-                <div className="col-span-2">
+                <div className="col-span-3">
                   <div className={`text-xs font-medium ${getThreatColor(report.threat_type)}`}>
                     {report.threat_type || 'Security Incident'}
                   </div>
-                </div>
-                
-                <div className="col-span-1">
-                  {getSubmissionSourceBadge(report.submission_source || 'internal')}
                 </div>
                 
                 <div className="col-span-1">
@@ -378,7 +355,7 @@ const RealTimeReports = () => {
                   {getMediaCount(report)}
                 </div>
                 
-                <div className="col-span-3 flex space-x-1">
+                <div className="col-span-2 flex space-x-1">
                   {report.status !== 'resolved' && report.status !== 'assigned' && (
                     <Button 
                       size="sm" 
