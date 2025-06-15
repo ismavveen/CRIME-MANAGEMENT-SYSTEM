@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
@@ -17,9 +16,9 @@ serve(async (req) => {
 
   try {
     // Parse form
-    const { email, fullName, password, serviceNumber, rank, unit, category } = await req.json();
+    const { email, fullName, serviceNumber, rank, unit, category } = await req.json();
 
-    if (!email || !fullName || !password) {
+    if (!email || !fullName) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -31,13 +30,13 @@ serve(async (req) => {
     const expirationTime = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
     const resetLink = `${Deno.env.get("SITE_URL") || "http://localhost:5173"}/commander-password-setup?email=${encodeURIComponent(email)}&token=${resetToken}&expires=${expirationTime.getTime()}`;
 
-    // --- Compose Email HTML w/Branding Logo and Custom Message
+    // --- Compose Email HTML: NO password shown, just congratulatory message
     const emailHTML = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Defense Headquarters - Unit Commander Credentials</title>
+        <title>Defense Headquarters - Unit Commander Account Setup</title>
         <style>
           body { font-family: 'Inter', Arial, sans-serif; background: #f5f7fa; line-height: 1.6; color: #222; }
           .container { background: #fff; max-width: 600px; margin: 24px auto; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 24px 0 rgba(0, 43, 92, .1); }
@@ -66,45 +65,29 @@ serve(async (req) => {
           </div>
           <div class="content">
             <div class="important">
-              <strong>Welcome ${rank} ${fullName},</strong><br/>
+              <strong>Congratulations ${rank} ${fullName}!</strong><br/>
               <span>
-                You have been appointed as a <span style="color:#0f72e5;font-weight:600">${category} Unit Commander</span> for <b>${unit ? `${unit}, ` : ""}${category}</b>.<br/>
-                Your mission is crucial to the safety and response for <b>Nigeria</b>. This system empowers you to coordinate field units, respond to threats, and access intelligence reports anonymously and securely.
+                Your Commander account for <b>${unit ? `${unit}, ` : ""}${category}</b> has been successfully created.<br/>
+                Please activate your account by setting your secure password below.
               </span>
             </div>
-            <div class="credentials">
-              <strong>Login Credentials:</strong><br/>
-              Email: <b>${email}</b><br/>
-              Service Number: <b>${serviceNumber}</b><br/>
-              Military Branch: <b>${category}</b><br/>
-              Rank: <b>${rank}</b><br/>
-              ${unit ? `Unit: <b>${unit}</b><br/>` : ""}
-              Temporary Password: <code style="background:#eee;border-radius:3px;padding:1px 7px">${password}</code><br/>
-            </div>
+            <!-- Password Setup Link (NO password is sent) -->
             <div class="reset-link-box">
-              <span style="font-size:1.07rem"><b>🔒 Setup or Reset Your Password</b></span><br/>
-              Click the secure link below <b>IMMEDIATELY</b> to set up your password and activate your account.<br/>
+              <span style="font-size:1.07rem"><b>🔒 Securely Set Your Password</b></span><br/>
+              To activate your account and access the portal, please click the setup link below:<br/>
               <a href="${resetLink}">Set Up Password (Expires in 1 Hour)</a>
               <span class="expires">This link will expire at: <b>${expirationTime.toLocaleTimeString([], { hour: '2-digit', minute:'2-digit', hour12: true })}, ${expirationTime.toLocaleDateString()}</b></span>
             </div>
-            <div class="warning">
-              <b>DO NOT SHARE THIS EMAIL OR PASSWORD WITH ANYONE.</b><br/>
-              For security, the link expires in 1 hour. After that, request a new reset link from Defense Headquarters IT Support.
-            </div>
             <div class="security-reminders">
-              - Access your dashboard for ${unit ? unit + ', ' : ""}${category}-assigned state only.<br/>
-              - Follow operational guidelines and log out after use.<br/>
-              - Delete this email after setting your password.<br/>
+              - Set a strong password and do NOT share it.<br/>
+              - This link is for you only and expires in 1 hour.<br/>
+              - If expired, request a new setup link from DHQ IT Support.
             </div>
-            <div style="margin:18px 0 18px 0">
-              For tech support, contact <a href="mailto:support@defencehq.ng" style="color:#002b5c">DHQ IT Support</a>.<br/>
-              Thank you for defending Nigeria.
+            <div class="footer">
+              &copy; ${new Date().getFullYear()} Defense Headquarters &bullet; Federal Republic of Nigeria<br>
+              This is an AUTOMATED security notification.<br>
+              <b>DEFENSE INTELLIGENCE OFFICE</b> &bullet; Do not reply directly to this email.
             </div>
-          </div>
-          <div class="footer">
-            &copy; ${new Date().getFullYear()} Defense Headquarters &bullet; Federal Republic of Nigeria<br>
-            This is an AUTOMATED security notification.<br>
-            <b>DEFENSE INTELLIGENCE OFFICE</b> &bullet; Do not reply directly to this email.
           </div>
         </div>
       </body>
@@ -162,14 +145,14 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Branded credentials sent via Gmail API with 1-hour reset link.",
+        message: "Account creation email sent with secure password setup link.",
         resetLink,
         expiresAt: expirationTime.toISOString(),
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
-    console.error("Error in branded send-commander-credentials function:", error);
+    console.error("Error in send-commander-credentials function:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

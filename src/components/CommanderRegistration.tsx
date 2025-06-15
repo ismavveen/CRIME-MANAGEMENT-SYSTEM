@@ -72,19 +72,7 @@ const CommanderRegistration = () => {
     setIsLoading(true);
 
     try {
-      // Generate a secure password
-      const defaultPassword = generatePassword();
-
-      // Hash the password using the edge function
-      const { data: hashData, error: hashError } = await supabase.functions.invoke('set-commander-password', {
-        body: { 
-          email: formData.email, 
-          password: defaultPassword 
-        }
-      });
-
-      if (hashError) throw hashError;
-
+      // No password is generated or stored at registration.
       // Upload profile image if provided
       let profileImageUrl = null;
       if (profileImage) {
@@ -102,7 +90,7 @@ const CommanderRegistration = () => {
         }
       }
 
-      // Create commander record
+      // Create commander record with NULL password hash.
       const newCommander = await createCommander({
         full_name: formData.fullName,
         rank: formData.rank,
@@ -114,17 +102,17 @@ const CommanderRegistration = () => {
         specialization: formData.specialization,
         location: formData.location,
         contact_info: formData.contactInfo,
-        password_hash: hashData.hash,
+        password_hash: null,
         profile_image: profileImageUrl,
         status: 'active'
       });
 
-      // Send enhanced credentials via email
-      const { error: emailError, data: emailData } = await supabase.functions.invoke('send-commander-credentials', {
+      // Send credentials/setup email (branded, NO password included)
+      const { error: emailError } = await supabase.functions.invoke('send-commander-credentials', {
         body: {
           email: formData.email,
           fullName: formData.fullName,
-          password: defaultPassword,
+          password: null, // password is not sent/stored here!
           serviceNumber: formData.serviceNumber,
           rank: formData.rank,
           unit: formData.unit,
@@ -141,7 +129,6 @@ const CommanderRegistration = () => {
         });
       }
 
-      // Set success data and show enhanced modal
       setRegisteredCommander({
         name: formData.fullName,
         email: formData.email,
@@ -153,7 +140,6 @@ const CommanderRegistration = () => {
       });
       setShowSuccessModal(true);
 
-      // Reset form
       setFormData({
         fullName: '',
         rank: '',

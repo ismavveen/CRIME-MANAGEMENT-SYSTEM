@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,14 +89,14 @@ const CommanderPasswordSetup = () => {
     setIsLoading(true);
 
     try {
-      // Hash the new password
+      // Hash password using Supabase Edge Function (bcrypt)
       const { data: hashData, error: hashError } = await supabase.functions.invoke('set-commander-password', {
         body: { email, password }
       });
 
       if (hashError) throw hashError;
 
-      // Update commander's password in database
+      // Update commander's password in DB
       const { error: updateError } = await supabase
         .from('unit_commanders')
         .update({ 
