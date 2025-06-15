@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ZoomIn, ZoomOut, RotateCw, Download, Eye, Play, Pause, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCw, Download, Eye, Play, Pause, Shield, AlertTriangle, CheckCircle, Scan } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ImageAnalysisModal from './ImageAnalysisModal';
+import FileSecurityPanel from './FileSecurityPanel';
 
 interface MediaViewerModalProps {
   isOpen: boolean;
@@ -33,75 +34,10 @@ const MediaViewerModal = ({
   const [rotation, setRotation] = useState(0);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [scanStatus, setScanStatus] = useState<'scanning' | 'clean' | 'infected' | 'suspicious' | 'error'>('scanning');
-  const [scanDetails, setScanDetails] = useState<any>(null);
+  const [scanResult, setScanResult] = useState<any>(null);
 
-  useEffect(() => {
-    if (isOpen && mediaUrl) {
-      performVirusScan();
-    }
-  }, [isOpen, mediaUrl]);
-
-  const performVirusScan = async () => {
-    try {
-      setScanStatus('scanning');
-      
-      const { data, error } = await supabase.functions.invoke('scan-file', {
-        body: {
-          fileUrl: mediaUrl,
-          reportId: reportId,
-          fileType: mediaType === 'image' ? 'image/jpeg' : 'video/mp4'
-        }
-      });
-
-      if (error) {
-        console.error('Scan error:', error);
-        setScanStatus('error');
-        return;
-      }
-
-      setScanDetails(data);
-      setScanStatus(data.scanResult);
-    } catch (error) {
-      console.error('Failed to scan file:', error);
-      setScanStatus('error');
-    }
-  };
-
-  const getScanStatusBadge = () => {
-    switch (scanStatus) {
-      case 'scanning':
-        return (
-          <Badge className="bg-yellow-600 text-white animate-pulse">
-            <Shield className="w-3 h-3 mr-1 animate-spin" />
-            Scanning...
-          </Badge>
-        );
-      case 'clean':
-        return (
-          <Badge className="bg-green-600 text-white">
-            <CheckCircle className="w-3 h-3 mr-1" />
-            Safe
-          </Badge>
-        );
-      case 'infected':
-      case 'suspicious':
-        return (
-          <Badge className="bg-red-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Threat Detected
-          </Badge>
-        );
-      case 'error':
-        return (
-          <Badge className="bg-gray-600 text-white">
-            <AlertTriangle className="w-3 h-3 mr-1" />
-            Scan Failed
-          </Badge>
-        );
-      default:
-        return null;
-    }
+  const handleScanComplete = (result: any) => {
+    setScanResult(result);
   };
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 300));
@@ -109,7 +45,7 @@ const MediaViewerModal = ({
   const handleRotate = () => setRotation(prev => (prev + 90) % 360);
 
   const handleDownload = () => {
-    if (scanStatus !== 'clean') {
+    if (scanResult && scanResult.scanResult !== 'clean') {
       alert('File cannot be downloaded - security scan failed or detected threats');
       return;
     }
@@ -122,17 +58,16 @@ const MediaViewerModal = ({
     document.body.removeChild(link);
   };
 
-  const canDisplayMedia = scanStatus === 'clean';
+  const canDisplayMedia = !scanResult || scanResult.scanResult === 'clean';
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-5xl max-h-[95vh] bg-gray-900 border-gray-700">
+        <DialogContent className="max-w-6xl max-h-[95vh] bg-gray-900 border-gray-700">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center justify-between">
               <span>Evidence Viewer - Report {reportId.slice(0, 8)}</span>
               <div className="flex items-center space-x-2">
-                {getScanStatusBadge()}
                 {reportDetails && (
                   <Badge className="bg-blue-600 text-white">
                     {reportDetails.threat_type}
@@ -143,27 +78,14 @@ const MediaViewerModal = ({
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Security Status */}
-            <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-              <div className="flex items-center space-x-3">
-                <Shield className="w-5 h-5 text-cyan-400" />
-                <div className="flex-1">
-                  <h3 className="text-white font-semibold">Security Status</h3>
-                  <div className="flex items-center space-x-4 mt-2">
-                    {getScanStatusBadge()}
-                    {scanDetails && (
-                      <div className="text-sm text-gray-300">
-                        {scanStatus === 'clean' && 'File is safe to view and download'}
-                        {(scanStatus === 'infected' || scanStatus === 'suspicious') && 
-                          `Threats detected: ${scanDetails.threats?.join(', ') || 'Unknown threats'}`}
-                        {scanStatus === 'error' && 'Unable to complete security scan'}
-                        {scanStatus === 'scanning' && 'Performing security scan...'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* File Security Panel */}
+            <FileSecurityPanel
+              fileUrl={mediaUrl}
+              reportId={reportId}
+              fileType={mediaType === 'image' ? 'image/jpeg' : 'video/mp4'}
+              onScanComplete={handleScanComplete}
+              showActions={true}
+            />
 
             {/* Media Controls */}
             {canDisplayMedia && (
@@ -206,30 +128,10 @@ const MediaViewerModal = ({
               {!canDisplayMedia ? (
                 <div className="flex items-center justify-center h-96 text-center">
                   <div className="space-y-4">
-                    {scanStatus === 'scanning' && (
-                      <>
-                        <div className="animate-spin w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full mx-auto"></div>
-                        <p className="text-white">Scanning file for security threats...</p>
-                        <p className="text-gray-400 text-sm">Please wait while we ensure this file is safe</p>
-                      </>
-                    )}
-                    {(scanStatus === 'infected' || scanStatus === 'suspicious') && (
-                      <>
-                        <AlertTriangle className="w-16 h-16 text-red-400 mx-auto" />
-                        <p className="text-red-400 font-semibold">Security Threat Detected</p>
-                        <p className="text-gray-300">This file cannot be displayed for security reasons</p>
-                        {scanDetails?.threats && (
-                          <p className="text-gray-400 text-sm">Threats: {scanDetails.threats.join(', ')}</p>
-                        )}
-                      </>
-                    )}
-                    {scanStatus === 'error' && (
-                      <>
-                        <AlertTriangle className="w-16 h-16 text-yellow-400 mx-auto" />
-                        <p className="text-yellow-400 font-semibold">Scan Failed</p>
-                        <p className="text-gray-300">Unable to verify file security</p>
-                      </>
-                    )}
+                    <AlertTriangle className="w-16 h-16 text-red-400 mx-auto" />
+                    <p className="text-red-400 font-semibold">Security Check Required</p>
+                    <p className="text-gray-300">This file must be scanned before it can be displayed</p>
+                    <p className="text-gray-400 text-sm">Use the security panel above to scan this file</p>
                   </div>
                 </div>
               ) : (

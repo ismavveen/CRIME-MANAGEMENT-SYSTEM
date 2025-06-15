@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import RealTimeReports from '@/components/RealTimeReports';
 import AuditDashboard from '@/pages/AuditDashboard';
 import ReportAnalytics from '@/components/ReportAnalytics';
+import FileScanDashboard from '@/components/FileScanDashboard';
 import { FileText, Activity, BarChart3, Shield, History, Users, Eye } from 'lucide-react';
 
 const Reports = () => {
@@ -32,7 +33,7 @@ const Reports = () => {
       {/* Navigation Tabs */}
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gray-800/50 mb-6">
+          <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 mb-6">
             <TabsTrigger 
               value="reports" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
@@ -47,6 +48,14 @@ const Reports = () => {
               <Activity className="h-4 w-4" />
               <span>Audit & Logs</span>
               <Badge className="bg-green-600 text-white text-xs ml-1 animate-pulse">LIVE</Badge>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="security" 
+              className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
+            >
+              <Shield className="h-4 w-4" />
+              <span>File Security</span>
+              <Badge className="bg-red-600 text-white text-xs ml-1">NEW</Badge>
             </TabsTrigger>
             <TabsTrigger 
               value="analytics" 
@@ -130,6 +139,11 @@ const Reports = () => {
             </div>
 
             <AuditDashboard />
+          </TabsContent>
+
+          {/* File Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <FileScanDashboard />
           </TabsContent>
 
           {/* Analytics Tab */}
