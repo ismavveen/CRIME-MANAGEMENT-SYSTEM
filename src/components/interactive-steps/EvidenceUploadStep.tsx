@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Camera, Upload, Video, AlertTriangle, FileText, Info } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, ArrowRight, Camera, Upload, Video, AlertTriangle, FileText, Info, Play, Eye, Trash2 } from "lucide-react";
 import MediaUploadSection from "../MediaUploadSection";
 import LiveWitnessRecorder from "../LiveWitnessRecorder";
 
@@ -10,6 +11,7 @@ interface EvidenceUploadStepProps {
   data: {
     images: File[];
     videos: File[];
+    liveWitnessVideos?: Blob[];
   };
   onDataChange: (field: string, value: any) => void;
   onNext: () => void;
@@ -25,12 +27,19 @@ const EvidenceUploadStep = ({
   uploading 
 }: EvidenceUploadStepProps) => {
   const [showLiveWitness, setShowLiveWitness] = useState(false);
-  const [hasWitnessVideo, setHasWitnessVideo] = useState(false);
+  const [liveWitnessVideos, setLiveWitnessVideos] = useState<Blob[]>(data.liveWitnessVideos || []);
 
   const handleWitnessVideoComplete = (videoBlob: Blob) => {
-    setHasWitnessVideo(true);
+    const updatedVideos = [...liveWitnessVideos, videoBlob];
+    setLiveWitnessVideos(updatedVideos);
+    onDataChange('liveWitnessVideos', updatedVideos);
     setShowLiveWitness(false);
-    console.log('Witness video recorded:', videoBlob);
+  };
+
+  const handleDeleteWitnessVideo = (index: number) => {
+    const updatedVideos = liveWitnessVideos.filter((_, i) => i !== index);
+    setLiveWitnessVideos(updatedVideos);
+    onDataChange('liveWitnessVideos', updatedVideos);
   };
 
   return (
@@ -107,70 +116,101 @@ const EvidenceUploadStep = ({
         </Card>
 
         {/* Live Witness Recording Section */}
-        <Card className="border-blue-200 shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardTitle className="flex items-center space-x-3 text-blue-800">
+        <Card className="border-purple-200 shadow-lg hover:shadow-xl transition-shadow">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
+            <CardTitle className="flex items-center space-x-3 text-purple-800">
               <Video className="h-6 w-6" />
-              <span className="text-xl">Live Witness Recording (Optional)</span>
+              <span className="text-xl">Live Witness Recording</span>
+              <Badge className="bg-purple-100 text-purple-700 text-xs">Special Evidence</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              <p className="text-blue-700 leading-relaxed">
-                Record a video testimony from yourself or witnesses. This is completely optional but can provide 
-                valuable firsthand accounts of the incident.
-              </p>
-              
-              {!showLiveWitness && !hasWitnessVideo && (
+            <div className="space-y-6">
+              <div className="text-center space-y-4">
+                <p className="text-purple-700 leading-relaxed">
+                  Record live video testimony from yourself or witnesses. These recordings are specially tagged 
+                  as "Live Witness" evidence and carry additional weight in investigations.
+                </p>
+                
+                {!showLiveWitness && (
+                  <div className="space-y-4">
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <h5 className="font-semibold text-purple-800 mb-2">Live Witness Recording Guidelines:</h5>
+                      <ul className="text-sm text-purple-700 space-y-1 text-left">
+                        <li>• Describe what you witnessed in chronological order</li>
+                        <li>• Mention specific times, locations, and people involved</li>
+                        <li>• Include any important details you remember</li>
+                        <li>• Speak clearly and at a comfortable pace</li>
+                        <li>• These recordings are tagged as "Live Witness" evidence</li>
+                      </ul>
+                    </div>
+                    
+                    <Button 
+                      onClick={() => setShowLiveWitness(true)}
+                      className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg"
+                    >
+                      <Video className="mr-3 h-5 w-5" />
+                      Start Live Witness Recording
+                    </Button>
+                  </div>
+                )}
+
+                {showLiveWitness && (
+                  <div className="border-2 border-purple-200 rounded-lg p-4">
+                    <LiveWitnessRecorder 
+                      onRecordingComplete={handleWitnessVideoComplete}
+                      onCancel={() => setShowLiveWitness(false)}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Live Witness Videos Display */}
+              {liveWitnessVideos.length > 0 && (
                 <div className="space-y-4">
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h5 className="font-semibold text-blue-800 mb-2">What to include in your witness recording:</h5>
-                    <ul className="text-sm text-blue-700 space-y-1 text-left">
-                      <li>• Describe what you witnessed in detail</li>
-                      <li>• Mention the time and location of the incident</li>
-                      <li>• Include any important details you remember</li>
-                      <li>• Speak clearly and at a comfortable pace</li>
-                    </ul>
+                  <h5 className="text-purple-800 font-semibold flex items-center">
+                    <Video className="h-4 w-4 mr-2" />
+                    Recorded Live Witness Videos ({liveWitnessVideos.length})
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {liveWitnessVideos.map((video, index) => (
+                      <Card key={index} className="border-purple-200 bg-purple-50">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                              <Badge className="bg-purple-600 text-white animate-pulse">
+                                Live Witness #{index + 1}
+                              </Badge>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteWitnessVideo(index)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <video 
+                            src={URL.createObjectURL(video)}
+                            className="w-full h-32 bg-gray-900 rounded object-cover"
+                            controls
+                          />
+                          <p className="text-sm text-purple-700 mt-2">
+                            Recorded: {new Date().toLocaleString()}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
                   </div>
                   
                   <Button 
                     onClick={() => setShowLiveWitness(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg"
-                  >
-                    <Video className="mr-3 h-5 w-5" />
-                    Start Live Witness Recording
-                  </Button>
-                  
-                  <p className="text-sm text-blue-600">
-                    You can skip this step if you don't want to record a video testimony
-                  </p>
-                </div>
-              )}
-
-              {showLiveWitness && (
-                <div className="border-2 border-blue-200 rounded-lg p-4">
-                  <LiveWitnessRecorder 
-                    onRecordingComplete={handleWitnessVideoComplete}
-                    onCancel={() => setShowLiveWitness(false)}
-                  />
-                </div>
-              )}
-
-              {hasWitnessVideo && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center justify-center space-x-2 text-green-700">
-                    <Video className="h-5 w-5" />
-                    <span className="font-semibold">Witness video recorded successfully!</span>
-                  </div>
-                  <Button 
                     variant="outline"
-                    onClick={() => {
-                      setShowLiveWitness(true);
-                      setHasWitnessVideo(false);
-                    }}
-                    className="mt-3 border-blue-600 text-blue-600 hover:bg-blue-50"
+                    className="w-full border-purple-600 text-purple-600 hover:bg-purple-50"
                   >
-                    Record New Video
+                    <Video className="mr-2 h-4 w-4" />
+                    Record Additional Witness Video
                   </Button>
                 </div>
               )}
@@ -179,25 +219,31 @@ const EvidenceUploadStep = ({
         </Card>
 
         {/* Upload Summary */}
-        {(data.images.length > 0 || data.videos.length > 0 || hasWitnessVideo) && (
+        {(data.images.length > 0 || data.videos.length > 0 || liveWitnessVideos.length > 0) && (
           <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg">
             <CardContent className="p-6">
               <h4 className="font-bold text-green-800 mb-4 text-lg flex items-center">
                 <FileText className="h-5 w-5 mr-2" />
                 Evidence Summary
               </h4>
-              <div className="grid md:grid-cols-3 gap-4 text-center">
+              <div className="grid md:grid-cols-4 gap-4 text-center">
                 <div className="bg-white rounded-lg p-4 border border-green-200">
                   <div className="text-2xl font-bold text-green-600">{data.images.length}</div>
-                  <div className="text-sm text-green-700">Photos uploaded</div>
+                  <div className="text-sm text-green-700">Photos</div>
                 </div>
                 <div className="bg-white rounded-lg p-4 border border-green-200">
                   <div className="text-2xl font-bold text-blue-600">{data.videos.length}</div>
-                  <div className="text-sm text-blue-700">Videos uploaded</div>
+                  <div className="text-sm text-blue-700">Videos</div>
                 </div>
-                <div className="bg-white rounded-lg p-4 border border-green-200">
-                  <div className="text-2xl font-bold text-purple-600">{hasWitnessVideo ? 1 : 0}</div>
-                  <div className="text-sm text-purple-700">Witness recordings</div>
+                <div className="bg-white rounded-lg p-4 border border-purple-200">
+                  <div className="text-2xl font-bold text-purple-600">{liveWitnessVideos.length}</div>
+                  <div className="text-sm text-purple-700">Live Witness</div>
+                </div>
+                <div className="bg-white rounded-lg p-4 border border-gray-200">
+                  <div className="text-2xl font-bold text-gray-600">
+                    {data.images.length + data.videos.length + liveWitnessVideos.length}
+                  </div>
+                  <div className="text-sm text-gray-700">Total Files</div>
                 </div>
               </div>
             </CardContent>
