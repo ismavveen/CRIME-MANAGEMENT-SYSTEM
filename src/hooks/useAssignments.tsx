@@ -7,7 +7,7 @@ export interface Assignment {
   report_id: string;
   commander_id: string;
   assigned_at: string;
-  status: 'pending' | 'accepted' | 'responded_to' | 'resolved';
+  status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned';
   resolved_at: string | null;
   resolved_by: string | null;
   resolution_notes: string | null;
@@ -43,7 +43,7 @@ export const useAssignments = () => {
         report_id: assignment.report_id,
         commander_id: assignment.commander_id,
         assigned_at: assignment.assigned_at,
-        status: assignment.status as 'pending' | 'accepted' | 'responded_to' | 'resolved',
+        status: assignment.status as 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned',
         resolved_at: assignment.resolved_at,
         resolved_by: assignment.resolved_by,
         resolution_notes: assignment.resolution_notes,
@@ -107,7 +107,7 @@ export const useAssignments = () => {
 
   const updateAssignmentStatus = async (
     assignmentId: string,
-    status: 'pending' | 'accepted' | 'responded_to' | 'resolved',
+    status: 'pending' | 'accepted' | 'responded_to' | 'resolved' | 'assigned',
     resolutionNotes?: string,
     operationData?: {
       operation_outcome?: string;
