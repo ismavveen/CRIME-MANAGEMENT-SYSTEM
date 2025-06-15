@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,14 +5,39 @@ import { Button } from '@/components/ui/button';
 import { Clock, MapPin, AlertTriangle, FileText } from 'lucide-react';
 import { useReports } from '@/hooks/useReports';
 import { useAssignments } from '@/hooks/useAssignments';
+import AssignmentDialog from "./AssignmentDialog";
+import { useAuth } from '@/hooks/useAuth'; // Utility to check admin status
 
 const PendingReportsSection: React.FC = () => {
-  const { reports } = useReports();
-  const { assignments } = useAssignments();
+  const { reports, updateReportStatus, refetch } = useReports();
+  const { assignments, createAssignment } = useAssignments();
+  const { user, isAdmin } = useAuth(); // Assume this provides isAdmin
 
   // Filter reports that are not assigned yet
   const assignedReportIds = assignments.map(a => a.report_id);
   const pendingReports = reports.filter(report => !assignedReportIds.includes(report.id));
+
+  const [assignDialogOpen, setAssignDialogOpen] = React.useState(false);
+  const [selectedReport, setSelectedReport] = React.useState<any>(null);
+
+  const handleAssignClick = (report: any) => {
+    setSelectedReport(report);
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignment = async (commanderId: string) => {
+    if (!selectedReport) return;
+    await createAssignment({
+      report_id: selectedReport.id,
+      commander_id: commanderId
+    });
+    // Update report status to "assigned"
+    await updateReportStatus(selectedReport.id, "assigned");
+    // Refresh data
+    refetch();
+    setAssignDialogOpen(false);
+    setSelectedReport(null);
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -60,14 +84,14 @@ const PendingReportsSection: React.FC = () => {
               </div>
               
               <div className="flex justify-end mt-3">
-                <Button size="sm" variant="outline" className="text-blue-400 border-blue-600">
+                <Button size="sm" variant="outline" className="text-blue-400 border-blue-600"
+                  onClick={() => handleAssignClick(report)}>
                   <FileText className="h-3 w-3 mr-1" />
-                  Assign Unit
+                  Assign Report
                 </Button>
               </div>
             </div>
           ))}
-          
           {pendingReports.length === 0 && (
             <div className="text-center py-8">
               <Clock className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -76,6 +100,14 @@ const PendingReportsSection: React.FC = () => {
             </div>
           )}
         </div>
+        {/* Assignment Dialog */}
+        <AssignmentDialog
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          reportId={selectedReport?.id || null}
+          // ... you can pass more props if desired
+          onAssign={handleAssignment} // Additional prop, may need to update AssignmentDialog
+        />
       </CardContent>
     </Card>
   );

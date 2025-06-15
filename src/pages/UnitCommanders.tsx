@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, UserPlus, Users } from 'lucide-react';
 import { useUnitCommanders } from '@/hooks/useUnitCommanders';
 import { useSystemMetrics } from '@/hooks/useSystemMetrics';
+import { useAuth } from '@/hooks/useAuth';
 
 const UnitCommanders = () => {
   const { commanders, loading, updateCommanderStatus, deleteCommander } = useUnitCommanders();
   const { metrics } = useSystemMetrics();
+  const { user, isAdmin } = useAuth();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -80,7 +82,6 @@ const UnitCommanders = () => {
           </TabsList>
 
           <TabsContent value="units" className="space-y-4">
-            {/* Search and Filter */}
             <UnitCommanderFilters
               searchTerm={searchTerm}
               setSearchTerm={setSearchTerm}
@@ -89,14 +90,15 @@ const UnitCommanders = () => {
               commanders={commanders}
             />
 
-            {/* Response Units Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredCommanders.map((commander) => (
                 <ResponseUnitCard 
                   key={commander.id} 
                   unit={commander}
-                  onStatusUpdate={updateCommanderStatus}
-                  onDelete={deleteCommander}
+                  onStatusUpdate={isAdmin ? updateCommanderStatus : undefined}
+                  onDelete={isAdmin ? deleteCommander : undefined}
+                  isDeleteEnabled={!!isAdmin}
+                  isStatusEnabled={!!isAdmin}
                 />
               ))}
             </div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -13,6 +12,7 @@ interface AssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reportId: string | null;
+  onAssign: (commanderId: string) => void; // <-- new
   reportLocation?: string;
   reportLatitude?: number;
   reportLongitude?: number;
@@ -22,6 +22,7 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
   open,
   onOpenChange,
   reportId,
+  onAssign,
   reportLocation,
   reportLatitude,
   reportLongitude
@@ -40,19 +41,10 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
 
   const handleAssign = async () => {
     if (!reportId || !selectedCommander) return;
-
     setIsSubmitting(true);
+
     try {
-      await createAssignment({
-        report_id: reportId,
-        commander_id: selectedCommander
-      });
-
-      toast({
-        title: "Assignment Created",
-        description: `Report assigned successfully`,
-      });
-
+      await onAssign(selectedCommander);
       onOpenChange(false);
       setSelectedCommander('');
       setNotes('');
@@ -130,5 +122,4 @@ const AssignmentDialog: React.FC<AssignmentDialogProps> = ({
     </Dialog>
   );
 };
-
 export default AssignmentDialog;
