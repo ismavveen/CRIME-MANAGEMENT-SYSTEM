@@ -340,6 +340,7 @@ const NigeriaMap = () => {
       />
 
       {/* Assignment dialog */}
+      {/* Added required prop onAssign below */}
       <AssignmentDialog
         open={showAssignDialog}
         onOpenChange={setShowAssignDialog}
@@ -347,7 +348,7 @@ const NigeriaMap = () => {
         reportLocation={selectedIncident?.location}
         reportLatitude={selectedIncident?.coordinates?.lat}
         reportLongitude={selectedIncident?.coordinates?.lng}
-        onAssign={handleAssign} {/* <-- Added required prop */}
+        onAssign={handleAssign}
       />
     </div>
   );
