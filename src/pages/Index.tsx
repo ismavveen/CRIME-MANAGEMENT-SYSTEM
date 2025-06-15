@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import DashboardSidebar from '../components/DashboardSidebar';
 import StatCard from '../components/StatCard';
@@ -138,7 +139,7 @@ const Index = () => {
           
           {/* Full Width Map Container */}
           <div className="w-full">
-            <div className="dhq-card p-6 h-[600px]">
+            <div className="dhq-card p-6 h-[700px]">
               <GoogleMapsHeatmap 
                 reports={reports} 
                 onMarkerClick={handleMarkerClick}

@@ -25,23 +25,6 @@ const GoogleMapsHeatmap: React.FC<GoogleMapsHeatmapProps> = ({
       const newMap = new window.google.maps.Map(mapRef.current, {
         center: { lat: 9.0765, lng: 7.3986 }, // Nigeria center
         zoom: 6,
-        styles: [
-          {
-            "featureType": "all",
-            "elementType": "geometry.fill",
-            "stylers": [{"color": "#1e293b"}]
-          },
-          {
-            "featureType": "all",
-            "elementType": "labels.text.fill",
-            "stylers": [{"color": "#ffffff"}]
-          },
-          {
-            "featureType": "water",
-            "elementType": "geometry",
-            "stylers": [{"color": "#0f172a"}]
-          }
-        ]
       });
       setMap(newMap);
     }
