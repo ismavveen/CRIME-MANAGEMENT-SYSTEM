@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,11 +16,11 @@ const PendingReportsSection: React.FC = () => {
 
   // Filter for reports that are pending and don't have an "active" assignment.
   const activeAssignmentReportIds = new Set(
-    assignments.filter(a => a.status === 'pending' || a.status === 'accepted' || a.status === 'assigned' || a.status === 'responded_to').map(a => a.report_id)
+    assignments.filter(a => ['pending', 'accepted', 'assigned', 'responded_to'].includes(a.status.toLowerCase())).map(a => a.report_id)
   );
   
   const pendingReports = reports.filter(
-    report => report.status === 'pending' && !activeAssignmentReportIds.has(report.id)
+    report => report.status.toLowerCase() === 'pending' && !activeAssignmentReportIds.has(report.id)
   );
 
   const [assignDialogOpen, setAssignDialogOpen] = React.useState(false);

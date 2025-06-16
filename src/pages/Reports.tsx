@@ -1,19 +1,32 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import RealTimeReports from '@/components/RealTimeReports';
-import ReportAnalytics from '@/components/ReportAnalytics';
+import AdminReviewPanel from '@/components/AdminReviewPanel';
 import AssignedReports from '@/components/AssignedReports';
 import PendingReportsSection from '@/components/PendingReportsSection';
 import ResolvedReports from '@/components/ResolvedReports';
-import { FileText, BarChart3, Shield, Clock, CheckCircle } from 'lucide-react';
-import { useNavigate } from "react-router-dom";
+import { FileText, Shield, Clock, CheckCircle, ShieldCheck } from 'lucide-react';
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Reports = () => {
-  const [activeTab, setActiveTab] = useState('reports');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState('reports');
+
+  // Update active tab based on URL
+  useEffect(() => {
+    const tab = location.pathname.split('/').pop() || 'reports';
+    if (['reports', 'pending', 'assigned', 'resolved', 'review'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/reports/${value}`);
+  };
 
   return (
     <>
@@ -46,7 +59,7 @@ const Reports = () => {
 
       {/* Navigation Tabs */}
       <div className="p-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className="grid w-full grid-cols-5 bg-gray-800/50 mb-6">
             <TabsTrigger 
               value="reports" 
@@ -77,11 +90,11 @@ const Reports = () => {
               <span>Resolved</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="analytics" 
+              value="review" 
               className="flex items-center space-x-2 data-[state=active]:bg-cyan-600"
             >
-              <BarChart3 className="h-4 w-4" />
-              <span>Analytics</span>
+              <ShieldCheck className="h-4 w-4" />
+              <span>Admin Review</span>
             </TabsTrigger>
           </TabsList>
 
@@ -105,9 +118,9 @@ const Reports = () => {
             <ResolvedReports />
           </TabsContent>
 
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <ReportAnalytics />
+          {/* Admin Review Tab */}
+          <TabsContent value="review" className="space-y-6">
+            <AdminReviewPanel />
           </TabsContent>
         </Tabs>
       </div>

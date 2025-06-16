@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import StatCard from '../components/StatCard';
 import GoogleMapsHeatmap from '../components/GoogleMapsHeatmap';
@@ -43,7 +42,7 @@ const Index = () => {
               </div>
               <div className="space-y-2">
                 <h1 className="text-3xl font-bold text-white mb-2 dhq-heading tracking-tight">
-                  Defence Headquarters Central Threat Intelligence and Monitoring System (STIMS)
+                  Report a Crime or Threat – Join the Mission For a Safer Nigeria
                 </h1>
                 <p className="text-gray-300 text-lg dhq-body font-medium">
                   Real-Time Crime Intelligence & Response System

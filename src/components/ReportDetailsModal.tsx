@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +58,10 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({ report, onClose
     });
   };
 
+  if (!report) {
+    return null;
+  }
+
   return (
     <Dialog open={!!report} onOpenChange={onClose}>
       <DialogContent className="bg-gray-800 text-white border-gray-700 max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -87,7 +90,7 @@ const ReportDetailsModal: React.FC<ReportDetailsModalProps> = ({ report, onClose
           </div>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="w-full mt-4">
+        <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-4 bg-gray-700/50">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="location">Location</TabsTrigger>
@@ -158,6 +161,5 @@ const InfoRow = ({ label, value, isMono = false, isBlock = false }: { label: str
     )}
   </div>
 );
-
 
 export default ReportDetailsModal;

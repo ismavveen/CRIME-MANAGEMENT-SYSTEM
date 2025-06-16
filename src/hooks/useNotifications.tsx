@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSettings } from '@/contexts/SettingsContext';
 
 export interface Notification {
   id: string;
@@ -18,6 +18,37 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const { toast } = useToast();
+  const { notificationSounds } = useSettings();
+
+  const playNotificationSound = (type: Notification['type']) => {
+    if (!notificationSounds.enabled) return;
+
+    let soundFile = '';
+    switch (type) {
+      case 'new_report':
+        soundFile = notificationSounds.sounds.newReport;
+        break;
+      case 'assignment':
+      case 'resolution':
+        soundFile = notificationSounds.sounds.statusChange;
+        break;
+      case 'update':
+        soundFile = notificationSounds.sounds.criticalAlert;
+        break;
+      default:
+        soundFile = notificationSounds.sounds.message;
+    }
+
+    if (notificationSounds.customSound) {
+      soundFile = notificationSounds.customSound;
+    }
+
+    const audio = new Audio(soundFile);
+    audio.volume = notificationSounds.volume;
+    audio.play().catch(error => {
+      console.error('Error playing notification sound:', error);
+    });
+  };
 
   const fetchNotifications = async () => {
     try {
@@ -102,6 +133,9 @@ export const useNotifications = () => {
             title: newNotification.title,
             description: newNotification.message,
           });
+
+          // Play notification sound
+          playNotificationSound(newNotification.type);
         }
       )
       .subscribe();
@@ -109,7 +143,7 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [toast]);
+  }, [toast, notificationSounds]);
 
   return {
     notifications,

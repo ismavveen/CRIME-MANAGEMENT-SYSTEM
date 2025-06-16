@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -26,7 +25,7 @@ const DashboardSidebar = () => {
     { path: '/reports', label: 'Reports & Intel', icon: FileText },
     // Audit & Logs nav removed
     { path: '/charts', label: 'Analytics & Charts', icon: BarChart3 },
-    { path: '/unit-commanders', label: 'Unit Commanders', icon: Shield },
+    { path: '/unit-commanders', label: 'States Command Center', icon: Shield },
     { path: '/users', label: 'Users', icon: Users },
     { path: '/calendar', label: 'Calendar', icon: Calendar },
     { path: '/inbox', label: 'Inbox', icon: Mail },
@@ -38,12 +37,12 @@ const DashboardSidebar = () => {
       {/* Enhanced Logo/Header */}
       <div className="p-6 border-b border-gray-700/50 flex-shrink-0">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg flex-shrink-0">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="w-10 h-10 rounded-lg overflow-hidden bg-white flex items-center justify-center shadow-lg flex-shrink-0">
+            <img src="/lovable-uploads/170657b3-653f-4cd6-bbfe-c51ee743b13a.png" alt="Defence HQ Logo" className="w-full h-full object-contain" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-white font-bold text-lg dhq-heading tracking-tight truncate">DHQ</h2>
-            <p className="text-gray-400 text-xs dhq-caption truncate">Defense HQ Portal</p>
+            <h2 className="text-white font-bold text-lg dhq-heading tracking-tight truncate">Defence HQ Portal</h2>
+            <p className="text-gray-400 text-xs dhq-caption truncate">Defence HQ Portal</p>
           </div>
         </div>
       </div>
